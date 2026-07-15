@@ -1,0 +1,78 @@
+// Esquema inicial de Fase 1 — Arquitectura
+// TODO (Claude Code): ajustar campos, agregar índices y relaciones
+// adicionales conforme se implementen los módulos.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolUsuario {
+  super_admin
+  admin_tenant
+  operador
+  cliente_final
+}
+
+enum EstadoEnvio {
+  creado
+  en_transito
+  en_aduana
+  entregado
+  incidencia
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  nombre    String
+  ruc       String?  @unique
+  plan      String   @default("trial")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios  User[]
+  envios    Shipment[]
+
+  @@map("tenants")
+}
+
+model User {
+  id         String     @id @default(uuid())
+  tenantId   String
+  email      String
+  password   String
+  nombre     String
+  rol        RolUsuario @default(operador)
+  activo     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+model Shipment {
+  id                 String      @id @default(uuid())
+  tenantId           String
+  codigoGuia         String      @unique
+  remitenteNombre    String
+  destinatarioNombre String
+  destinatarioEmail  String?
+  origen             String
+  destino            String
+  estado             EstadoEnvio @default(creado)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  tenant             Tenant      @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("shipments")
+}
