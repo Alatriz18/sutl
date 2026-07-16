@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {
   title: 'SUTL — Sistema Universal de Tracking Logístico',
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="bg-white text-navy antialiased">{children}</body>
+      <body className="bg-white text-navy antialiased">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

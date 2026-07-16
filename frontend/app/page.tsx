@@ -1,17 +1,27 @@
+import Link from 'next/link';
+
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-navy px-6 text-center text-white">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-navy px-6 text-center text-white">
       <h1 className="text-4xl font-bold">SUTL</h1>
       <p className="max-w-md text-sky-200">
-        Sistema Universal de Tracking Logístico — Fase 1: Arquitectura en
-        construcción.
+        Sistema Universal de Tracking Logístico — plataforma SaaS de tracking
+        logístico para Ecuador y LATAM.
       </p>
-      {/*
-        TODO (Fase 1 - Claude Code):
-        - Portal público de seguimiento por código de guía
-        - Login / dashboard de cliente
-        - Ver CLAUDE.md para el detalle de los módulos
-      */}
+      <div className="flex gap-4">
+        <Link
+          href="/tracking"
+          className="rounded-md bg-sky px-5 py-2.5 text-sm font-medium text-white hover:bg-sky/90"
+        >
+          Rastrear un envío
+        </Link>
+        <Link
+          href="/login"
+          className="rounded-md border border-white/30 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+        >
+          Ingresar al panel
+        </Link>
+      </div>
     </main>
   );
 }

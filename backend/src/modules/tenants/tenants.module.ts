@@ -1,13 +1,10 @@
 import { Module } from '@nestjs/common';
-
-// TODO (Fase 1 - Claude Code): implementar TenantsController, TenantsService,
-// entidad/modelo Prisma Tenant (empresa suscriptora), plan contratado y
-// estado de cuenta. Base del panel SaaS Admin (Fase 5).
+import { TenantsController } from './tenants.controller';
+import { TenantsService } from './tenants.service';
 
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  controllers: [TenantsController],
+  providers: [TenantsService],
+  exports: [TenantsService],
 })
 export class TenantsModule {}

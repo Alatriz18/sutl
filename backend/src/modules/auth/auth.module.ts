@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
-
-// TODO (Fase 1 - Claude Code): implementar AuthController, AuthService,
-// estrategia JWT (access + refresh), guard de tenant y roles
-// (super_admin, admin_tenant, operador, cliente_final) según CLAUDE.md.
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  imports: [PassportModule, JwtModule.register({})],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy, JwtRefreshStrategy],
+  exports: [AuthService],
 })
 export class AuthModule {}

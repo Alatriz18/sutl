@@ -3,19 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.2.5",
+    "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.4.0",
     "lucide-react": "^0.408.0",
-    "axios": "^1.7.2"
+    "axios": "^1.7.2",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
@@ -26,6 +27,6 @@
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.0",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.5"
+    "eslint-config-next": "14.2.35"
   }
 }

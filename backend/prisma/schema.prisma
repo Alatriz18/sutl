@@ -1,14 +1,32 @@
-// Esquema inicial de Fase 1 — Arquitectura
-// TODO (Claude Code): ajustar campos, agregar índices y relaciones
-// adicionales conforme se implementen los módulos.
+// Esquema SUTL — adaptado al Plan de Acción v2.0 (importaciones/exportaciones,
+// navieras, documentos, notificaciones, alertas, reportes, planes SaaS,
+// auditoría). DB destino inicial: Supabase (Postgres gestionado). Al migrar a
+// AWS RDS Aurora solo cambia DATABASE_URL — el schema es 100% Postgres
+// estándar, sin extensiones propietarias de Supabase.
+//
+// Alcance de esta revisión: se amplía el modelo de datos para soportar todo
+// el dominio del plan. Los módulos backend (documentos, notificaciones,
+// alertas, reportes, suscripciones, auditoría) todavía NO tienen API propia —
+// las tablas existen como base para implementarlos en las siguientes fases.
+// Las integraciones externas (navieras, Stripe, Twilio, FCM/APNs) quedan
+// modeladas como credenciales/config por tenant, sin lógica de integración
+// real todavía (ver CarrierCredential).
+//
+// Nota sobre super_admin: no pertenece a un tenant "cliente" real, pero el
+// modelo User exige tenantId (fila compartida). Se usa un tenant especial
+// "SVK Solutions" (ver prisma/seed.ts) como owner de las cuentas super_admin
+// del panel SaaS.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Requerido por el connection pooler de Supabase (pgbouncer) en modo
+  // transaction: las migraciones necesitan una conexión directa sin pooling.
+  directUrl = env("DIRECT_URL")
 }
 
 enum RolUsuario {
@@ -26,6 +44,59 @@ enum EstadoEnvio {
   incidencia
 }
 
+enum TipoEnvio {
+  importacion
+  exportacion
+}
+
+enum ModoTransporte {
+  maritimo
+  aereo
+  terrestre
+}
+
+enum TipoCarrier {
+  naviera
+  aerolinea
+  terrestre
+}
+
+enum TipoDocumento {
+  bl
+  awb
+  factura
+  pedimento
+  packing_list
+  otro
+}
+
+enum CanalNotificacion {
+  email
+  push
+  sms
+}
+
+enum EstadoNotificacion {
+  pendiente
+  enviado
+  fallido
+}
+
+enum TipoAlerta {
+  retraso
+  cambio_estado
+  llegada_proxima
+  documento_faltante
+  personalizada
+}
+
+enum EstadoSuscripcion {
+  prueba
+  activa
+  vencida
+  cancelada
+}
+
 model Tenant {
   id        String   @id @default(uuid())
   nombre    String
@@ -35,44 +106,249 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  usuarios  User[]
-  envios    Shipment[]
+  usuarios          User[]
+  envios            Shipment[]
+  suscripcion       Subscription?
+  documentos        Document[]
+  notificaciones    Notification[]
+  alertas           Alert[]
+  reportes          Report[]
+  auditLogs         AuditLog[]
+  carrierCredentials CarrierCredential[]
 
   @@map("tenants")
 }
 
 model User {
-  id         String     @id @default(uuid())
-  tenantId   String
-  email      String
-  password   String
-  nombre     String
-  rol        RolUsuario @default(operador)
-  activo     Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id               String     @id @default(uuid())
+  tenantId         String
+  email            String
+  password         String
+  nombre           String
+  rol              RolUsuario @default(operador)
+  activo           Boolean    @default(true)
+  refreshTokenHash String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
-  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  tenant           Tenant     @relation(fields: [tenantId], references: [id])
+
+  documentosSubidos Document[]     @relation("DocumentoSubidoPor")
+  reportesGenerados Report[]       @relation("ReporteGeneradoPor")
+  notificaciones    Notification[] @relation("NotificacionDestinatario")
+  auditLogs         AuditLog[]     @relation("AuditLogActor")
 
   @@unique([tenantId, email])
+  @@index([tenantId])
   @@map("users")
 }
 
+// Naviera / aerolínea / transportista terrestre — catálogo global compartido
+// por todos los tenants (no es dato de negocio de un tenant específico).
+model Carrier {
+  id        String      @id @default(uuid())
+  nombre    String
+  tipo      TipoCarrier
+  codigo    String?     @unique // SCAC (naviera) o código IATA (aerolínea)
+  activo    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  envios      Shipment[]
+  credenciales CarrierCredential[]
+
+  @@map("carriers")
+}
+
+// Credenciales/config de integración de un tenant con una naviera/aerolínea
+// puntual (API key sandbox, etc.). Sin lógica de integración real todavía —
+// es la base para "Módulo de configuración de integraciones externas" (Fase 3).
+model CarrierCredential {
+  id        String   @id @default(uuid())
+  tenantId  String
+  carrierId String
+  apiKey    String?
+  apiSecret String?
+  activo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  carrier Carrier @relation(fields: [carrierId], references: [id])
+
+  @@unique([tenantId, carrierId])
+  @@map("carrier_credentials")
+}
+
 model Shipment {
-  id                 String      @id @default(uuid())
+  id                 String         @id @default(uuid())
   tenantId           String
-  codigoGuia         String      @unique
+  codigoGuia         String         @unique
+  tipo               TipoEnvio      @default(exportacion)
+  modo               ModoTransporte @default(maritimo)
+  carrierId          String?
+  referenciaDocumento String?       // número de BL o AWB
   remitenteNombre    String
   destinatarioNombre String
   destinatarioEmail  String?
   origen             String
   destino            String
-  estado             EstadoEnvio @default(creado)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  puertoOrigen       String?
+  puertoDestino      String?
+  pesoKg             Float?
+  fechaEstimadaSalida   DateTime?
+  fechaEstimadaLlegada  DateTime?
+  estado             EstadoEnvio    @default(creado)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
-  tenant             Tenant      @relation(fields: [tenantId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  carrier  Carrier?  @relation(fields: [carrierId], references: [id])
+
+  documentos Document[]
+  alertas    Alert[]
 
   @@index([tenantId])
+  @@index([carrierId])
   @@map("shipments")
+}
+
+// Documentos del envío (BL, AWB, facturas, pedimentos). El archivo en sí vive
+// en S3 (o equivalente) — aquí solo se guarda la referencia (urlArchivo) y el
+// versionado. Sin lógica de upload real todavía.
+model Document {
+  id            String        @id @default(uuid())
+  tenantId      String
+  shipmentId    String
+  tipo          TipoDocumento
+  nombreArchivo String
+  urlArchivo    String
+  version       Int           @default(1)
+  subidoPorId   String?
+  createdAt     DateTime      @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  subidoPor User?   @relation("DocumentoSubidoPor", fields: [subidoPorId], references: [id])
+
+  @@index([tenantId])
+  @@index([shipmentId])
+  @@map("documents")
+}
+
+// Notificaciones salientes (email/push/sms) a un usuario del tenant. Sin
+// integración real con SES/FCM/Twilio todavía — el `estado` queda en
+// `pendiente` hasta que se conecte el proveedor correspondiente.
+model Notification {
+  id            String             @id @default(uuid())
+  tenantId      String
+  userId        String?
+  canal         CanalNotificacion
+  tipo          String
+  asunto        String
+  mensaje       String
+  estado        EstadoNotificacion @default(pendiente)
+  enviadoAt     DateTime?
+  createdAt     DateTime           @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation("NotificacionDestinatario", fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@map("notifications")
+}
+
+// Umbral/regla de alerta configurable por tenant, opcionalmente asociada a un
+// envío puntual (ej. "avisarme si este envío lleva 3 días en aduana").
+model Alert {
+  id         String     @id @default(uuid())
+  tenantId   String
+  shipmentId String?
+  tipo       TipoAlerta
+  condicion  Json?
+  activo     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  shipment Shipment? @relation(fields: [shipmentId], references: [id])
+
+  @@index([tenantId])
+  @@map("alerts")
+}
+
+// Reporte generado (analytics/KPIs, export PDF/Excel/CSV). El archivo final
+// vive en S3 — aquí se guarda la referencia y metadata del reporte.
+model Report {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tipo          String
+  formato       String   // pdf | excel | csv
+  urlArchivo    String?
+  generadoPorId String?
+  createdAt     DateTime @default(now())
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  generadoPor User?  @relation("ReporteGeneradoPor", fields: [generadoPorId], references: [id])
+
+  @@index([tenantId])
+  @@map("reports")
+}
+
+// Catálogo global de planes de suscripción del panel SaaS (Fase 5).
+model SubscriptionPlan {
+  id             String   @id @default(uuid())
+  nombre         String   @unique
+  precioMensual  Float
+  maxUsuarios    Int?
+  maxEnvios      Int?
+  features       Json?
+  activo         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  suscripciones Subscription[]
+
+  @@map("subscription_plans")
+}
+
+// Suscripción activa de un tenant a un plan. Campos de Stripe quedan nulos
+// hasta que se conecte el proveedor de pagos real.
+model Subscription {
+  id                   String            @id @default(uuid())
+  tenantId             String            @unique
+  planId               String
+  estado               EstadoSuscripcion @default(prueba)
+  fechaInicio          DateTime          @default(now())
+  fechaFin             DateTime?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id])
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("subscriptions")
+}
+
+// Bitácora de auditoría: quién hizo qué sobre qué entidad. `entidad` +
+// `entidadId` apuntan a cualquier tabla de negocio (shipments, users, etc.)
+// sin FK física para no acoplar el log a un esquema en particular.
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String?
+  accion     String
+  entidad    String
+  entidadId  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation("AuditLogActor", fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([entidad, entidadId])
+  @@map("audit_logs")
 }

@@ -10,11 +10,27 @@ services:
       POSTGRES_PASSWORD: sutl_dev_password
       POSTGRES_DB: sutl_db
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - sutl_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sutl -d sutl_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    container_name: sutl_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: sutl_tracking
+    ports:
+      - "27018:27017"
+    volumes:
+      - sutl_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,6 +48,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -45,7 +63,7 @@ services:
     env_file:
       - ./frontend/.env
     ports:
-      - "3000:3000"
+      - "3002:3000"
     depends_on:
       - backend
     volumes:
@@ -55,3 +73,4 @@ services:
 
 volumes:
   sutl_postgres_data:
+  sutl_mongo_data:
