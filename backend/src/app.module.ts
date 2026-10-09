@@ -8,6 +8,19 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TrackingEventsModule } from './modules/tracking-events/tracking-events.module';
 import { CarriersModule } from './modules/carriers/carriers.module';
+import { PartnersModule } from './modules/partners/partners.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { RatesModule } from './modules/rates/rates.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { ContainersModule } from './modules/containers/containers.module';
+import { WarehousesModule } from './modules/warehouses/warehouses.module';
+import { FleetModule } from './modules/fleet/fleet.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -37,6 +50,19 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ShipmentsModule,
     TrackingEventsModule,
     CarriersModule,
+    PartnersModule,
+    QuotesModule,
+    BookingsModule,
+    RatesModule,
+    ContractsModule,
+    InvoicesModule,
+    ContainersModule,
+    WarehousesModule,
+    FleetModule,
+    DocumentsModule,
+    AlertsModule,
+    NotificationsModule,
+    ReportsModule,
   ],
   providers: [
     // Guard global: toda ruta exige JWT salvo @Public(). RolesGuard corre

@@ -5,16 +5,21 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardTitle } from '@/components/ui/card';
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/lib/toast-context';
+import { extractApiError } from '@/lib/format';
 import { RolUsuario, User } from '@/types';
 
 const ROLES: RolUsuario[] = ['admin_tenant', 'operador', 'cliente_final'];
 
 export default function UsersPage() {
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ email: '', password: '', nombre: '', rol: 'operador' as RolUsuario });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function cargar() {
     setLoading(true);
@@ -34,11 +39,43 @@ export default function UsersPage() {
     try {
       await api.post('/users', form);
       setForm({ email: '', password: '', nombre: '', rol: 'operador' });
+      toast.success('Usuario creado correctamente.');
       await cargar();
-    } catch {
-      setError('No se pudo crear el usuario. Verifica que el email no esté en uso.');
+    } catch (err) {
+      setError(extractApiError(err, 'No se pudo crear el usuario. Verifica que el email no esté en uso.'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function cambiarRol(u: User, rol: RolUsuario) {
+    setBusyId(u.id);
+    try {
+      await api.patch(`/users/${u.id}`, { rol });
+      toast.success(`Rol de ${u.nombre} actualizado.`);
+      await cargar();
+    } catch (err) {
+      toast.error(extractApiError(err, 'No se pudo actualizar el rol.'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function toggleActivo(u: User) {
+    setBusyId(u.id);
+    try {
+      if (u.activo) {
+        await api.delete(`/users/${u.id}`);
+        toast.success(`${u.nombre} fue desactivado.`);
+      } else {
+        await api.patch(`/users/${u.id}`, { activo: true });
+        toast.success(`${u.nombre} fue reactivado.`);
+      }
+      await cargar();
+    } catch (err) {
+      toast.error(extractApiError(err, 'No se pudo actualizar el estado del usuario.'));
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -49,40 +86,73 @@ export default function UsersPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="overflow-hidden rounded-lg border border-navy/10 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-navy/5 text-navy/70">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Nombre</th>
-                  <th className="px-4 py-3 font-medium">Email</th>
-                  <th className="px-4 py-3 font-medium">Rol</th>
-                  <th className="px-4 py-3 font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading && (
+          <div className="overflow-x-auto rounded-lg border border-navy/10 bg-white">
+            {loading ? (
+              <TableSkeleton rows={4} cols={4} />
+            ) : (
+              <table className="w-full min-w-[520px] text-left text-sm">
+                <thead className="bg-navy/5 text-navy/70">
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-navy/50">
-                      Cargando...
-                    </td>
+                    <th className="px-4 py-3 font-medium">Nombre</th>
+                    <th className="px-4 py-3 font-medium">Email</th>
+                    <th className="px-4 py-3 font-medium">Rol</th>
+                    <th className="px-4 py-3 font-medium">Estado</th>
+                    <th className="px-4 py-3 font-medium"></th>
                   </tr>
-                )}
-                {users.map((u) => (
-                  <tr key={u.id} className="border-t border-navy/5">
-                    <td className="px-4 py-3">{u.nombre}</td>
-                    <td className="px-4 py-3">{u.email}</td>
-                    <td className="px-4 py-3 capitalize">{u.rol.replace('_', ' ')}</td>
-                    <td className="px-4 py-3">
-                      {u.activo ? (
-                        <span className="text-emerald-600">Activo</span>
-                      ) : (
-                        <span className="text-red-500">Inactivo</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-center text-navy/50">
+                        Aún no hay usuarios.
+                      </td>
+                    </tr>
+                  )}
+                  {users.map((u) => (
+                    <tr key={u.id} className="border-t border-navy/5">
+                      <td className="px-4 py-3">{u.nombre}</td>
+                      <td className="px-4 py-3 text-navy/70">{u.email}</td>
+                      <td className="px-4 py-3">
+                        {u.rol === 'super_admin' ? (
+                          <span className="capitalize text-navy/60">super admin</span>
+                        ) : (
+                          <select
+                            className="rounded-md border border-navy/20 px-2 py-1 text-xs capitalize"
+                            value={u.rol}
+                            disabled={busyId === u.id}
+                            onChange={(e) => cambiarRol(u, e.target.value as RolUsuario)}
+                          >
+                            {ROLES.map((r) => (
+                              <option key={r} value={r}>
+                                {r.replace('_', ' ')}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {u.activo ? (
+                          <span className="text-emerald-600">Activo</span>
+                        ) : (
+                          <span className="text-red-500">Inactivo</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {u.rol !== 'super_admin' && (
+                          <button
+                            disabled={busyId === u.id}
+                            onClick={() => toggleActivo(u)}
+                            className="text-xs font-medium text-navy/60 hover:text-navy disabled:opacity-40"
+                          >
+                            {u.activo ? 'Desactivar' : 'Reactivar'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Card, CardTitle } from '@/components/ui/card';
 import { EstadoBadge } from '@/components/ui/badge';
+import { formatDateTime } from '@/lib/format';
 import { TrackingPublicoResponse } from '@/types';
 
 export default function TrackingResultPage() {
@@ -43,7 +44,7 @@ export default function TrackingResultPage() {
         {!loading && data && (
           <>
             <Card className="mt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle>{data.codigoGuia}</CardTitle>
                   <p className="mt-1 text-navy/60">
@@ -70,9 +71,7 @@ export default function TrackingResultPage() {
                   >
                     <div className="flex items-center justify-between">
                       <EstadoBadge estado={ev.estado} />
-                      <span className="text-navy/50">
-                        {new Date(ev.timestamp).toLocaleString('es-EC')}
-                      </span>
+                      <span className="text-navy/50">{formatDateTime(ev.timestamp)}</span>
                     </div>
                     {ev.ubicacion && <p className="mt-2 text-navy">📍 {ev.ubicacion}</p>}
                     {ev.descripcion && <p className="text-navy/70">{ev.descripcion}</p>}

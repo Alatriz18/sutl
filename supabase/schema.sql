@@ -1,10 +1,20 @@
--- SUTL — schema inicial para Supabase (Fase 1)
--- Equivalente SQL de backend/prisma/schema.prisma. Uso recomendado: dejar que
--- Prisma genere y aplique la migración (`npm run prisma:migrate` con
--- DATABASE_URL apuntando a Supabase). Este archivo queda como referencia para
--- aplicar el esquema manualmente desde el SQL Editor de Supabase si se
--- necesita, y es 100% Postgres estándar — migrar a AWS RDS Aurora más
--- adelante no requiere cambios aquí, solo actualizar DATABASE_URL.
+-- SUTL — schema inicial para Supabase (Fase 1: tenants/users/shipments)
+--
+-- ⚠️ Desde la revisión "ERP logístico" (Partners, Quotes, Bookings, Rates,
+-- Contracts, Invoices, Payments, Containers, Warehouses, Vehicles, etc.),
+-- backend/prisma/schema.prisma es la ÚNICA fuente de verdad del esquema —
+-- este archivo dejó de mantenerse tabla por tabla porque duplicarlo a mano
+-- con ~20 modelos nuevos es propenso a desincronizarse. Para aplicar el
+-- esquema completo actual a Supabase, usa Prisma directamente:
+--   npx prisma migrate dev --name init   (interactivo, genera la migración)
+--   npx prisma db push                   (sin historial de migraciones, más rápido en dev)
+-- Es 100% Postgres estándar — migrar a AWS RDS Aurora después no requiere
+-- cambios de schema, solo actualizar DATABASE_URL/DIRECT_URL.
+--
+-- Lo de abajo queda como referencia histórica de las 3 tablas originales
+-- (tenants/users/shipments) para quien prefiera inspeccionar el modelo base
+-- sin instalar Node — ya no reflejan las columnas nuevas de shipments
+-- (tipo, modo, carrierId, bookingId, containerId, etc.) ni las tablas del ERP.
 
 create extension if not exists "pgcrypto";
 

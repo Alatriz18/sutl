@@ -289,8 +289,8 @@ export default function DashboardOverviewPage() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <CardTitle className="mb-3">Envíos recientes</CardTitle>
-          <div className="overflow-hidden rounded-lg border border-navy/10 bg-white">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-lg border border-navy/10 bg-white">
+            <table className="w-full min-w-[480px] text-left text-sm">
               <thead className="bg-navy/5 text-navy/70">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Guía</th>

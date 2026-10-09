@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { Booking, Partner } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackingEventsService } from '../tracking-events/tracking-events.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
@@ -16,11 +17,15 @@ export class ShipmentsService {
     return this.prisma.shipment.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
+      include: { carrier: true },
     });
   }
 
   async findOne(tenantId: string, id: string) {
-    const shipment = await this.prisma.shipment.findFirst({ where: { id, tenantId } });
+    const shipment = await this.prisma.shipment.findFirst({
+      where: { id, tenantId },
+      include: { carrier: true, booking: true },
+    });
     if (!shipment) {
       throw new NotFoundException('Envío no encontrado');
     }
@@ -58,6 +63,34 @@ export class ShipmentsService {
       createdAt: shipment.createdAt,
       eventos,
     };
+  }
+
+  // Usado por BookingsService al confirmar una reserva: crea el envío real y
+  // lo enlaza 1:1 con el booking que le dio origen.
+  async createFromBooking(tenantId: string, booking: Booking, cliente: Partner) {
+    const yaConvertido = await this.prisma.shipment.findUnique({
+      where: { bookingId: booking.id },
+    });
+    if (yaConvertido) {
+      throw new ConflictException('Esta reserva ya fue convertida en un envío');
+    }
+
+    const codigoGuia = await this.generarCodigoGuia();
+    return this.prisma.shipment.create({
+      data: {
+        tenantId,
+        codigoGuia,
+        tipo: booking.tipo,
+        modo: booking.modo,
+        carrierId: booking.carrierId,
+        bookingId: booking.id,
+        remitenteNombre: booking.tipo === 'exportacion' ? cliente.nombre : 'Por confirmar',
+        destinatarioNombre: booking.tipo === 'exportacion' ? 'Por confirmar' : cliente.nombre,
+        destinatarioEmail: cliente.email,
+        origen: booking.origen,
+        destino: booking.destino,
+      },
+    });
   }
 
   private async generarCodigoGuia(): Promise<string> {

@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardTitle } from '@/components/ui/card';
+import { DEMO_MODE } from '@/lib/api';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -32,6 +33,23 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardTitle>Iniciar sesión</CardTitle>
         <p className="mb-6 mt-1 text-sm text-navy/60">Panel SUTL para empresas de logística</p>
+
+        {DEMO_MODE && (
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('admin@demo-transportes.com');
+              setPassword('Demo2026!');
+            }}
+            className="mb-4 w-full rounded-md border border-gold/30 bg-gold/5 px-3 py-2.5 text-left text-xs text-navy/70 transition-colors hover:bg-gold/10"
+          >
+            <span className="font-medium text-navy">Modo demo:</span> usa{' '}
+            <code className="font-mono text-navy">admin@demo-transportes.com</code> /{' '}
+            <code className="font-mono text-navy">Demo2026!</code>
+            <br />
+            Toca aquí para autocompletar.
+          </button>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>

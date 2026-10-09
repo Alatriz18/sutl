@@ -6,10 +6,13 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/lib/toast-context';
+import { extractApiError } from '@/lib/format';
 import { Carrier, ModoTransporte, TipoEnvio } from '@/types';
 
 export default function NuevoEnvioPage() {
   const router = useRouter();
+  const toast = useToast();
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [form, setForm] = useState({
     tipo: 'exportacion' as TipoEnvio,
@@ -50,9 +53,10 @@ export default function NuevoEnvioPage() {
         puertoDestino: form.puertoDestino || undefined,
         pesoKg: form.pesoKg ? Number(form.pesoKg) : undefined,
       });
+      toast.success(`Envío ${res.data.codigoGuia} creado correctamente.`);
       router.push(`/dashboard/shipments/${res.data.id}`);
-    } catch {
-      setError('No se pudo crear el envío. Revisa los datos e intenta de nuevo.');
+    } catch (err) {
+      setError(extractApiError(err, 'No se pudo crear el envío. Revisa los datos e intenta de nuevo.'));
     } finally {
       setLoading(false);
     }
