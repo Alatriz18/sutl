@@ -428,6 +428,36 @@ export const documents: SutlDocument[] = [
     urlArchivo: 'mock://documentos/Factura-CMDU4455667.pdf', version: 1, subidoPorId: 'u-operador',
     createdAt: mesesAtras(2, 19),
   },
+  {
+    id: 'doc-3', tenantId: 't-demo', shipmentId: 's1', tipo: 'bl', nombreArchivo: 'BL-MAEU1234567.pdf',
+    urlArchivo: 'mock://documentos/BL-MAEU1234567.pdf', version: 1, subidoPorId: 'u-operador',
+    createdAt: mesesAtras(0, 3),
+  },
+  {
+    id: 'doc-4', tenantId: 't-demo', shipmentId: 's2', tipo: 'awb', nombreArchivo: 'AWB-CW-88213.pdf',
+    urlArchivo: 'mock://documentos/AWB-CW-88213.pdf', version: 1, subidoPorId: 'u-operador',
+    createdAt: mesesAtras(0, 10),
+  },
+  {
+    id: 'doc-5', tenantId: 't-demo', shipmentId: 's5', tipo: 'awb', nombreArchivo: 'AWB-CW-77104.pdf',
+    urlArchivo: 'mock://documentos/AWB-CW-77104.pdf', version: 1, subidoPorId: 'u-admin',
+    createdAt: mesesAtras(2, 2),
+  },
+  {
+    id: 'doc-6', tenantId: 't-demo', shipmentId: 's8', tipo: 'awb', nombreArchivo: 'AWB-CW-65332.pdf',
+    urlArchivo: 'mock://documentos/AWB-CW-65332.pdf', version: 1, subidoPorId: 'u-admin',
+    createdAt: mesesAtras(3, 25),
+  },
+  {
+    id: 'doc-7', tenantId: 't-demo', shipmentId: 's10', tipo: 'bl', nombreArchivo: 'BL-MAEU7789012.pdf',
+    urlArchivo: 'mock://documentos/BL-MAEU7789012.pdf', version: 1, subidoPorId: 'u-operador',
+    createdAt: mesesAtras(5, 6),
+  },
+  {
+    id: 'doc-8', tenantId: 't-demo', shipmentId: 's6', tipo: 'bl', nombreArchivo: 'BL-CMDU4455667.pdf',
+    urlArchivo: 'mock://documentos/BL-CMDU4455667.pdf', version: 1, subidoPorId: 'u-operador',
+    createdAt: mesesAtras(2, 18),
+  },
 ];
 
 export function documentExpanded(d: SutlDocument): SutlDocument {

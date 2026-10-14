@@ -39,6 +39,12 @@ Kevin quiere que SUTL sea la plataforma de logística más completa del mercado,
 
 ## Historial de cambios
 
+### 2026-10-13
+- Pulida visual del dashboard interno completo (afecta las ~20 pantallas a la vez vía componentes compartidos, sin tocar cada página): `Card` y `StatTile` con sombra/borde más suaves y radio mayor, `Button` con sombra de color y micro-interacción al presionar, spinner de carga en vez de texto plano.
+- Se agregó un **topbar persistente** (`src/components/layout/topbar.tsx`) en escritorio y móvil: título de la sección actual, campana de notificaciones y avatar con iniciales del usuario.
+- Se extrajo la configuración de navegación del sidebar a `src/lib/nav.ts` (compartida entre sidebar y topbar), y se rediseñó el sidebar: indicador de sección activa con barra lateral, insignia "Modo demo" más visible, pie con avatar + rol del usuario.
+- Ajustada la data de muestra (`mock/data.ts`): se agregaron documentos BL/AWB adicionales para que la alerta de "documento faltante" no marque casi todos los envíos (de 9/10 a un número creíble), evitando que el demo se vea "roto" para un inversionista.
+
 ### 2026-10-08
 - Se agregó modo demo completo (`frontend/src/lib/mock/`) que simula toda la API REST en el navegador — login, shipments, tracking-events, quotes, bookings, rates, contracts, invoices+pagos, containers, warehouses+inventory, vehicles+drivers, documents (con descarga simulada), alerts (evaluación dinámica), notifications, reports (CSV real generado en cliente). Activado vía `NEXT_PUBLIC_DEMO_MODE=true`.
 - Se desplegó el frontend a Vercel (proyecto `sutl`, root directory `frontend`) conectado al repo de GitHub, con el modo demo activo.
