@@ -141,8 +141,8 @@ export default function AlertasPage() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {totalDisparadas > 0 && (
-            <Card className="mb-4 border-[#d03b3b]/30 bg-[#d03b3b]/5">
-              <p className="text-sm font-medium text-[#d03b3b]">
+            <Card className="mb-4 border-[#B3362B]/30 bg-[#B3362B]/5">
+              <p className="text-sm font-medium text-[#B3362B]">
                 {totalDisparadas} envío(s) disparando alguna alerta ahora mismo
               </p>
             </Card>
@@ -174,7 +174,7 @@ export default function AlertasPage() {
                     </div>
                     {ev && ev.disparados.length > 0 && (
                       <div className="mt-3 border-t border-navy/5 pt-3">
-                        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#d03b3b]">
+                        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#B3362B]">
                           Disparada por {ev.disparados.length} envío(s)
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -182,7 +182,7 @@ export default function AlertasPage() {
                             <Link
                               key={s.id}
                               href={`/dashboard/shipments/${s.id}`}
-                              className="rounded-full bg-[#d03b3b]/10 px-2 py-0.5 text-xs font-medium text-[#d03b3b] hover:underline"
+                              className="rounded-full bg-[#B3362B]/10 px-2 py-0.5 text-xs font-medium text-[#B3362B] hover:underline"
                             >
                               {s.codigoGuia}
                             </Link>

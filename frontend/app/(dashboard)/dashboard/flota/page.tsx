@@ -15,7 +15,7 @@ import { Driver, EstadoVehiculo, Vehicle } from '@/types';
 const ESTADO_COLOR: Record<EstadoVehiculo, string> = {
   disponible: 'bg-emerald-100 text-emerald-700',
   en_ruta: 'bg-sky/10 text-sky',
-  mantenimiento: 'bg-[#fab219]/20 text-[#a86a00]',
+  mantenimiento: 'bg-[#C98A2B]/20 text-[#8A5A12]',
   inactivo: 'bg-slate-100 text-slate-700',
 };
 

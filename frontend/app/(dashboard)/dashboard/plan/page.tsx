@@ -39,7 +39,7 @@ function UsageBar({ label, actual, max }: { label: string; actual: number; max: 
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-navy/10">
         <div
-          className={`h-full rounded-full ${pct > 85 ? 'bg-[#d03b3b]' : 'bg-sky'}`}
+          className={`h-full rounded-full ${pct > 85 ? 'bg-[#B3362B]' : 'bg-sky'}`}
           style={{ width: `${pct}%` }}
         />
       </div>

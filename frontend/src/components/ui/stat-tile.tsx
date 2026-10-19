@@ -12,17 +12,17 @@ interface StatTileProps {
 const accentStyles: Record<NonNullable<StatTileProps['accent']>, string> = {
   navy: 'bg-navy/10 text-navy',
   sky: 'bg-sky/10 text-sky',
-  good: 'bg-[#0ca30c]/10 text-[#0ca30c]',
-  warning: 'bg-[#fab219]/20 text-[#a86a00]',
-  critical: 'bg-[#d03b3b]/10 text-[#d03b3b]',
+  good: 'bg-[#1A7A4C]/10 text-[#1A7A4C]',
+  warning: 'bg-[#C98A2B]/20 text-[#8A5A12]',
+  critical: 'bg-[#B3362B]/10 text-[#B3362B]',
 };
 
 const barStyles: Record<NonNullable<StatTileProps['accent']>, string> = {
   navy: 'bg-navy',
   sky: 'bg-sky',
-  good: 'bg-[#0ca30c]',
-  warning: 'bg-[#fab219]',
-  critical: 'bg-[#d03b3b]',
+  good: 'bg-[#1A7A4C]',
+  warning: 'bg-[#C98A2B]',
+  critical: 'bg-[#B3362B]',
 };
 
 export function StatTile({ label, value, icon: Icon, accent = 'navy', hint }: StatTileProps) {

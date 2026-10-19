@@ -17,9 +17,9 @@ const CANAL_LABEL = { email: 'Email', push: 'Push', sms: 'SMS' } as const;
 
 const ESTADO_ICON = { enviado: CheckCircle2, pendiente: Clock, fallido: XCircle } as const;
 const ESTADO_COLOR = {
-  enviado: 'text-[#0ca30c]',
-  pendiente: 'text-[#a86a00]',
-  fallido: 'text-[#d03b3b]',
+  enviado: 'text-[#1A7A4C]',
+  pendiente: 'text-[#8A5A12]',
+  fallido: 'text-[#B3362B]',
 } as const;
 
 export default function NotificacionesPage() {
@@ -102,14 +102,14 @@ export default function NotificacionesPage() {
             </Card>
             <Card>
               <p className="text-sm text-navy/60">Tasa de entrega</p>
-              <p className="mt-1 text-2xl font-bold text-[#0ca30c]">
+              <p className="mt-1 text-2xl font-bold text-[#1A7A4C]">
                 {stats.tasa}
                 {stats.tasa !== '—' ? '%' : ''}
               </p>
             </Card>
             <Card>
               <p className="text-sm text-navy/60">Fallidas</p>
-              <p className="mt-1 text-2xl font-bold text-[#d03b3b]">{stats.fallidas}</p>
+              <p className="mt-1 text-2xl font-bold text-[#B3362B]">{stats.fallidas}</p>
             </Card>
           </div>
 

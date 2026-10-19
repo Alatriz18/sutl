@@ -14,7 +14,7 @@ import { Carrier, Container, EstadoContenedor, Shipment } from '@/types';
 
 const ESTADO_COLOR: Record<EstadoContenedor, string> = {
   abierto: 'bg-sky/10 text-sky',
-  cerrado: 'bg-[#fab219]/20 text-[#a86a00]',
+  cerrado: 'bg-[#C98A2B]/20 text-[#8A5A12]',
   en_transito: 'bg-violet-100 text-violet-700',
   entregado: 'bg-emerald-100 text-emerald-700',
 };

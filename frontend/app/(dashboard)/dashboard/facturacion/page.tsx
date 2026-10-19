@@ -13,7 +13,7 @@ import { extractApiError, formatDate, formatMoney } from '@/lib/format';
 import { EstadoFactura, Invoice, Partner, TipoFactura } from '@/types';
 
 const ESTADO_COLOR: Record<EstadoFactura, string> = {
-  pendiente: 'bg-[#fab219]/20 text-[#a86a00]',
+  pendiente: 'bg-[#C98A2B]/20 text-[#8A5A12]',
   pagada: 'bg-emerald-100 text-emerald-700',
   vencida: 'bg-red-100 text-red-700',
   anulada: 'bg-slate-100 text-slate-700',
@@ -114,7 +114,7 @@ export default function FacturacionPage() {
               </div>
             </Card>
             <Card className="flex items-center gap-3">
-              <span className="rounded-md bg-[#d03b3b]/10 p-2 text-[#d03b3b]">
+              <span className="rounded-md bg-[#B3362B]/10 p-2 text-[#B3362B]">
                 <ArrowUpCircle size={20} />
               </span>
               <div>

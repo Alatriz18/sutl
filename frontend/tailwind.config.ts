@@ -8,10 +8,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Paleta SUTL — navy / sky blue / gold (deck de inversionista)
+        // Paleta SUTL — navy / steel blue / bronze gold (deck de inversionista).
+        // Tonos desaturados a propósito frente al cian/ámbar de antes, para
+        // leer como software corporativo de logística, no como un SaaS de
+        // consumo.
         navy: '#0D2040',
-        sky: '#0EA5E9',
-        gold: '#F59E0B',
+        sky: '#2E86AB',
+        gold: '#B38A3C',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],

@@ -24,10 +24,10 @@ export const SEQUENTIAL_BLUE = [
 
 // Paleta de estado — fija, nunca reutilizada para series categóricas.
 export const STATUS = {
-  good: '#0ca30c',
-  warning: '#fab219',
+  good: '#1A7A4C',
+  warning: '#C98A2B',
   serious: '#ec835a',
-  critical: '#d03b3b',
+  critical: '#B3362B',
 } as const;
 
 // Tinta y chrome del chart (modo claro — el dashboard actual es solo claro).

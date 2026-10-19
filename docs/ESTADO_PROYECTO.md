@@ -39,6 +39,9 @@ Kevin quiere que SUTL sea la plataforma de logística más completa del mercado,
 
 ## Historial de cambios
 
+### 2026-10-19
+- Paleta de marca retonada a colores más corporativos: `sky` pasó del cian brillante (#0EA5E9) a un azul acero/marítimo (#2E86AB), `gold` de ámbar neón (#F59E0B) a bronce (#B38A3C). También se atenuaron los colores de estado (éxito/advertencia/crítico) usados como literales en badges de 7 páginas — de verde/ámbar/rojo muy saturados a tonos más sobrios. Favicon actualizado a la misma paleta. Contraste verificado a mano contra navy y blanco.
+
 ### 2026-10-13
 - Pulida visual del dashboard interno completo (afecta las ~20 pantallas a la vez vía componentes compartidos, sin tocar cada página): `Card` y `StatTile` con sombra/borde más suaves y radio mayor, `Button` con sombra de color y micro-interacción al presionar, spinner de carga en vez de texto plano.
 - Se agregó un **topbar persistente** (`src/components/layout/topbar.tsx`) en escritorio y móvil: título de la sección actual, campana de notificaciones y avatar con iniciales del usuario.
