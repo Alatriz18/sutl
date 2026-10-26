@@ -24,6 +24,11 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
+  // Invocado solo por super_admin (ver AuthController) para aprovisionar el
+  // primer usuario de un tenant nuevo. A propósito NO emite tokens ni inicia
+  // sesión como el usuario creado — quien llama sigue siendo super_admin, no
+  // el usuario recién creado; secuestrar su sesión sería un bug de seguridad
+  // en sí mismo, además de la fuga entre tenants que esto reemplaza.
   async register(dto: RegisterDto) {
     const tenant = await this.prisma.tenant.findUnique({ where: { id: dto.tenantId } });
     if (!tenant || !tenant.activo) {
@@ -45,9 +50,18 @@ export class AuthService {
         password: hashedPassword,
         nombre: dto.nombre,
       },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        rol: true,
+        tenantId: true,
+        activo: true,
+        createdAt: true,
+      },
     });
 
-    return this.issueTokens(user.id, user.tenantId, user.rol, user.email);
+    return user;
   }
 
   async login(dto: LoginDto) {

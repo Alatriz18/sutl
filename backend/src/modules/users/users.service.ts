@@ -47,8 +47,10 @@ export class UsersService {
 
   async update(tenantId: string, id: string, dto: UpdateUserDto) {
     await this.findOne(tenantId, id);
+    // tenantId repetido en el where (no solo en el findOne previo): defensa
+    // en profundidad ante un futuro refactor que se salte el chequeo.
     return this.prisma.user.update({
-      where: { id },
+      where: { id, tenantId },
       data: dto,
       select: this.publicSelect,
     });
@@ -57,7 +59,7 @@ export class UsersService {
   async remove(tenantId: string, id: string) {
     await this.findOne(tenantId, id);
     return this.prisma.user.update({
-      where: { id },
+      where: { id, tenantId },
       data: { activo: false },
       select: this.publicSelect,
     });

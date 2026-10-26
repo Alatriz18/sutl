@@ -37,7 +37,7 @@ export class ContractsService {
   async update(tenantId: string, id: string, dto: UpdateContractDto) {
     await this.findOne(tenantId, id);
     return this.prisma.contract.update({
-      where: { id },
+      where: { id, tenantId },
       data: { ...dto, condiciones: dto.condiciones as Prisma.InputJsonValue },
       include: { carrier: true },
     });
@@ -45,6 +45,6 @@ export class ContractsService {
 
   async remove(tenantId: string, id: string) {
     await this.findOne(tenantId, id);
-    return this.prisma.contract.update({ where: { id }, data: { activo: false } });
+    return this.prisma.contract.update({ where: { id, tenantId }, data: { activo: false } });
   }
 }

@@ -41,7 +41,7 @@ export class ShipmentsService {
 
   async update(tenantId: string, id: string, dto: UpdateShipmentDto) {
     await this.findOne(tenantId, id);
-    return this.prisma.shipment.update({ where: { id }, data: dto });
+    return this.prisma.shipment.update({ where: { id, tenantId }, data: dto });
   }
 
   // Endpoint público (sin auth): un cliente final consulta su envío por

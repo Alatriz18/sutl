@@ -40,7 +40,7 @@ export class BookingsService {
   async update(tenantId: string, id: string, dto: UpdateBookingDto) {
     await this.findOne(tenantId, id);
     return this.prisma.booking.update({
-      where: { id },
+      where: { id, tenantId },
       data: dto,
       include: { cliente: true, carrier: true },
     });
@@ -54,10 +54,10 @@ export class BookingsService {
       booking,
       booking.cliente,
     );
-    await this.prisma.booking.update({ where: { id }, data: { estado: 'convertida' } });
+    await this.prisma.booking.update({ where: { id, tenantId }, data: { estado: 'convertida' } });
     if (booking.quoteId) {
       await this.prisma.quote.update({
-        where: { id: booking.quoteId },
+        where: { id: booking.quoteId, tenantId },
         data: { estado: 'convertida' },
       });
     }

@@ -36,7 +36,7 @@ export class ContainersService {
   async update(tenantId: string, id: string, dto: UpdateContainerDto) {
     await this.findOne(tenantId, id);
     return this.prisma.container.update({
-      where: { id },
+      where: { id, tenantId },
       data: dto,
       include: { carrier: true, envios: true },
     });
@@ -51,7 +51,10 @@ export class ContainersService {
     if (!shipment) {
       throw new NotFoundException('Envío no encontrado para este tenant');
     }
-    await this.prisma.shipment.update({ where: { id: shipmentId }, data: { containerId: id } });
+    await this.prisma.shipment.update({
+      where: { id: shipmentId, tenantId },
+      data: { containerId: id },
+    });
     return this.findOne(tenantId, id);
   }
 }

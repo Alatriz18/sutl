@@ -38,7 +38,7 @@ export class QuotesService {
   async update(tenantId: string, id: string, dto: UpdateQuoteDto) {
     await this.findOne(tenantId, id);
     return this.prisma.quote.update({
-      where: { id },
+      where: { id, tenantId },
       data: dto,
       include: { cliente: true, carrier: true },
     });

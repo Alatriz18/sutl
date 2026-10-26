@@ -50,7 +50,7 @@ export class InvoicesService {
 
     if (totalPagado >= invoice.montoTotal) {
       await this.prisma.invoice.update({
-        where: { id: invoiceId },
+        where: { id: invoiceId, tenantId },
         data: { estado: 'pagada' },
       });
     }

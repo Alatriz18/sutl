@@ -36,7 +36,7 @@ export class TrackingEventsService {
 
     // El estado del envío en Postgres refleja el último evento registrado.
     await this.prisma.shipment.update({
-      where: { id: shipment.id },
+      where: { id: shipment.id, tenantId },
       data: { estado: dto.estado },
     });
 

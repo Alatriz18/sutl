@@ -33,6 +33,8 @@ export class WarehousesService {
   }
 
   async addLocation(tenantId: string, warehouseId: string, dto: CreateLocationDto) {
+    // findOne ya garantiza que warehouseId pertenece al tenant; la ubicación
+    // hereda esa pertenencia a través de la bodega (no tiene tenantId propio).
     await this.findOne(tenantId, warehouseId);
     return this.prisma.warehouseLocation.create({ data: { ...dto, warehouseId } });
   }
@@ -82,7 +84,7 @@ export class WarehousesService {
         data: { ...dto, tenantId, inventoryItemId: itemId, responsableId },
       }),
       this.prisma.inventoryItem.update({
-        where: { id: itemId },
+        where: { id: itemId, tenantId },
         data: { cantidad: nuevaCantidad },
       }),
     ]);

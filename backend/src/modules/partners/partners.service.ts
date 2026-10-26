@@ -29,11 +29,11 @@ export class PartnersService {
 
   async update(tenantId: string, id: string, dto: UpdatePartnerDto) {
     await this.findOne(tenantId, id);
-    return this.prisma.partner.update({ where: { id }, data: dto });
+    return this.prisma.partner.update({ where: { id, tenantId }, data: dto });
   }
 
   async remove(tenantId: string, id: string) {
     await this.findOne(tenantId, id);
-    return this.prisma.partner.update({ where: { id }, data: { activo: false } });
+    return this.prisma.partner.update({ where: { id, tenantId }, data: { activo: false } });
   }
 }

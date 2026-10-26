@@ -37,7 +37,7 @@ export class FleetService {
 
   async updateVehicle(tenantId: string, id: string, dto: UpdateVehicleDto) {
     await this.findVehicle(tenantId, id);
-    return this.prisma.vehicle.update({ where: { id }, data: dto });
+    return this.prisma.vehicle.update({ where: { id, tenantId }, data: dto });
   }
 
   findAllDrivers(tenantId: string) {
@@ -68,7 +68,10 @@ export class FleetService {
         data: { ...dto, tenantId },
         include: { vehicle: true, driver: true },
       }),
-      this.prisma.vehicle.update({ where: { id: dto.vehicleId }, data: { estado: 'en_ruta' } }),
+      this.prisma.vehicle.update({
+        where: { id: dto.vehicleId, tenantId },
+        data: { estado: 'en_ruta' },
+      }),
     ]);
     return assignment;
   }
@@ -82,11 +85,11 @@ export class FleetService {
     }
     const [updated] = await this.prisma.$transaction([
       this.prisma.vehicleAssignment.update({
-        where: { id },
+        where: { id, tenantId },
         data: { fechaFin: new Date() },
       }),
       this.prisma.vehicle.update({
-        where: { id: assignment.vehicleId },
+        where: { id: assignment.vehicleId, tenantId },
         data: { estado: 'disponible' },
       }),
     ]);
@@ -100,7 +103,10 @@ export class FleetService {
     }
     const [record] = await this.prisma.$transaction([
       this.prisma.maintenanceRecord.create({ data: { ...dto, tenantId, vehicleId } }),
-      this.prisma.vehicle.update({ where: { id: vehicleId }, data: { estado: 'mantenimiento' } }),
+      this.prisma.vehicle.update({
+        where: { id: vehicleId, tenantId },
+        data: { estado: 'mantenimiento' },
+      }),
     ]);
     return record;
   }

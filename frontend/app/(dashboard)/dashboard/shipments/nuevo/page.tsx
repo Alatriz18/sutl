@@ -189,10 +189,13 @@ export default function NuevoEnvioPage() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  // El control queda dentro de <label> (no en un <div> aparte) para que la
+  // asociación label↔input sea implícita: necesario para lectores de
+  // pantalla y para que herramientas de testing lo encuentren por label.
   return (
-    <div>
-      <label className="mb-1 block text-sm font-medium text-navy">{label}</label>
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-navy">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }

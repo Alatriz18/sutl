@@ -35,7 +35,7 @@ export class AlertsService {
   async update(tenantId: string, id: string, dto: UpdateAlertDto) {
     await this.findOne(tenantId, id);
     return this.prisma.alert.update({
-      where: { id },
+      where: { id, tenantId },
       data: { ...dto, condicion: dto.condicion as Prisma.InputJsonValue | undefined },
     });
   }

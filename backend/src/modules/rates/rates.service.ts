@@ -29,6 +29,18 @@ export class RatesService {
     return rate;
   }
 
+  // A diferencia de findOne (que también muestra tarifas globales de
+  // mercado, tenantId null), las mutaciones exigen que la tarifa sea del
+  // propio tenant — si no, cualquier tenant podría editar/desactivar una
+  // tarifa global que gestiona el equipo central.
+  private async findOwned(tenantId: string, id: string) {
+    const rate = await this.prisma.rate.findFirst({ where: { id, tenantId } });
+    if (!rate) {
+      throw new NotFoundException('Tarifa no encontrada');
+    }
+    return rate;
+  }
+
   create(tenantId: string, dto: CreateRateDto) {
     return this.prisma.rate.create({
       data: { ...dto, tenantId },
@@ -37,16 +49,16 @@ export class RatesService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateRateDto) {
-    await this.findOne(tenantId, id);
+    await this.findOwned(tenantId, id);
     return this.prisma.rate.update({
-      where: { id },
+      where: { id, tenantId },
       data: dto,
       include: { carrier: true },
     });
   }
 
   async remove(tenantId: string, id: string) {
-    await this.findOne(tenantId, id);
-    return this.prisma.rate.update({ where: { id }, data: { activo: false } });
+    await this.findOwned(tenantId, id);
+    return this.prisma.rate.update({ where: { id, tenantId }, data: { activo: false } });
   }
 }

@@ -30,7 +30,7 @@ export class NotificationsService {
       throw new NotFoundException('Notificación no encontrada');
     }
     return this.prisma.notification.update({
-      where: { id },
+      where: { id, tenantId },
       data: { estado: 'enviado', enviadoAt: new Date() },
     });
   }
