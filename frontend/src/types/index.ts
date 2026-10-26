@@ -384,3 +384,50 @@ export interface Report {
   generadoPor?: User | null;
   createdAt: string;
 }
+
+// --- Integraciones: couriers, e-commerce y conectividad externa ---
+
+export type CategoriaIntegracion = 'courier' | 'ecommerce' | 'naviera_aerolinea' | 'erp_externo';
+export type EstadoIntegracion = 'conectado' | 'desconectado' | 'error';
+
+export interface IntegrationProvider {
+  id: string;
+  categoria: CategoriaIntegracion;
+  nombre: string;
+  descripcion: string;
+}
+
+export interface Integration {
+  id: string;
+  tenantId: string;
+  providerId: string;
+  provider?: IntegrationProvider;
+  estado: EstadoIntegracion;
+  ultimaSincronizacion: string | null;
+  enviosImportados: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiKey {
+  id: string;
+  tenantId: string;
+  nombre: string;
+  llavePublica: string;
+  ultimoUso: string | null;
+  activo: boolean;
+  createdAt: string;
+}
+
+export type EventoWebhook = 'envio.creado' | 'envio.actualizado' | 'envio.entregado' | 'factura.pagada';
+
+export interface Webhook {
+  id: string;
+  tenantId: string;
+  url: string;
+  eventos: EventoWebhook[];
+  activo: boolean;
+  ultimoEnvio: string | null;
+  ultimoEnvioOk: boolean | null;
+  createdAt: string;
+}

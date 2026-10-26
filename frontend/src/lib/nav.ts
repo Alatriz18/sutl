@@ -17,6 +17,7 @@ import {
   Container,
   Warehouse,
   Truck,
+  Plug,
   type LucideIcon,
 } from 'lucide-react';
 import { RolUsuario } from '@/types';
@@ -61,6 +62,7 @@ export const navGroups: NavGroup[] = [
       { href: '/dashboard/alertas', label: 'Alertas', icon: AlertTriangle },
       { href: '/dashboard/notificaciones', label: 'Notificaciones', icon: Bell },
       { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 },
+      { href: '/dashboard/integraciones', label: 'Integraciones', icon: Plug },
     ],
   },
   {

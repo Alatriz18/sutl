@@ -5,6 +5,7 @@ import {
   AppNotification,
   Booking,
   Container,
+  Integration,
   Invoice,
   Partner,
   Payment,
@@ -16,6 +17,7 @@ import {
   TrackingPublicoResponse,
   User,
   Warehouse,
+  Webhook,
 } from '@/types';
 import * as db from './data';
 import { nextId } from './data';
@@ -151,7 +153,7 @@ function evaluarAlertas(): AlertaEvaluada[] {
 export const mockAdapter: AxiosAdapter = async (config) => {
   const method = (config.method ?? 'get').toLowerCase();
   const url = new URL(config.url ?? '', 'http://demo.local');
-  const path = url.pathname.replace(/^\/api/, '');
+  const path = url.pathname.replace(/^\/api(?=\/|$)/, '');
   const qs = url.searchParams;
   const body = parseBody(config);
 
@@ -803,6 +805,104 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       if (!report || !csv) throw new MockApiError(404, 'Reporte no encontrado o sin archivo.');
       const blob = new Blob([csv], { type: 'text/csv' });
       return delay(ok(config, blob), 200);
+    }
+
+    // --- INTEGRATIONS (couriers, e-commerce, navieras API, ERP externo) ---
+    if (method === 'get' && path === '/integrations/providers') {
+      return delay(ok(config, db.integrationProviders));
+    }
+    if (method === 'get' && path === '/integrations') {
+      return delay(ok(config, db.integrations.map(db.integrationExpanded)));
+    }
+    if (method === 'post' && path === '/integrations') {
+      const providerId = String(body.providerId ?? '');
+      const existente = db.integrations.find((i) => i.providerId === providerId);
+      if (existente) {
+        existente.estado = 'conectado';
+        existente.updatedAt = nowIso();
+        return delay(ok(config, db.integrationExpanded(existente)), 400);
+      }
+      const integration: Integration = {
+        id: nextId('int'),
+        tenantId: currentUser()?.tenantId ?? 't-demo',
+        providerId,
+        estado: 'conectado',
+        ultimaSincronizacion: nowIso(),
+        enviosImportados: 0,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+      db.integrations.push(integration);
+      return delay(ok(config, db.integrationExpanded(integration)), 500);
+    }
+    m = match(path, /^\/integrations\/([^/]+)\/desconectar$/);
+    if (method === 'post' && m) {
+      const integration = db.integrations.find((i) => i.id === m![1]);
+      if (!integration) throw new MockApiError(404, 'Integración no encontrada.');
+      integration.estado = 'desconectado';
+      integration.updatedAt = nowIso();
+      return delay(ok(config, db.integrationExpanded(integration)), 250);
+    }
+    m = match(path, /^\/integrations\/([^/]+)\/sincronizar$/);
+    if (method === 'post' && m) {
+      const integration = db.integrations.find((i) => i.id === m![1]);
+      if (!integration) throw new MockApiError(404, 'Integración no encontrada.');
+      integration.estado = 'conectado';
+      integration.ultimaSincronizacion = nowIso();
+      integration.enviosImportados += Math.floor(Math.random() * 5) + 1;
+      integration.updatedAt = nowIso();
+      return delay(ok(config, db.integrationExpanded(integration)), 600);
+    }
+
+    // --- API KEYS ---
+    if (method === 'get' && path === '/api-keys') {
+      return delay(ok(config, db.apiKeys));
+    }
+    if (method === 'post' && path === '/api-keys') {
+      const key = db.newApiKey(String(body.nombre ?? 'Nueva llave'));
+      db.apiKeys.push(key);
+      return delay(ok(config, key), 260);
+    }
+    m = match(path, /^\/api-keys\/([^/]+)$/);
+    if (method === 'delete' && m) {
+      const key = db.apiKeys.find((k) => k.id === m![1]);
+      if (!key) throw new MockApiError(404, 'Llave no encontrada.');
+      key.activo = false;
+      return delay(ok(config, key), 200);
+    }
+
+    // --- WEBHOOKS ---
+    if (method === 'get' && path === '/webhooks') {
+      return delay(ok(config, db.webhooks));
+    }
+    if (method === 'post' && path === '/webhooks') {
+      const webhook: Webhook = {
+        id: nextId('wh'),
+        tenantId: currentUser()?.tenantId ?? 't-demo',
+        url: String(body.url ?? ''),
+        eventos: (body.eventos as Webhook['eventos']) ?? [],
+        activo: true,
+        ultimoEnvio: null,
+        ultimoEnvioOk: null,
+        createdAt: nowIso(),
+      };
+      db.webhooks.push(webhook);
+      return delay(ok(config, webhook), 260);
+    }
+    m = match(path, /^\/webhooks\/([^/]+)\/probar$/);
+    if (method === 'post' && m) {
+      const webhook = db.webhooks.find((w) => w.id === m![1]);
+      if (!webhook) throw new MockApiError(404, 'Webhook no encontrado.');
+      webhook.ultimoEnvio = nowIso();
+      webhook.ultimoEnvioOk = true;
+      return delay(ok(config, webhook), 450);
+    }
+    m = match(path, /^\/webhooks\/([^/]+)$/);
+    if (method === 'delete' && m) {
+      const idx = db.webhooks.findIndex((w) => w.id === m![1]);
+      if (idx === -1) throw new MockApiError(404, 'Webhook no encontrado.');
+      const [removed] = db.webhooks.splice(idx, 1);
+      return delay(ok(config, removed), 200);
     }
 
     throw new MockApiError(404, `(demo) Endpoint no implementado en el modo demo: ${method.toUpperCase()} ${path}`);

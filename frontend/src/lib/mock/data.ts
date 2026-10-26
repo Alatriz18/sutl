@@ -1,11 +1,14 @@
 import {
   Alert,
+  ApiKey,
   AppNotification,
   Booking,
   Carrier,
   Container,
   Contract,
   Driver,
+  Integration,
+  IntegrationProvider,
   Invoice,
   InventoryItem,
   Partner,
@@ -21,6 +24,7 @@ import {
   Vehicle,
   VehicleAssignment,
   Warehouse,
+  Webhook,
 } from '@/types';
 
 // Datos de muestra para el modo demo (NEXT_PUBLIC_DEMO_MODE=true).
@@ -534,4 +538,76 @@ export function buildCsvEnviosPorCliente(): string {
   }
   for (const [k, v] of Object.entries(porCliente)) lines.push(`"${k}",${v}`);
   return lines.join('\n');
+}
+
+// --- Integraciones: couriers, e-commerce, navieras y conectividad externa ---
+// Tracking universal: SUTL no solo registra envíos creados a mano — se conecta
+// a couriers y tiendas online para ingerir sus guías automáticamente, y expone
+// API keys + webhooks para que otros sistemas se conecten a SUTL.
+
+export const integrationProviders: IntegrationProvider[] = [
+  { id: 'prov-fedex', categoria: 'courier', nombre: 'FedEx', descripcion: 'Couriers internacionales puerta a puerta.' },
+  { id: 'prov-dhl', categoria: 'courier', nombre: 'DHL Express', descripcion: 'Mensajería y paquetería internacional.' },
+  { id: 'prov-servientrega', categoria: 'courier', nombre: 'Servientrega', descripcion: 'Courier nacional Ecuador.' },
+  { id: 'prov-laar', categoria: 'courier', nombre: 'Laar Courier', descripcion: 'Courier nacional y regional.' },
+  { id: 'prov-shopify', categoria: 'ecommerce', nombre: 'Shopify', descripcion: 'Importa pedidos de tu tienda Shopify como envíos.' },
+  { id: 'prov-woocommerce', categoria: 'ecommerce', nombre: 'WooCommerce', descripcion: 'Importa pedidos de tu tienda WordPress/WooCommerce.' },
+  { id: 'prov-mercadolibre', categoria: 'ecommerce', nombre: 'Mercado Libre', descripcion: 'Importa ventas y despachos del marketplace.' },
+  { id: 'prov-maersk-api', categoria: 'naviera_aerolinea', nombre: 'Maersk API', descripcion: 'Estado de contenedores en tiempo real.' },
+  { id: 'prov-iata-api', categoria: 'naviera_aerolinea', nombre: 'IATA CargoWise', descripcion: 'Estado de guías aéreas en tiempo real.' },
+  { id: 'prov-erp-generico', categoria: 'erp_externo', nombre: 'ERP / sistema propio (API genérica)', descripcion: 'Conecta el ERP o sistema a medida de tu empresa vía API REST.' },
+];
+
+export const integrations: Integration[] = [
+  {
+    id: 'int-1', tenantId: 't-demo', providerId: 'prov-shopify', estado: 'conectado',
+    ultimaSincronizacion: diasAtras(0), enviosImportados: 46, createdAt: mesesAtras(2), updatedAt: diasAtras(0),
+  },
+  {
+    id: 'int-2', tenantId: 't-demo', providerId: 'prov-servientrega', estado: 'conectado',
+    ultimaSincronizacion: diasAtras(1), enviosImportados: 128, createdAt: mesesAtras(3), updatedAt: diasAtras(1),
+  },
+  {
+    id: 'int-3', tenantId: 't-demo', providerId: 'prov-maersk-api', estado: 'error',
+    ultimaSincronizacion: diasAtras(4), enviosImportados: 12, createdAt: mesesAtras(1), updatedAt: diasAtras(4),
+  },
+];
+
+export function integrationExpanded(i: Integration): Integration {
+  return { ...i, provider: integrationProviders.find((p) => p.id === i.providerId) };
+}
+
+function randomKeySuffix() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+export const apiKeys: ApiKey[] = [
+  {
+    id: 'key-1', tenantId: 't-demo', nombre: 'Integración ERP interno',
+    llavePublica: 'sutl_live_7f2a9c1e4b6d', ultimoUso: diasAtras(0), activo: true, createdAt: mesesAtras(2),
+  },
+];
+
+export const webhooks: Webhook[] = [
+  {
+    id: 'wh-1', tenantId: 't-demo', url: 'https://erp.transportesdemo.ec/webhooks/sutl',
+    eventos: ['envio.actualizado', 'envio.entregado'], activo: true,
+    ultimoEnvio: diasAtras(0), ultimoEnvioOk: true, createdAt: mesesAtras(1),
+  },
+];
+
+export function newApiKey(nombre: string): ApiKey {
+  return {
+    id: nextId('key'),
+    tenantId: 't-demo',
+    nombre,
+    llavePublica: `sutl_live_${randomKeySuffix()}`,
+    ultimoUso: null,
+    activo: true,
+    createdAt: nowIso(),
+  };
+}
+
+function nowIso() {
+  return new Date().toISOString();
 }
