@@ -36,8 +36,13 @@ Kevin quiere que SUTL sea la plataforma de logística más completa del mercado,
 - Operación logística puntual — el software debe *operar* el día a día, no solo visualizarlo.
 - Facturación integrada en cada operación/envío, no como módulo aislado.
 - Conectividad con sistemas externos de terceros (hub de integración, no isla cerrada).
+- **Autoabastecimiento** (agregado 2026-10-26): un servicio de autoabastecimiento/reabastecimiento que SUTL ofrece directamente a sus clientes (SVK gestiona el abastecimiento por ellos), no solo software para que el cliente gestione el suyo. Kevin lo quiere como la **última** funcionalidad grande a construir — se hace al final, una vez el resto esté sólido.
 
 ## Historial de cambios
+
+### 2026-10-26
+- Se retomó el desarrollo de SUTL después de una pausa en la que se evaluó (y se descartó por ahora) una idea para un proyecto distinto (portal de soporte centralizado para SuperCías — sistema de estados financieros, repo separado). No se tocó código de SUTL en esa pausa.
+- Confirmado con Kevin: el objetivo sigue siendo que SUTL cubra **todo** el espectro de logística (tracking universal, multi-naviera/multi-modo, couriers/e-commerce, facturación integrada, conectividad externa — ver visión de producto arriba), y se agrega **autoabastecimiento** como funcionalidad final a construir al cierre, no ahora.
 
 ### 2026-10-19
 - Paleta de marca retonada a colores más corporativos: `sky` pasó del cian brillante (#0EA5E9) a un azul acero/marítimo (#2E86AB), `gold` de ámbar neón (#F59E0B) a bronce (#B38A3C). También se atenuaron los colores de estado (éxito/advertencia/crítico) usados como literales en badges de 7 páginas — de verde/ámbar/rojo muy saturados a tonos más sobrios. Favicon actualizado a la misma paleta. Contraste verificado a mano contra navy y blanco.
