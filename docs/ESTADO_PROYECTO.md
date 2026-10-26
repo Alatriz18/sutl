@@ -8,13 +8,13 @@ El Plan Maestro es la referencia de timeline/roles/fases (ver PDF entregado por 
 
 - **Frontend**: Next.js 14 con prácticamente todos los módulos de UI de un ERP logístico completo ya construidos (envíos, tracking, cotizaciones, reservas, tarifas/contratos, facturación, contenedores, almacén, flota, documentos, alertas, notificaciones, reportes, integraciones, panel SaaS de tenants/usuarios/plan). Landing page, login y tracking público con estética corporativa premium, responsive, y un **modo demo** (`NEXT_PUBLIC_DEMO_MODE=true`) que simula toda la API en el navegador con datos de muestra — desplegado en Vercel. Ahora además tiene lint configurado (`next lint`, limpio) y una primera suite e2e con Playwright (`npm run test:e2e`, 6 pruebas del flujo principal, todas en verde).
 - **Backend**: todos los módulos NestJS existen y **ya corren de verdad** contra Postgres + MongoDB reales (local, vía Docker Compose — `docker compose up -d postgres mongo` + `prisma migrate deploy` + seed). Se hizo una pasada de seguridad real (ver más abajo) y hay dos suites de tests (unitarios con Jest + e2e con Supertest) que pasan en verde contra la base real. Sigue sin desplegarse a ningún entorno compartido (Staging/Producción) — eso sigue pendiente de credenciales de Supabase/Atlas/AWS.
-- **Infraestructura real**: local únicamente (Docker Compose, con un bug de YAML corregido). Sigue sin existir AWS, Terraform, Staging, CI en GitHub Actions, ni ClickUp cargado con este plan. El repo está en GitHub (`Alatriz18/sutl`) pero se trabaja directo sobre `main` (sin `develop`, sin ramas protegidas, sin PRs).
+- **Infraestructura real**: local únicamente (Docker Compose, con un bug de YAML corregido). Ya existe **CI en GitHub Actions** (`.github/workflows/ci.yml`) que corre lint + build + tests de backend y frontend en cada push/PR a `main` — backend contra Postgres+Mongo reales levantados como servicios del runner. Sigue sin existir AWS, Terraform, Staging, ni ClickUp cargado con este plan. El repo está en GitHub (`Alatriz18/sutl`) pero se trabaja directo sobre `main` (sin `develop`, sin ramas protegidas, sin PRs — el CI valida pero todavía no bloquea nada).
 - **Lo que el usuario ve hoy en producción (Vercel)**: solo el frontend, en modo demo (datos ficticios en memoria del navegador, sin backend real detrás). El backend real funciona pero vive únicamente en local por ahora.
 
 ## Brechas vs. el plan (lo que el plan pide y todavía no existe)
 
-- Sin GitHub Environments / ramas protegidas / flujo de PR — se commitea directo a `main`.
-- Sin CI (lint + test + build por PR) — no hay GitHub Actions configurado (aunque `lint` y `test`/`test:e2e` ya funcionan localmente en ambos lados, listos para enchufarse a un workflow).
+- Sin GitHub Environments / ramas protegidas / flujo de PR — se commitea directo a `main`. El CI ya corre en cada push a `main`, pero como no hay ramas protegidas, nada impide hacer push aunque el CI vaya a fallar (sigue siendo detección, no prevención).
+- CI resuelto: `.github/workflows/ci.yml` corre lint + `tsc --noEmit` + build + tests unitarios + tests e2e del backend (contra Postgres 16 y Mongo 7 reales como servicios del runner, con seed) y lint + build + Playwright del frontend (modo demo). Falta: badge de estado en el README, y que bloquee merges (necesita rama protegida).
 - Sin Terraform / AWS — ECS, RDS, Atlas, S3, CloudFront, WAF, Secrets Manager: nada desplegado.
 - Sin Prisma baseline real contra una base gestionada (Supabase/Atlas) — el schema y las migraciones ya corren limpio contra Postgres real (hoy local), falta solo apuntar `DATABASE_URL`/`DIRECT_URL` a un proyecto Supabase real y repetir `prisma migrate deploy`.
 - Sin ADRs (`/docs` solo tiene `ARQUITECTURA.md`, falta ADR-001 multi-tenancy y ADR-002 Postgres+Mongo formales).
@@ -41,6 +41,15 @@ Kevin quiere que SUTL sea la plataforma de logística más completa del mercado,
 - **Autoabastecimiento** (agregado 2026-10-26): un servicio de autoabastecimiento/reabastecimiento que SUTL ofrece directamente a sus clientes (SVK gestiona el abastecimiento por ellos), no solo software para que el cliente gestione el suyo. Kevin lo quiere como la **última** funcionalidad grande a construir — se hace al final, una vez el resto esté sólido.
 
 ## Historial de cambios
+
+### 2026-10-26 (noche) — CI en GitHub Actions
+Siguiente pieza de la pasada "en orden" tras la de seguridad/testing de esta misma tarde: con tests reales en ambos lados, faltaba que corrieran solos en cada push.
+
+- **`.github/workflows/ci.yml`** nuevo, dos jobs independientes:
+  - `backend`: levanta `postgres:16` y `mongo:7` como *services* del runner (con health checks), corre `prisma migrate deploy` + `prisma db seed` contra esa base efímera, luego `lint` (con `--max-warnings=1`, el único warning benigno ya conocido en `documents.controller.ts`), `tsc --noEmit`, `nest build`, `jest` (unitarios) y `jest --config test/jest-e2e.json` (e2e, incluye las pruebas de aislamiento multi-tenant) — todo contra una base real, no mocks.
+  - `frontend`: `next lint`, `next build` (con `NEXT_PUBLIC_DEMO_MODE=true`), instala navegadores de Playwright y corre la suite e2e del flujo demo.
+- Verificado localmente antes de confiar en el runner remoto: `npx eslint ... --max-warnings=1` da exactamente 1 warning (pasa).
+- Pendiente: no hay rama protegida, así que el CI hoy es diagnóstico, no un gate — un push a `main` que rompa algo se sube igual, solo que quedará marcado en rojo en GitHub. Para que bloquee de verdad hace falta activar "require status checks" en la protección de `main` (GitHub) y moverse a flujo de PRs.
 
 ### 2026-10-26 (tarde) — backend real + pasada de seguridad y testing
 Kevin pidió explícitamente trabajar "en orden", sin dejar nada a medias, con backend y frontend sólidos, todo probado y con seguridad de primer nivel. Esta entrada cubre esa pasada:
