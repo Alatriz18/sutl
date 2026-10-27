@@ -29,8 +29,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const esLlamadaDeRefresh = originalRequest?.url?.includes('/auth/refresh');
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Si la que falló con 401 es la propia llamada de refresh (ej: visita
+    // sin sesión, cookie vencida), NO hay que "refrescar el refresh" — eso
+    // crea una promesa que espera sobre sí misma y nunca se resuelve
+    // (deadlock), dejando el loading del login colgado para siempre.
+    if (error.response?.status === 401 && !originalRequest._retry && !esLlamadaDeRefresh) {
       originalRequest._retry = true;
 
       if (!refreshing) {

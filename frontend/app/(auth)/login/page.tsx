@@ -46,10 +46,13 @@ export default function LoginPage() {
           <CardTitle>Iniciar sesión</CardTitle>
           <p className="mb-6 mt-1 text-sm text-navy/60">Panel SUTL para empresas de logística</p>
 
-          {DEMO_MODE && (
+          {(DEMO_MODE || process.env.NODE_ENV !== 'production') && (
             <button
               type="button"
               onClick={() => {
+                // Sobreescribe el estado de React directamente — evita el
+                // autocompletado del navegador, que puede sugerir una
+                // contraseña vieja guardada de una sesión anterior.
                 setEmail('admin@demo-transportes.com');
                 setPassword('Demo2026!');
               }}
@@ -57,11 +60,11 @@ export default function LoginPage() {
             >
               <Sparkles size={14} className="mt-0.5 shrink-0 text-gold" />
               <span>
-                <span className="font-medium text-navy">Modo demo:</span>{' '}
+                <span className="font-medium text-navy">Credenciales demo:</span>{' '}
                 <code className="font-mono text-navy">admin@demo-transportes.com</code> /{' '}
                 <code className="font-mono text-navy">Demo2026!</code>
                 <br />
-                Toca aquí para autocompletar.
+                Toca aquí para autocompletar (evita el autofill del navegador).
               </span>
             </button>
           )}
@@ -72,6 +75,7 @@ export default function LoginPage() {
               <Input
                 type="email"
                 required
+                autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@demo-transportes.com"
@@ -82,6 +86,7 @@ export default function LoginPage() {
               <Input
                 type="password"
                 required
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
