@@ -27,9 +27,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    // h-screen + overflow-hidden (en vez de min-h-screen) para que el alto
+    // quede fijado al viewport: así es <main> quien scrollea por dentro y el
+    // sidebar queda siempre visible, en vez de que la página entera scrollee
+    // y se lleve el sidebar con ella.
+    <div className="flex h-screen overflow-hidden bg-slate-50">
       <Sidebar open={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex h-screen flex-1 flex-col overflow-hidden">
         <Topbar onOpenMenu={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
