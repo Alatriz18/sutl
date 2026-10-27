@@ -3,7 +3,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ContractsService } from './contracts.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('contracts')
 @Controller('contracts')
 export class ContractsController {
   constructor(private readonly contractsService: ContractsService) {}

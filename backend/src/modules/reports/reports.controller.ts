@@ -4,7 +4,9 @@ import { join } from 'path';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('reports')
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}

@@ -3,7 +3,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ContainersService } from './containers.service';
 import { CreateContainerDto } from './dto/create-container.dto';
 import { UpdateContainerDto } from './dto/update-container.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('containers')
 @Controller('containers')
 export class ContainersController {
   constructor(private readonly containersService: ContainersService) {}

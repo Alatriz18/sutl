@@ -2,7 +2,9 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TrackingEventsService } from './tracking-events.service';
 import { CreateTrackingEventDto } from './dto/create-tracking-event.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('tracking-events')
 @Controller('tracking-events')
 export class TrackingEventsController {
   constructor(private readonly trackingEventsService: TrackingEventsService) {}

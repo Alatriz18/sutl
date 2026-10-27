@@ -3,7 +3,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('invoices')
 @Controller('invoices')
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}

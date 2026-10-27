@@ -3,7 +3,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AlertsService } from './alerts.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { UpdateAlertDto } from './dto/update-alert.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('alerts')
 @Controller('alerts')
 export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}

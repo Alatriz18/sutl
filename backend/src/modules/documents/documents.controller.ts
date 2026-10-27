@@ -18,9 +18,11 @@ import { mkdirSync } from 'fs';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { ApiTags } from '@nestjs/swagger';
 
 const TIPOS_PERMITIDOS = ['.pdf', '.jpg', '.jpeg', '.png', '.xlsx', '.doc', '.docx'];
 
+@ApiTags('documents')
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}

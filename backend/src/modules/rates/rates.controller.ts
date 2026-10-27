@@ -3,7 +3,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RatesService } from './rates.service';
 import { CreateRateDto } from './dto/create-rate.dto';
 import { UpdateRateDto } from './dto/update-rate.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('rates')
 @Controller('rates')
 export class RatesController {
   constructor(private readonly ratesService: RatesService) {}

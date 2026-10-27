@@ -21,9 +21,11 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { ApiTags } from '@nestjs/swagger';
 
 const REFRESH_COOKIE = 'refreshToken';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(

@@ -4,7 +4,9 @@ import { Public } from '../../common/decorators/public.decorator';
 import { ShipmentsService } from './shipments.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('shipments')
 @Controller('shipments')
 export class ShipmentsController {
   constructor(private readonly shipmentsService: ShipmentsService) {}

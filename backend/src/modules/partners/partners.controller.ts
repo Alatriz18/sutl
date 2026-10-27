@@ -4,7 +4,9 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { PartnersService } from './partners.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('partners')
 @Controller('partners')
 export class PartnersController {
   constructor(private readonly partnersService: PartnersService) {}

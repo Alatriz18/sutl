@@ -14,11 +14,13 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { ApiTags } from '@nestjs/swagger';
 
 // Todo este controlador es exclusivo de super_admin: gestiona tenants a nivel
 // global, cruzando el aislamiento normal de datos por diseño (panel SaaS).
 @UseGuards(RolesGuard)
 @Roles(RolUsuario.super_admin)
+@ApiTags('tenants')
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}

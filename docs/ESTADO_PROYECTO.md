@@ -42,6 +42,16 @@ Kevin quiere que SUTL sea la plataforma de logística más completa del mercado,
 
 ## Historial de cambios
 
+### 2026-10-27 (cont.) — documentación Swagger/OpenAPI de la API real
+Kevin preguntó cómo seguir con "las APIs y demás" de cara a presentar avances. Antes de auditar módulo por módulo (pendiente, ver abajo), se agregó documentación interactiva de la API — mayor impacto inmediato para mostrarle a un inversionista la superficie real del backend sin depender de Postman/curl.
+
+- `@nestjs/swagger@^7.4.2` instalado (la v12 más reciente pide `@nestjs/common` v12, incompatible con Nest 10 actual de este repo — se fijó la v7, compatible con Nest 9/10).
+- `backend/src/main.ts`: `SwaggerModule` montado en `GET /api/docs` (UI) y `/api/docs-json` (spec), **solo fuera de producción** (`NODE_ENV !== 'production'`) — no queremos la documentación de la API expuesta públicamente más adelante. Helmet relaja su CSP únicamente en ese mismo caso (Swagger UI necesita `<style>`/`<script>` inline; en producción el CSP estricto queda intacto).
+- Los 19 controladores (los 18 módulos de dominio + `auth`) llevan ahora `@ApiTags('<módulo>')` para que la UI los agrupe por dominio. Verificado: 19 tags, 51 endpoints documentados en `/api/docs-json`.
+- No se tocó el guard global de JWT ni las DTOs — esto es puramente documentación, no cambia comportamiento de ningún endpoint. Build (`npm run build`) y lint quedaron limpios.
+- Pendiente: los DTOs no tienen decoradores `@ApiProperty` todavía, así que Swagger infiere los tipos pero no muestra descripciones/ejemplos — mejora cosmética para otra pasada, no bloqueante para presentar.
+- Próximo paso acordado con Kevin: auditar los 18 módulos uno por uno (¿el servicio pega a Postgres/Mongo real o hay algo a medias?, ¿la pantalla del frontend llama al endpoint real?) — no iniciado todavía.
+
 ### 2026-10-27 — backend real corriendo en local + bug crítico de deadlock en el login del frontend
 Kevin pidió levantar todo en local (backend real, no modo demo) para poder presentar avances semanalmente sin depender de un despliegue en la nube todavía. Al probarlo en el navegador apareció un bug real.
 

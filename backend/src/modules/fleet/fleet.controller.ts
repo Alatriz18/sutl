@@ -6,7 +6,9 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { CreateMaintenanceDto } from './dto/create-maintenance.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('fleet')
 @Controller()
 export class FleetController {
   constructor(private readonly fleetService: FleetService) {}

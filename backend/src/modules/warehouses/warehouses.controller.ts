@@ -5,7 +5,9 @@ import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
 import { CreateMovementDto } from './dto/create-movement.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('warehouses')
 @Controller()
 export class WarehousesController {
   constructor(private readonly warehousesService: WarehousesService) {}
