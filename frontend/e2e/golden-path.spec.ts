@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Flujo principal (modo demo)', () => {
   test('landing muestra el hero y navega a login', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: /Visibilidad total de tus envíos/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /Orquesta a quienes la mueven/i })).toBeVisible();
     await page.getByRole('link', { name: 'Ingresar al panel' }).first().click();
     await expect(page).toHaveURL(/\/login$/);
   });

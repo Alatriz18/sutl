@@ -13,8 +13,9 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'SUTL — Sistema Universal de Tracking Logístico',
-  description: 'Plataforma SaaS de tracking logístico y gestión logística integral para Ecuador/LATAM.',
+  title: 'SUTL — Managed Supply Chain Control Tower',
+  description:
+    'Plataforma tecnológica + orquestación humana que une compras, inventario y logística en una sola torre de control. Hecho en Ecuador.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },

@@ -40,7 +40,60 @@ Kevin quiere que SUTL sea la plataforma de logística más completa del mercado,
 - Conectividad con sistemas externos de terceros (hub de integración, no isla cerrada).
 - **Autoabastecimiento** (agregado 2026-10-26): un servicio de autoabastecimiento/reabastecimiento que SUTL ofrece directamente a sus clientes (SVK gestiona el abastecimiento por ellos), no solo software para que el cliente gestione el suyo. Kevin lo quiere como la **última** funcionalidad grande a construir — se hace al final, una vez el resto esté sólido.
 
+## Giro estratégico — Business Plan 2026 (28 oct 2026)
+
+Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemplaza el posicionamiento** de "app de tracking logístico para transportistas" por:
+
+> **SUTL — Managed Supply Chain Control Tower.** Plataforma tecnológica + orquestación humana de abastecimiento y logística. *"SUTL no mueve la carga; SUTL orquesta a quienes la mueven y protege la continuidad del abastecimiento."*
+
+**Cambio de cliente**: el cliente ya no es (solo) la empresa de transporte, sino la **empresa que compra/importa/produce** (mediana o grande, 50+ SKU críticos, 3+ operadores logísticos, seguimiento hoy en Excel/correo/WhatsApp). La unidad de valor deja de ser el "tracking" y pasa a ser **la resolución coordinada de excepciones**.
+
+**Tres ofertas**:
+
+| Oferta | Incluye | Cliente ideal |
+|---|---|---|
+| SUTL Platform | Software, dashboards, documentos, alertas, integraciones, trazabilidad | Empresa con equipo interno robusto |
+| SUTL Managed Control Tower | Platform + analista SUTL + seguimiento de proveedores/operadores + gestión de excepciones | Operación compleja, poca capacidad interna |
+| SUTL Supply Control | Managed + cobertura de inventario, abastecimiento, riesgo de stock, priorización de compras | Manufactura, alimentos, pharma, importadores |
+
+*Supply Control es la formalización del "autoabastecimiento" que Kevin pidió el 2026-10-26 — sigue siendo la capa final.*
+
+**Pricing (hipótesis a validar, NO precios públicos)**: onboarding USD 2.000–10.000 único · Platform USD 500–2.000/mes · Managed USD 1.500–5.000+/mes · escalones por complejidad · integraciones a cotización. Cobrar por operación controlada, no por usuario.
+
+**Go-to-market**: vertical inicial agroindustria/alimentos o manufactura (pharma como segundo frente tras revisión regulatoria ARCSA) → 15–20 entrevistas → 2–3 design partners → piloto 8–12 semanas con baseline (Diagnóstico 1–2, Configuración 2–3, Operación 4–8, Evaluación 9–10, Conversión 10–12) → convertir al menos un piloto en contrato anual antes de ampliar desarrollo.
+
+**Roadmap de producto del plan**: 0–3 m MVP operable (OC, proveedores, shipments, documentos, inventario básico, dashboard, tareas, alertas por reglas) · 3–6 m Control Tower gestionada (centro de excepciones, SLA, bitácora, KPIs, portal colaborativo) · 6–12 m Supply Control (cobertura, riesgo de stockout, score de proveedor) · 12–18 m Automatización (ingesta de hitos, OCR documental, playbooks) · 18–24 m Escala (benchmarking, multi-país, predictivo, marketplace de conectores).
+
+### Brecha: módulos del Business Plan vs. lo que ya existe en el código
+
+| Módulo del plan (§7.1) | Estado en el repo |
+|---|---|
+| Control de OCs (órdenes de compra, líneas, proveedor, responsable) | **No existe.** Es la pieza central del giro — prioridad #1 del backlog nuevo. |
+| Inventario & cobertura (stock, consumo, safety stock, días de cobertura) | Parcial: `warehouses` tiene inventario/stock; falta consumo, cobertura y safety stock. |
+| Shipment tracking (hitos, ETD/ETA, BL/AWB, contenedor) | Existe: `shipments`, `tracking-events`, `containers`, `carriers`. Falta enlazar embarque ↔ OC. |
+| Movimientos nacionales (despacho, recepción, POD) | Parcial: `fleet`. Falta POD y recepción conectada a OC. |
+| Documentos (factura, packing list, BL, certificados) | Existe `documents`. Falta checklist por operación y vencimientos. |
+| Exception engine (reglas, severidad, SLA, responsable, escalamiento) | Parcial: `alerts`. Falta SLA, responsable y escalamiento. |
+| Control Tower (vista de riesgos y tareas) | Parcial: dashboard actual es de envíos, no de riesgo. |
+| Workflow humano (tareas, comentarios, evidencia, bitácora) | **No existe.** |
+| Analytics (OTIF, lead time, aging, cumplimiento de proveedor) | Parcial: `reports` sin estas métricas. |
+| Portal colaborativo (acceso por rol cliente/proveedor/operador) | Parcial: tracking público. Faltan roles `analista_sutl` y `proveedor` (hoy: `super_admin`, `admin_tenant`, `operador`, `cliente_final`). |
+| Motor de riesgo de abastecimiento (§7.2) | **No existe.** Diferenciador clave: días de cobertura, fecha de quiebre vs. fecha de reposición, semáforo y acción recomendada. |
+| Seguridad (§7.3): RBAC, MFA, auditoría | RBAC y aislamiento multi-tenant ✓. MFA no existe. Bitácora de auditoría parcial. |
+
+Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contratos de naviera, flota) responden al cliente *transportista* anterior. No se borran, pero dejan de ser el foco; el backlog nuevo arranca por **OCs → vínculo OC↔embarque↔inventario → motor de riesgo → centro de excepciones + tareas**.
+
 ## Historial de cambios
+
+### 2026-10-28 — Business Plan 2026 incorporado + landing rediseñada con el nuevo posicionamiento
+Kevin entregó `SUTL_Business_Plan_2026.pdf` (giro a *Managed Supply Chain Control Tower*) y pidió anotarlo en el plan y rehacer la web pública "magistral, llamativa y con todo".
+
+- **Plan**: nueva sección "Giro estratégico — Business Plan 2026" arriba en este documento, con las 3 ofertas, pricing como hipótesis, go-to-market, roadmap del plan y una **tabla de brechas módulo por módulo** contra el código actual (lo más importante: no existen todavía Control de OCs, motor de riesgo de abastecimiento ni workflow humano/tareas).
+- **Landing (`frontend/app/page.tsx`) reescrita completa** alrededor del mensaje *"SUTL no mueve la carga. Orquesta a quienes la mueven."* Secciones: hero con mockup animado de control tower (centro de excepciones rotando, cadena Proveedor→Forwarder→Aduana→Bodega→Planta) · fuentes que unifica (marquee) · cifras de mercado de Ecuador con fuente (BCE, ENL 2023) · los 6 dolores → respuesta SUTL · mapa de orquestación interactivo por actor ("sigue siendo responsable de" vs "SUTL hace") · las 3 ofertas + modelo de precio **sin cifras** · los 10 módulos de la plataforma (MVP + evolución) · **simulador interactivo del motor de riesgo** (días de cobertura vs. ETA + variabilidad → semáforo y acción recomendada) · valor por área en pestañas · cadencia operativa + matriz RACI · industrias con nivel de encaje y nota ARCSA para pharma · competencia y sustitutos · piloto de 12 semanas en Gantt · roadmap 0–24 meses · seguridad · tesis · autoevaluación de cliente ideal (6 criterios del ICP) · CTA y footer.
+- Componentes nuevos en `frontend/src/components/landing/` (nav con menú móvil, reveal/count-up con `IntersectionObserver`, mockup, hub, simulador, pestañas, checklist ICP). Animaciones respetan `prefers-reduced-motion`. Metadata del sitio actualizada al nuevo posicionamiento.
+- **Decisiones de honestidad del contenido**: los rangos de precio del plan *no* se publican (el propio plan dice que son hipótesis); los ahorros no se prometen con números; no se lista MFA como característica (no existe aún); la frase del piloto se ajustó para no prometer "sin resultados no hay contrato".
+- Verificado: lint y `tsc` limpios, build de producción OK (`/` = 9,7 kB), sin scroll horizontal a 390 px, capturas revisadas en escritorio y móvil, simulador probado con interacción real. Suite e2e del modo demo 6/6 (se actualizó la aserción del título del hero).
+- Pendiente: la web no tiene todavía un canal de contacto real (formulario/correo/WhatsApp para "agendar diagnóstico") — falta que Kevin defina a dónde deben llegar los leads.
 
 ### 2026-10-27 (cont.) — documentación Swagger/OpenAPI de la API real
 Kevin preguntó cómo seguir con "las APIs y demás" de cara a presentar avances. Antes de auditar módulo por módulo (pendiente, ver abajo), se agregó documentación interactiva de la API — mayor impacto inmediato para mostrarle a un inversionista la superficie real del backend sin depender de Postman/curl.
