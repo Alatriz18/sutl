@@ -22,6 +22,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -72,6 +73,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     AlertsModule,
     NotificationsModule,
     ReportsModule,
+    PurchaseOrdersModule,
   ],
   providers: [
     // Orden importa: Throttler primero (corta abuso antes de tocar DB/JWT),

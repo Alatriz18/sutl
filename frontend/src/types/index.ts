@@ -431,3 +431,61 @@ export interface Webhook {
   ultimoEnvioOk: boolean | null;
   createdAt: string;
 }
+
+// --- Control de Órdenes de Compra (Supply Control) ---
+
+export type EstadoOrdenCompra =
+  | 'borrador'
+  | 'emitida'
+  | 'confirmada'
+  | 'despachada'
+  | 'recibida_parcial'
+  | 'recibida'
+  | 'cancelada';
+
+export interface PurchaseOrderReceipt {
+  id: string;
+  tenantId: string;
+  purchaseOrderLineId: string;
+  cantidad: number;
+  responsableId: string | null;
+  notas: string | null;
+  fecha: string;
+  createdAt: string;
+}
+
+export interface PurchaseOrderLine {
+  id: string;
+  tenantId: string;
+  purchaseOrderId: string;
+  sku: string;
+  descripcion: string;
+  cantidad: number;
+  unidad: string;
+  precioUnitario: number | null;
+  cantidadRecibida: number;
+  recepciones?: PurchaseOrderReceipt[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  tenantId: string;
+  numero: string;
+  proveedorId: string;
+  proveedor?: Pick<Partner, 'id' | 'nombre'> & Partial<Pick<Partner, 'taxId' | 'email' | 'contactoNombre'>>;
+  estado: EstadoOrdenCompra;
+  incoterm: string | null;
+  moneda: string;
+  fechaEmision: string;
+  fechaRequerida: string | null;
+  fechaConfirmadaProveedor: string | null;
+  fechaDespacho: string | null;
+  motivoCancelacion: string | null;
+  notas: string | null;
+  creadoPorId: string | null;
+  lineas: PurchaseOrderLine[];
+  createdAt: string;
+  updatedAt: string;
+}

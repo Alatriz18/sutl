@@ -53,6 +53,47 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('Playwright Test Remitente')).toBeVisible();
   });
 
+  test('órdenes de compra: lista con alertas y recepción que cierra la OC', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('admin@demo-transportes.com').fill('admin@demo-transportes.com');
+    await page.getByPlaceholder('••••••••').fill('Demo2026!');
+    await page.getByRole('button', { name: 'Ingresar' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Órdenes de compra' }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Órdenes de compra' })).toBeVisible();
+    await expect(page.getByText('OC-2026-0431')).toBeVisible();
+    await expect(page.getByText(/despacha 4 días después de la fecha requerida/).first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'OC-2026-0442' }).click();
+    await expect(page.getByRole('heading', { name: 'OC-2026-0442' })).toBeVisible();
+    await page.getByLabel('Cantidad recibida de CAJ-30x40').fill('8000');
+    await page.getByRole('button', { name: 'Registrar recepción' }).click();
+    await expect(page.getByText('Recepción registrada.')).toBeVisible();
+    await expect(page.getByText('Recibida', { exact: true }).first()).toBeVisible();
+  });
+
+  test('órdenes de compra: crear una OC y emitirla', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('admin@demo-transportes.com').fill('admin@demo-transportes.com');
+    await page.getByPlaceholder('••••••••').fill('Demo2026!');
+    await page.getByRole('button', { name: 'Ingresar' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.goto('/dashboard/compras/nueva');
+    await page.getByLabel('N° de OC (como está en tu ERP)').fill('OC-PLAYWRIGHT-001');
+    await page.getByLabel('Proveedor').selectOption({ label: 'Empaques del Litoral S.A.' });
+    await page.getByLabel('SKU').fill('TAP-28');
+    await page.getByLabel('Descripción').fill('Tapa rosca 28 mm');
+    await page.getByLabel('Cantidad').fill('10000');
+    await page.getByRole('button', { name: 'Crear OC en borrador' }).click();
+
+    await expect(page.getByRole('heading', { name: 'OC-PLAYWRIGHT-001' })).toBeVisible();
+    await page.getByRole('button', { name: 'Emitir OC' }).click();
+    await expect(page.getByText('OC emitida.')).toBeVisible();
+    await expect(page.getByLabel('Fecha de despacho comprometida por el proveedor')).toBeVisible();
+  });
+
   test('tracking público encuentra un envío existente por código de guía', async ({ page }) => {
     await page.goto('/tracking/SUTL-DEMO-0003');
     await expect(page.getByText('SUTL-DEMO-0003')).toBeVisible();

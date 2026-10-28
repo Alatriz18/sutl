@@ -688,6 +688,93 @@ async function main() {
     });
   }
 
+  // Control de OCs (Supply Control): proveedores y órdenes de compra en
+  // distintos estados del ciclo, para que la demo muestre alertas de fecha,
+  // recepciones parciales y OCs cerradas. Idempotente por (tenantId, numero).
+  const dia = 86400000;
+  const enDias = (n: number) => new Date(Date.now() + n * dia);
+  const proveedoresOc: Record<string, { id: string }> = {};
+  for (const p of [
+    { key: 'resinas', nombre: 'Ningbo Polymer Materials Co.', email: 'export@ningbopolymer.cn', contactoNombre: 'Chen Hao' },
+    { key: 'empaques', nombre: 'Empaques del Litoral S.A.', taxId: '0992223334001', email: 'ventas@empaqueslitoral.ec', contactoNombre: 'Andrea Molina' },
+  ]) {
+    const { key, ...data } = p;
+    proveedoresOc[key] =
+      (await prisma.partner.findFirst({ where: { tenantId: demoTenant.id, nombre: data.nombre } })) ??
+      (await prisma.partner.create({ data: { ...data, tipo: 'proveedor', tenantId: demoTenant.id } }));
+  }
+
+  const ordenesCompra = [
+    {
+      numero: 'OC-2026-0418', proveedor: 'resinas', estado: 'despachada' as const, incoterm: 'FOB',
+      fechaEmision: enDias(-40), fechaRequerida: enDias(12), fechaConfirmadaProveedor: enDias(-8), fechaDespacho: enDias(-6),
+      notas: 'Embarque Ningbo → Guayaquil, 2 contenedores 40HC.',
+      lineas: [
+        { sku: 'RES-PET-01', descripcion: 'Resina PET grado botella', cantidad: 40000, unidad: 'kg', precioUnitario: 1.32 },
+        { sku: 'RES-PP-07', descripcion: 'Polipropileno homopolímero', cantidad: 12000, unidad: 'kg', precioUnitario: 1.18 },
+      ],
+    },
+    {
+      numero: 'OC-2026-0431', proveedor: 'resinas', estado: 'confirmada' as const, incoterm: 'CIF',
+      fechaEmision: enDias(-20), fechaRequerida: enDias(25), fechaConfirmadaProveedor: enDias(29),
+      notas: 'Proveedor movió su fecha 9 días por congestión en puerto de origen.',
+      lineas: [{ sku: 'PIG-AZ-02', descripcion: 'Masterbatch azul', cantidad: 800, unidad: 'kg', precioUnitario: 4.9 }],
+    },
+    {
+      numero: 'OC-2026-0442', proveedor: 'empaques', estado: 'recibida_parcial' as const, incoterm: 'DAP',
+      fechaEmision: enDias(-18), fechaRequerida: enDias(3), fechaConfirmadaProveedor: enDias(-4), fechaDespacho: enDias(-3),
+      lineas: [
+        { sku: 'CAJ-30x40', descripcion: 'Caja corrugada 30x40', cantidad: 20000, unidad: 'unidad', precioUnitario: 0.42, cantidadRecibida: 12000 },
+        { sku: 'ETQ-500', descripcion: 'Etiqueta autoadhesiva 500 ml', cantidad: 50000, unidad: 'unidad', precioUnitario: 0.03, cantidadRecibida: 50000 },
+      ],
+    },
+    {
+      numero: 'OC-2026-0450', proveedor: 'empaques', estado: 'emitida' as const, incoterm: 'DAP',
+      fechaEmision: enDias(-5), fechaRequerida: enDias(6),
+      lineas: [{ sku: 'FLM-STR-23', descripcion: 'Film stretch 23 micras', cantidad: 300, unidad: 'rollo', precioUnitario: 18.5 }],
+    },
+    {
+      numero: 'OC-2026-0399', proveedor: 'empaques', estado: 'recibida' as const, incoterm: 'DAP',
+      fechaEmision: enDias(-60), fechaRequerida: enDias(-30), fechaConfirmadaProveedor: enDias(-35), fechaDespacho: enDias(-34),
+      lineas: [{ sku: 'CAJ-30x40', descripcion: 'Caja corrugada 30x40', cantidad: 15000, unidad: 'unidad', precioUnitario: 0.41, cantidadRecibida: 15000 }],
+    },
+    {
+      numero: 'OC-2026-0455', proveedor: 'resinas', estado: 'borrador' as const, incoterm: 'FOB',
+      fechaEmision: enDias(-1), fechaRequerida: enDias(45),
+      lineas: [{ sku: 'RES-PET-01', descripcion: 'Resina PET grado botella', cantidad: 25000, unidad: 'kg', precioUnitario: 1.3 }],
+    },
+  ];
+
+  for (const oc of ordenesCompra) {
+    const { proveedor, lineas, ...cabecera } = oc;
+    const existe = await prisma.purchaseOrder.findUnique({
+      where: { tenantId_numero: { tenantId: demoTenant.id, numero: oc.numero } },
+    });
+    if (existe) continue;
+    const creada = await prisma.purchaseOrder.create({
+      data: {
+        ...cabecera,
+        tenantId: demoTenant.id,
+        proveedorId: proveedoresOc[proveedor].id,
+        creadoPorId: adminDemo?.id,
+        lineas: { create: lineas.map((l) => ({ ...l, tenantId: demoTenant.id })) },
+      },
+      include: { lineas: true },
+    });
+    for (const l of creada.lineas.filter((x) => x.cantidadRecibida > 0)) {
+      await prisma.purchaseOrderReceipt.create({
+        data: {
+          tenantId: demoTenant.id,
+          purchaseOrderLineId: l.id,
+          cantidad: l.cantidadRecibida,
+          responsableId: adminDemo?.id,
+          notas: 'Recepción en bodega Guayaquil',
+          fecha: enDias(-2),
+        },
+      });
+    }
+  }
+
   // eslint-disable-next-line no-console
   console.log('Seed completado:', {
     superAdmin: 'admin@sutl.dev / SutlAdmin2026!',

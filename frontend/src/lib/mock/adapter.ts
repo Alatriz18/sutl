@@ -9,6 +9,8 @@ import {
   Invoice,
   Partner,
   Payment,
+  PurchaseOrder,
+  PurchaseOrderLine,
   Quote,
   Rate,
   Report,
@@ -360,6 +362,157 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       user.activo = false;
       user.updatedAt = nowIso();
       return delay(ok(config, user));
+    }
+
+    // --- PURCHASE ORDERS --- (mismas reglas que el backend real)
+    if (path.startsWith('/purchase-orders') && currentUser()?.rol === 'cliente_final') {
+      throw new MockApiError(403, 'Forbidden resource');
+    }
+    if (method === 'get' && path === '/purchase-orders') {
+      const estado = qs.get('estado');
+      const q = qs.get('q')?.toLowerCase();
+      const list = db.purchaseOrders
+        .filter((o) => !estado || o.estado === estado)
+        .filter(
+          (o) =>
+            !q || o.numero.toLowerCase().includes(q) || o.lineas.some((l) => l.sku.toLowerCase().includes(q)),
+        )
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return delay(ok(config, list.map(db.purchaseOrderExpanded)));
+    }
+    if (method === 'post' && path === '/purchase-orders') {
+      const numero = String(body.numero ?? '').trim();
+      if (db.purchaseOrders.some((o) => o.numero === numero)) {
+        throw new MockApiError(409, 'Ya existe una OC con ese número en tu empresa');
+      }
+      const proveedor = db.partners.find((pt) => pt.id === body.proveedorId && pt.tipo === 'proveedor');
+      if (!proveedor) throw new MockApiError(400, 'proveedorId no corresponde a un proveedor activo de tu empresa');
+      const lineasBody = (body.lineas as Array<Record<string, unknown>>) ?? [];
+      if (lineasBody.length === 0) throw new MockApiError(400, 'La OC debe tener al menos una línea');
+      const id = nextId('oc');
+      const tenantId = currentUser()?.tenantId ?? 't-demo';
+      const oc: PurchaseOrder = {
+        id,
+        tenantId,
+        numero,
+        proveedorId: proveedor.id,
+        estado: 'borrador',
+        incoterm: (body.incoterm as string) || null,
+        moneda: String(body.moneda ?? 'USD').toUpperCase(),
+        fechaEmision: (body.fechaEmision as string) || nowIso(),
+        fechaRequerida: (body.fechaRequerida as string) || null,
+        fechaConfirmadaProveedor: (body.fechaConfirmadaProveedor as string) || null,
+        fechaDespacho: null,
+        motivoCancelacion: null,
+        notas: (body.notas as string) || null,
+        creadoPorId: currentUser()?.id ?? null,
+        lineas: lineasBody.map(
+          (l): PurchaseOrderLine => ({
+            id: nextId('ocl'),
+            tenantId,
+            purchaseOrderId: id,
+            sku: String(l.sku ?? '').trim(),
+            descripcion: String(l.descripcion ?? ''),
+            cantidad: Number(l.cantidad),
+            unidad: (l.unidad as string) || 'unidad',
+            precioUnitario: l.precioUnitario != null ? Number(l.precioUnitario) : null,
+            cantidadRecibida: 0,
+            recepciones: [],
+            createdAt: nowIso(),
+            updatedAt: nowIso(),
+          }),
+        ),
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+      db.purchaseOrders.push(oc);
+      return delay(ok(config, db.purchaseOrderExpanded(oc), 201), 280);
+    }
+    m = match(path, /^\/purchase-orders\/([^/]+)(?:\/(transicion|recepciones))?$/);
+    if (m) {
+      const ocId = m[1];
+      const accion = m[2];
+      const oc = db.purchaseOrders.find((o) => o.id === ocId);
+      if (!oc) throw new MockApiError(404, 'Orden de compra no encontrada');
+      if (method === 'get' && !accion) {
+        return delay(ok(config, db.purchaseOrderExpanded(oc)));
+      }
+      if (method === 'patch' && !accion) {
+        if (oc.estado === 'recibida' || oc.estado === 'cancelada') {
+          throw new MockApiError(400, `La OC está ${oc.estado} y ya no se puede modificar`);
+        }
+        for (const campo of ['fechaRequerida', 'fechaConfirmadaProveedor', 'notas', 'incoterm'] as const) {
+          if (body[campo] !== undefined) oc[campo] = (body[campo] as string) || null;
+        }
+        oc.updatedAt = nowIso();
+        return delay(ok(config, db.purchaseOrderExpanded(oc)));
+      }
+      if (method === 'post' && accion === 'transicion') {
+        const destino = body.estado as PurchaseOrder['estado'];
+        const permitidas: Record<PurchaseOrder['estado'], PurchaseOrder['estado'][]> = {
+          borrador: ['emitida', 'cancelada'],
+          emitida: ['confirmada', 'cancelada'],
+          confirmada: ['despachada', 'cancelada'],
+          despachada: [],
+          recibida_parcial: [],
+          recibida: [],
+          cancelada: [],
+        };
+        if (!permitidas[oc.estado].includes(destino)) {
+          throw new MockApiError(400, `No se puede pasar una OC de ${oc.estado} a ${destino}`);
+        }
+        if (destino === 'confirmada') {
+          const fecha = (body.fechaConfirmadaProveedor as string) || oc.fechaConfirmadaProveedor;
+          if (!fecha) throw new MockApiError(400, 'Para confirmar la OC indica la fecha comprometida por el proveedor');
+          oc.fechaConfirmadaProveedor = fecha;
+        }
+        if (destino === 'despachada') oc.fechaDespacho = (body.fechaDespacho as string) || nowIso();
+        if (destino === 'cancelada') {
+          if (!body.motivo) throw new MockApiError(400, 'Indica el motivo de la cancelación');
+          oc.motivoCancelacion = String(body.motivo);
+        }
+        oc.estado = destino;
+        oc.updatedAt = nowIso();
+        return delay(ok(config, db.purchaseOrderExpanded(oc), 201));
+      }
+      if (method === 'post' && accion === 'recepciones') {
+        if (!['confirmada', 'despachada', 'recibida_parcial'].includes(oc.estado)) {
+          throw new MockApiError(400, `No se puede registrar recepción en una OC ${oc.estado}`);
+        }
+        const items = (body.lineas as Array<{ lineaId: string; cantidad: number }>) ?? [];
+        // Validar todo antes de aplicar nada (mismo comportamiento transaccional que el backend).
+        const acumulado = new Map<string, number>();
+        for (const item of items) {
+          const linea = oc.lineas.find((l) => l.id === item.lineaId);
+          if (!linea) throw new MockApiError(400, `La línea ${item.lineaId} no pertenece a esta OC`);
+          const total = (acumulado.get(linea.id) ?? linea.cantidadRecibida) + Number(item.cantidad);
+          if (Number(item.cantidad) <= 0 || total > linea.cantidad + 1e-9) {
+            throw new MockApiError(400, `La recepción de ${linea.sku} excede la cantidad pendiente de la OC`);
+          }
+          acumulado.set(linea.id, total);
+        }
+        for (const item of items) {
+          const linea = oc.lineas.find((l) => l.id === item.lineaId);
+          if (!linea) continue;
+          linea.cantidadRecibida += Number(item.cantidad);
+          linea.recepciones = [
+            {
+              id: nextId('ocr'),
+              tenantId: oc.tenantId,
+              purchaseOrderLineId: linea.id,
+              cantidad: Number(item.cantidad),
+              responsableId: currentUser()?.id ?? null,
+              notas: (body.notas as string) || null,
+              fecha: nowIso(),
+              createdAt: nowIso(),
+            },
+            ...(linea.recepciones ?? []),
+          ];
+        }
+        oc.estado = oc.lineas.every((l) => l.cantidadRecibida + 1e-9 >= l.cantidad) ? 'recibida' : 'recibida_parcial';
+        oc.updatedAt = nowIso();
+        return delay(ok(config, db.purchaseOrderExpanded(oc), 201), 280);
+      }
     }
 
     // --- PARTNERS ---

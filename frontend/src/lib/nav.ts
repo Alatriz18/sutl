@@ -18,6 +18,7 @@ import {
   Warehouse,
   Truck,
   Plug,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 import { RolUsuario } from '@/types';
@@ -41,6 +42,17 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
       { href: '/dashboard/shipments', label: 'Envíos', icon: Package },
+    ],
+  },
+  {
+    label: 'Supply Control',
+    items: [
+      {
+        href: '/dashboard/compras',
+        label: 'Órdenes de compra',
+        icon: ClipboardList,
+        roles: ['admin_tenant', 'operador', 'super_admin'],
+      },
     ],
   },
   {

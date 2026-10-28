@@ -192,6 +192,10 @@ model Tenant {
   vehicleAssignments VehicleAssignment[]
   maintenanceRecords MaintenanceRecord[]
 
+  purchaseOrders        PurchaseOrder[]
+  purchaseOrderLines    PurchaseOrderLine[]
+  purchaseOrderReceipts PurchaseOrderReceipt[]
+
   @@map("tenants")
 }
 
@@ -215,6 +219,8 @@ model User {
   auditLogs         AuditLog[]     @relation("AuditLogActor")
   cotizacionesCreadas Quote[]        @relation("QuoteCreadoPor")
   movimientosStock    StockMovement[] @relation("StockMovementResponsable")
+  ordenesCompraCreadas PurchaseOrder[]        @relation("PurchaseOrderCreadoPor")
+  recepcionesOc        PurchaseOrderReceipt[] @relation("PurchaseOrderReceiptResponsable")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -466,6 +472,7 @@ model Partner {
   quotes    Quote[]
   bookings  Booking[]
   invoices  Invoice[]
+  ordenesCompra PurchaseOrder[]
 
   @@index([tenantId])
   @@map("partners")
@@ -795,4 +802,97 @@ model MaintenanceRecord {
 
   @@index([tenantId])
   @@map("maintenance_records")
+}
+
+// ---------------------------------------------------------------------------
+// Control de Órdenes de Compra (Business Plan 2026 — Supply Control).
+// La OC es el punto de partida de la torre de control: qué se compró, a qué
+// proveedor, para cuándo se necesita y cuánto ha llegado. El motor de riesgo
+// de abastecimiento y el centro de excepciones se construyen encima de esto.
+// ---------------------------------------------------------------------------
+
+enum EstadoOrdenCompra {
+  borrador
+  emitida
+  confirmada
+  despachada
+  recibida_parcial
+  recibida
+  cancelada
+}
+
+model PurchaseOrder {
+  id                       String            @id @default(uuid())
+  tenantId                 String
+  numero                   String // número de OC del cliente (su ERP), único por tenant
+  proveedorId              String
+  estado                   EstadoOrdenCompra @default(borrador)
+  incoterm                 String?
+  moneda                   String            @default("USD")
+  fechaEmision             DateTime          @default(now())
+  fechaRequerida           DateTime? // cuándo la planta necesita el material
+  fechaConfirmadaProveedor DateTime? // fecha que el proveedor se comprometió a despachar
+  fechaDespacho            DateTime?
+  motivoCancelacion        String?
+  notas                    String?
+  creadoPorId              String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  proveedor Partner @relation(fields: [proveedorId], references: [id])
+  creadoPor User?   @relation("PurchaseOrderCreadoPor", fields: [creadoPorId], references: [id])
+
+  lineas PurchaseOrderLine[]
+
+  @@unique([tenantId, numero])
+  @@index([tenantId])
+  @@index([tenantId, estado])
+  @@index([proveedorId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id               String   @id @default(uuid())
+  tenantId         String
+  purchaseOrderId  String
+  sku              String
+  descripcion      String
+  cantidad         Float
+  unidad           String   @default("unidad")
+  precioUnitario   Float?
+  cantidadRecibida Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  recepciones PurchaseOrderReceipt[]
+
+  @@index([tenantId])
+  @@index([purchaseOrderId])
+  @@index([tenantId, sku])
+  @@map("purchase_order_lines")
+}
+
+// Cada recepción física (parcial o total) queda registrada para auditoría:
+// quién recibió, cuánto y cuándo. cantidadRecibida de la línea es el acumulado.
+model PurchaseOrderReceipt {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  purchaseOrderLineId String
+  cantidad            Float
+  responsableId       String?
+  notas               String?
+  fecha               DateTime @default(now())
+  createdAt           DateTime @default(now())
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  linea       PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Cascade)
+  responsable User?             @relation("PurchaseOrderReceiptResponsable", fields: [responsableId], references: [id])
+
+  @@index([tenantId])
+  @@index([purchaseOrderLineId])
+  @@map("purchase_order_receipts")
 }

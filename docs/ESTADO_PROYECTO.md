@@ -68,7 +68,7 @@ Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemp
 
 | Módulo del plan (§7.1) | Estado en el repo |
 |---|---|
-| Control de OCs (órdenes de compra, líneas, proveedor, responsable) | **No existe.** Es la pieza central del giro — prioridad #1 del backlog nuevo. |
+| Control de OCs (órdenes de compra, líneas, proveedor, responsable) | **Hecho (2026-10-28)**: módulo `purchase-orders` con ciclo de vida, recepciones parciales e historial, aislado por tenant y con tests. Falta vínculo OC ↔ embarque ↔ inventario (siguiente paso). |
 | Inventario & cobertura (stock, consumo, safety stock, días de cobertura) | Parcial: `warehouses` tiene inventario/stock; falta consumo, cobertura y safety stock. |
 | Shipment tracking (hitos, ETD/ETA, BL/AWB, contenedor) | Existe: `shipments`, `tracking-events`, `containers`, `carriers`. Falta enlazar embarque ↔ OC. |
 | Movimientos nacionales (despacho, recepción, POD) | Parcial: `fleet`. Falta POD y recepción conectada a OC. |
@@ -84,6 +84,35 @@ Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemp
 Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contratos de naviera, flota) responden al cliente *transportista* anterior. No se borran, pero dejan de ser el foco; el backlog nuevo arranca por **OCs → vínculo OC↔embarque↔inventario → motor de riesgo → centro de excepciones + tareas**.
 
 ## Historial de cambios
+
+### 2026-10-28 (cont.) — Control de Órdenes de Compra (primer módulo del Business Plan) + fix de escalada de privilegios
+Primer paso del backlog nuevo (OCs → vínculo OC↔embarque↔inventario → motor de riesgo → excepciones + tareas).
+
+**Backend — módulo `purchase-orders`** (`backend/src/modules/purchase-orders/`):
+- Modelos Prisma `PurchaseOrder`, `PurchaseOrderLine`, `PurchaseOrderReceipt` + enum `EstadoOrdenCompra`. Migración `20261028120000_control_ordenes_compra`. Todas las tablas llevan `tenantId`; el N° de OC es único **por tenant** (dos empresas pueden tener la misma "OC-001").
+- Ciclo de vida: `borrador → emitida → confirmada → despachada → recibida_parcial → recibida`, con `cancelada` desde borrador/emitida/confirmada. `recibida_parcial`/`recibida` no se fijan a mano: salen de registrar recepciones.
+- Reglas: confirmar exige la fecha comprometida por el proveedor; cancelar exige motivo; líneas, proveedor, número y moneda solo se editan en borrador; OCs recibidas/canceladas no se editan; el proveedor debe ser un `Partner` tipo `proveedor` activo **del mismo tenant** (respuesta genérica, no revela si existe en otro tenant).
+- Recepciones: transaccionales (si una línea falla no se guarda ninguna) con incremento condicional atómico — dos recepciones simultáneas no pueden sumar más de lo pedido. Cada recepción queda en historial (quién, cuánto, cuándo, nota).
+- Cambios de estado con control de concurrencia (estado actual en el `where`; si otro usuario cambió la OC entre tanto → 409).
+- Roles: `admin_tenant`, `operador`, `super_admin`. `cliente_final` recibe 403.
+- Endpoints: `GET/POST /purchase-orders` (filtros `estado`, `proveedorId`, `q` por N° o SKU), `GET/PATCH /purchase-orders/:id`, `POST /:id/transicion`, `POST /:id/recepciones`. Visibles en Swagger (`/api/docs`, tag `purchase-orders`).
+- Seed: 2 proveedores y 6 OCs de ejemplo en el tenant demo (una en cada estado, con alertas de fecha y una recepción parcial). Idempotente.
+- Tests: 15 unitarios (`purchase-orders.service.spec.ts`) + 23 e2e contra Postgres real (`test/purchase-orders.e2e-spec.ts`: flujo completo, validaciones, roles y aislamiento — B no ve, no edita, no transiciona ni recibe la OC de A, ni puede usar un proveedor de A).
+
+**Frontend** — nueva sección "Supply Control → Órdenes de compra" en el sidebar:
+- `/dashboard/compras`: KPIs (abiertas, en camino, recepción parcial, con alerta de fecha), filtros por estado, búsqueda por N°/proveedor/SKU, avance de recepción y total.
+- `/dashboard/compras/nueva`: cabecera + líneas dinámicas con total en vivo.
+- `/dashboard/compras/[id]`: línea de tiempo del estado, alerta de fecha, acción siguiente según estado (emitir / confirmar con fecha / despachar / cancelar con motivo), actualizar la fecha si el proveedor la mueve, registro de recepciones por línea e historial.
+- **Alerta de fecha** (señal temprana simple, *no* es el motor de riesgo): roja si la fecha requerida ya pasó o si el proveedor despacha después de la fecha requerida; ámbar si faltan ≤7 días y el proveedor aún no confirma.
+- Fechas de `<input type="date">` se envían al mediodía local para que no se corran un día por la zona horaria (UTC-5).
+- Modo demo (Vercel): mismas rutas y reglas simuladas en `src/lib/mock/`. Playwright: 2 tests nuevos (8/8 pasan).
+- Fix de paso: en el sidebar "Resumen" quedaba resaltado en todas las páginas (coincidía por prefijo con `/dashboard/*`).
+
+**Seguridad — escalada de privilegios corregida (crítico, existía desde antes)**: un `admin_tenant` podía crear un usuario con `rol: super_admin` (o ascender uno existente) vía `POST/PATCH /users`, y con eso administrar **todas** las empresas (crear tenants, registrar usuarios en cualquier tenant). Ahora solo un `super_admin` puede asignar ese rol, y un `admin_tenant` tampoco puede editar ni desactivar a un `super_admin` (403). Test nuevo `test/users-roles.e2e-spec.ts`, verificado que **falla sin el fix** y pasa con él. Se borraron de la base local los 2 `super_admin` que esa verificación creó.
+
+**Pendiente detectado (no corregido aún)**: varios `create` existentes (ej. `bookings`, `invoices`, `quotes`) aceptan un `clienteId`/`partnerId` sin validar que pertenezca al tenant del usuario — permite referenciar (y ver vía `include`) un partner de otra empresa si se conoce su UUID. Riesgo bajo (UUID no adivinable) pero rompe el aislamiento; el módulo de OCs ya lo valida. Corregir en la próxima pasada.
+
+Totales: backend 18 unitarios + 64 e2e, frontend 8 e2e — todo en verde. Lint, `tsc` y build de producción limpios.
 
 ### 2026-10-28 — Business Plan 2026 incorporado + landing rediseñada con el nuevo posicionamiento
 Kevin entregó `SUTL_Business_Plan_2026.pdf` (giro a *Managed Supply Chain Control Tower*) y pidió anotarlo en el plan y rehacer la web pública "magistral, llamativa y con todo".

@@ -72,8 +72,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   <div className="flex flex-col gap-0.5">
                     {visibleItems.map((item) => {
                       const Icon = item.icon;
+                      // /dashboard (Resumen) solo por coincidencia exacta: si no,
+                      // quedaría activo en todas las subpáginas del panel.
                       const active =
-                        pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                        pathname === item.href ||
+                        (item.href !== '/dashboard' && pathname?.startsWith(`${item.href}/`));
                       return (
                         <Link
                           key={item.href}

@@ -13,6 +13,8 @@ import {
   InventoryItem,
   Partner,
   Payment,
+  PurchaseOrder,
+  PurchaseOrderLine,
   Quote,
   Rate,
   Report,
@@ -247,6 +249,8 @@ export const partners: Partner[] = [
   { id: 'p-cliente-andino', tenantId: 't-demo', tipo: 'cliente', nombre: 'Importadora Andina S.A.', taxId: '0991234567001', email: 'compras@importadoraandina.ec', telefono: '+593 4 2345678', direccion: null, contactoNombre: 'María Sánchez', activo: true, createdAt: mesesAtras(6), updatedAt: mesesAtras(6) },
   { id: 'p-cliente-exportador', tenantId: 't-demo', tipo: 'cliente', nombre: 'Exportadora Tropical Cía. Ltda.', taxId: '0997654321001', email: 'ventas@tropicalexport.ec', telefono: '+593 4 2987654', direccion: null, contactoNombre: 'Carlos Vera', activo: true, createdAt: mesesAtras(6), updatedAt: mesesAtras(6) },
   { id: 'p-agente-asia', tenantId: 't-demo', tipo: 'agente', nombre: 'Asia Pacific Freight Agents Ltd.', taxId: null, email: 'ops@apfreight.cn', telefono: '+86 21 5555 0199', direccion: null, contactoNombre: 'Li Wei', activo: true, createdAt: mesesAtras(5), updatedAt: mesesAtras(5) },
+  { id: 'p-proveedor-resinas', tenantId: 't-demo', tipo: 'proveedor', nombre: 'Ningbo Polymer Materials Co.', taxId: null, email: 'export@ningbopolymer.cn', telefono: '+86 574 8888 1200', direccion: null, contactoNombre: 'Chen Hao', activo: true, createdAt: mesesAtras(7), updatedAt: mesesAtras(7) },
+  { id: 'p-proveedor-empaques', tenantId: 't-demo', tipo: 'proveedor', nombre: 'Empaques del Litoral S.A.', taxId: '0992223334001', email: 'ventas@empaqueslitoral.ec', telefono: '+593 4 2600 100', direccion: null, contactoNombre: 'Andrea Molina', activo: true, createdAt: mesesAtras(7), updatedAt: mesesAtras(7) },
   { id: 'p-transportista-local', tenantId: 't-demo', tipo: 'transportista', nombre: 'Transportes Costa Sierra S.A.', taxId: '0993334445001', email: null, telefono: '+593 9 8877 6655', direccion: null, contactoNombre: 'Jorge Paredes', activo: true, createdAt: mesesAtras(5), updatedAt: mesesAtras(5) },
 ];
 
@@ -610,4 +614,75 @@ export function newApiKey(nombre: string): ApiKey {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+// --- Control de Órdenes de Compra ---
+function lineaOc(
+  ocId: string,
+  n: number,
+  sku: string,
+  descripcion: string,
+  cantidad: number,
+  unidad: string,
+  precioUnitario: number | null,
+  cantidadRecibida = 0,
+): PurchaseOrderLine {
+  return {
+    id: `${ocId}-l${n}`, tenantId: 't-demo', purchaseOrderId: ocId, sku, descripcion, cantidad, unidad,
+    precioUnitario, cantidadRecibida, recepciones: [], createdAt: mesesAtras(1), updatedAt: mesesAtras(1),
+  };
+}
+
+function ordenCompra(o: Partial<PurchaseOrder> & Pick<PurchaseOrder, 'id' | 'numero' | 'proveedorId' | 'estado' | 'lineas'>): PurchaseOrder {
+  return {
+    tenantId: 't-demo', incoterm: null, moneda: 'USD', fechaEmision: diasAtras(30), fechaRequerida: null,
+    fechaConfirmadaProveedor: null, fechaDespacho: null, motivoCancelacion: null, notas: null,
+    creadoPorId: 'u-admin', createdAt: diasAtras(30), updatedAt: diasAtras(2), ...o,
+  };
+}
+
+export const purchaseOrders: PurchaseOrder[] = [
+  ordenCompra({
+    id: 'oc1', numero: 'OC-2026-0418', proveedorId: 'p-proveedor-resinas', estado: 'despachada', incoterm: 'FOB',
+    fechaEmision: diasAtras(40), fechaRequerida: diasAdelante(12), fechaConfirmadaProveedor: diasAtras(8), fechaDespacho: diasAtras(6),
+    notas: 'Embarque Ningbo → Guayaquil, 2 contenedores 40HC.',
+    lineas: [
+      lineaOc('oc1', 1, 'RES-PET-01', 'Resina PET grado botella', 40000, 'kg', 1.32),
+      lineaOc('oc1', 2, 'RES-PP-07', 'Polipropileno homopolímero', 12000, 'kg', 1.18),
+    ],
+  }),
+  ordenCompra({
+    id: 'oc2', numero: 'OC-2026-0431', proveedorId: 'p-proveedor-resinas', estado: 'confirmada', incoterm: 'CIF',
+    fechaEmision: diasAtras(20), fechaRequerida: diasAdelante(25), fechaConfirmadaProveedor: diasAdelante(29),
+    notas: 'Proveedor movió su fecha 9 días por congestión en puerto de origen.',
+    lineas: [lineaOc('oc2', 1, 'PIG-AZ-02', 'Masterbatch azul', 800, 'kg', 4.9)],
+  }),
+  ordenCompra({
+    id: 'oc3', numero: 'OC-2026-0442', proveedorId: 'p-proveedor-empaques', estado: 'recibida_parcial', incoterm: 'DAP',
+    fechaEmision: diasAtras(18), fechaRequerida: diasAdelante(3), fechaConfirmadaProveedor: diasAtras(4), fechaDespacho: diasAtras(3),
+    lineas: [
+      lineaOc('oc3', 1, 'CAJ-30x40', 'Caja corrugada 30x40', 20000, 'unidad', 0.42, 12000),
+      lineaOc('oc3', 2, 'ETQ-500', 'Etiqueta autoadhesiva 500 ml', 50000, 'unidad', 0.03, 50000),
+    ],
+  }),
+  ordenCompra({
+    id: 'oc4', numero: 'OC-2026-0450', proveedorId: 'p-proveedor-empaques', estado: 'emitida', incoterm: 'DAP',
+    fechaEmision: diasAtras(5), fechaRequerida: diasAdelante(6),
+    lineas: [lineaOc('oc4', 1, 'FLM-STR-23', 'Film stretch 23 micras', 300, 'rollo', 18.5)],
+  }),
+  ordenCompra({
+    id: 'oc5', numero: 'OC-2026-0399', proveedorId: 'p-proveedor-empaques', estado: 'recibida', incoterm: 'DAP',
+    fechaEmision: diasAtras(60), fechaRequerida: diasAtras(30), fechaConfirmadaProveedor: diasAtras(35), fechaDespacho: diasAtras(34),
+    lineas: [lineaOc('oc5', 1, 'CAJ-30x40', 'Caja corrugada 30x40', 15000, 'unidad', 0.41, 15000)],
+  }),
+  ordenCompra({
+    id: 'oc6', numero: 'OC-2026-0455', proveedorId: 'p-proveedor-resinas', estado: 'borrador', incoterm: 'FOB',
+    fechaEmision: diasAtras(1), fechaRequerida: diasAdelante(45),
+    lineas: [lineaOc('oc6', 1, 'RES-PET-01', 'Resina PET grado botella', 25000, 'kg', 1.3)],
+  }),
+];
+
+export function purchaseOrderExpanded(o: PurchaseOrder): PurchaseOrder {
+  const prov = partner(o.proveedorId);
+  return { ...o, proveedor: prov ? { id: prov.id, nombre: prov.nombre, taxId: prov.taxId, email: prov.email, contactoNombre: prov.contactoNombre } : undefined };
 }
