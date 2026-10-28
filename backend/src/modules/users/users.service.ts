@@ -1,4 +1,5 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -29,7 +30,8 @@ export class UsersService {
     return user;
   }
 
-  async create(tenantId: string, dto: CreateUserDto) {
+  async create(tenantId: string, dto: CreateUserDto, actorRol: RolUsuario) {
+    this.assertPuedeAsignarRol(dto.rol, actorRol);
     const existente = await this.prisma.user.findUnique({
       where: { tenantId_email: { tenantId, email: dto.email } },
     });
@@ -45,8 +47,10 @@ export class UsersService {
     return user;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateUserDto) {
-    await this.findOne(tenantId, id);
+  async update(tenantId: string, id: string, dto: UpdateUserDto, actorRol: RolUsuario) {
+    const objetivo = await this.findOne(tenantId, id);
+    this.assertPuedeGestionar(objetivo.rol, actorRol);
+    this.assertPuedeAsignarRol(dto.rol, actorRol);
     // tenantId repetido en el where (no solo en el findOne previo): defensa
     // en profundidad ante un futuro refactor que se salte el chequeo.
     return this.prisma.user.update({
@@ -56,13 +60,30 @@ export class UsersService {
     });
   }
 
-  async remove(tenantId: string, id: string) {
-    await this.findOne(tenantId, id);
+  async remove(tenantId: string, id: string, actorRol: RolUsuario) {
+    const objetivo = await this.findOne(tenantId, id);
+    this.assertPuedeGestionar(objetivo.rol, actorRol);
     return this.prisma.user.update({
       where: { id, tenantId },
       data: { activo: false },
       select: this.publicSelect,
     });
+  }
+
+  // Solo un super_admin puede crear o ascender a otro super_admin. Sin esto,
+  // un admin_tenant podría darse rol super_admin y saltar el aislamiento
+  // multi-tenant (crear tenants, registrar usuarios en cualquier empresa).
+  private assertPuedeAsignarRol(rol: RolUsuario | undefined, actorRol: RolUsuario) {
+    if (rol === RolUsuario.super_admin && actorRol !== RolUsuario.super_admin) {
+      throw new ForbiddenException('No tienes permiso para asignar ese rol');
+    }
+  }
+
+  // Un admin_tenant tampoco puede editar ni desactivar a un super_admin.
+  private assertPuedeGestionar(rolObjetivo: RolUsuario, actorRol: RolUsuario) {
+    if (rolObjetivo === RolUsuario.super_admin && actorRol !== RolUsuario.super_admin) {
+      throw new ForbiddenException('No tienes permiso para gestionar este usuario');
+    }
   }
 
   private readonly publicSelect = {

@@ -35,23 +35,32 @@ export class UsersController {
 
   @Roles(RolUsuario.admin_tenant, RolUsuario.super_admin)
   @Post()
-  create(@CurrentUser('tenantId') tenantId: string, @Body() dto: CreateUserDto) {
-    return this.usersService.create(tenantId, dto);
+  create(
+    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser('rol') actorRol: RolUsuario,
+    @Body() dto: CreateUserDto,
+  ) {
+    return this.usersService.create(tenantId, dto, actorRol);
   }
 
   @Roles(RolUsuario.admin_tenant, RolUsuario.super_admin)
   @Patch(':id')
   update(
     @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser('rol') actorRol: RolUsuario,
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.usersService.update(tenantId, id, dto);
+    return this.usersService.update(tenantId, id, dto, actorRol);
   }
 
   @Roles(RolUsuario.admin_tenant, RolUsuario.super_admin)
   @Delete(':id')
-  remove(@CurrentUser('tenantId') tenantId: string, @Param('id') id: string) {
-    return this.usersService.remove(tenantId, id);
+  remove(
+    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser('rol') actorRol: RolUsuario,
+    @Param('id') id: string,
+  ) {
+    return this.usersService.remove(tenantId, id, actorRol);
   }
 }
