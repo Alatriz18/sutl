@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 
@@ -27,7 +28,8 @@ export class ContractsService {
     return contract;
   }
 
-  create(tenantId: string, dto: CreateContractDto) {
+  async create(tenantId: string, dto: CreateContractDto) {
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     return this.prisma.contract.create({
       data: { ...dto, tenantId, condiciones: dto.condiciones as Prisma.InputJsonValue },
       include: { carrier: true },
@@ -36,6 +38,7 @@ export class ContractsService {
 
   async update(tenantId: string, id: string, dto: UpdateContractDto) {
     await this.findOne(tenantId, id);
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     return this.prisma.contract.update({
       where: { id, tenantId },
       data: { ...dto, condiciones: dto.condiciones as Prisma.InputJsonValue },

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
@@ -49,6 +50,17 @@ export class WarehousesService {
 
   async createItem(tenantId: string, dto: CreateInventoryItemDto) {
     await this.findOne(tenantId, dto.warehouseId);
+    // Las ubicaciones no tienen tenantId propio: pertenecen al tenant a
+    // través de su bodega, así que debe ser una ubicación de ESTA bodega.
+    if (dto.ubicacionId) {
+      const ubicacion = await this.prisma.warehouseLocation.count({
+        where: { id: dto.ubicacionId, warehouseId: dto.warehouseId },
+      });
+      if (ubicacion === 0) {
+        throw new NotFoundException('Ubicación no encontrada en esta bodega');
+      }
+    }
+    await assertTenantRefs(this.prisma, tenantId, { shipmentId: dto.shipmentId });
     return this.prisma.inventoryItem.create({
       data: { ...dto, tenantId },
       include: { warehouse: true, ubicacion: true },

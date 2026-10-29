@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
@@ -28,6 +29,7 @@ export class InvoicesService {
   }
 
   async create(tenantId: string, dto: CreateInvoiceDto) {
+    await assertTenantRefs(this.prisma, tenantId, { partnerId: dto.partnerId, shipmentId: dto.shipmentId });
     const prefijo = dto.tipo === 'cxc' ? 'FAC-CXC' : 'FAC-CXP';
     const numero = await this.generarNumero(prefijo);
     return this.prisma.invoice.create({

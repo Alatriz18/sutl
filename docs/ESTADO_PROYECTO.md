@@ -85,6 +85,22 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-10-28 (cont. 2) — Aislamiento multi-tenant en las referencias (fuga corregida)
+Kevin definió que por ahora se trabaja **solo en local** (el deploy en línea no está disponible).
+
+**Seguridad — fuga entre tenants corregida (existía desde antes)**: los `create`/`update` aceptaban IDs de otros registros en el body sin validar que fueran del mismo tenant. Prisma solo valida que el ID exista (FK), así que el tenant B podía enlazar sus registros a datos del tenant A y, como las respuestas usan `include`, **leer esos datos** (nombre, RUC, email del cliente, etc.). Requería conocer el UUID (no adivinable), pero rompía el aislamiento. Se confirmaron 14 vías con una prueba que **falló sin el fix** (16 de 18):
+- `quotes` (create/update): `clienteId`.
+- `bookings` (create/update): `clienteId`, `quoteId`.
+- `invoices`: `partnerId`, `shipmentId`.
+- `alerts` (create/update): `shipmentId`.
+- `fleet` (asignaciones): `driverId`, `shipmentId`.
+- `notifications`: `userId` (exponía el email del usuario de A).
+- `warehouses` (ítems): `ubicacionId` — además debe ser de **la misma bodega** (las ubicaciones no tienen `tenantId` propio), y `shipmentId`.
+
+Fix: helper común `backend/src/common/tenant-refs.ts` (`assertTenantRefs`), usado en los 11 servicios afectados. Responde 404 con el mismo mensaje que un ID inexistente (no revela si existe en otro tenant). `carrierId` es catálogo global (sin tenant): solo se valida que exista, así un ID inválido da 404 en vez de un 500 por FK (`shipments`, `bookings`, `quotes`, `containers`, `contracts`, `rates`).
+
+Test nuevo `backend/test/tenant-isolation-references.e2e-spec.ts` (18 pruebas: cada vía rechazada, la respuesta no filtra datos de A, las referencias propias siguen funcionando, los registros de B quedan intactos). Totales: backend 18 unitarias + 82 e2e en verde; lint/tsc/build limpios. Frontend sin cambios (sus formularios solo ofrecen registros del propio tenant).
+
 ### 2026-10-28 (cont.) — Control de Órdenes de Compra (primer módulo del Business Plan) + fix de escalada de privilegios
 Primer paso del backlog nuevo (OCs → vínculo OC↔embarque↔inventario → motor de riesgo → excepciones + tareas).
 
@@ -110,7 +126,7 @@ Primer paso del backlog nuevo (OCs → vínculo OC↔embarque↔inventario → m
 
 **Seguridad — escalada de privilegios corregida (crítico, existía desde antes)**: un `admin_tenant` podía crear un usuario con `rol: super_admin` (o ascender uno existente) vía `POST/PATCH /users`, y con eso administrar **todas** las empresas (crear tenants, registrar usuarios en cualquier tenant). Ahora solo un `super_admin` puede asignar ese rol, y un `admin_tenant` tampoco puede editar ni desactivar a un `super_admin` (403). Test nuevo `test/users-roles.e2e-spec.ts`, verificado que **falla sin el fix** y pasa con él. Se borraron de la base local los 2 `super_admin` que esa verificación creó.
 
-**Pendiente detectado (no corregido aún)**: varios `create` existentes (ej. `bookings`, `invoices`, `quotes`) aceptan un `clienteId`/`partnerId` sin validar que pertenezca al tenant del usuario — permite referenciar (y ver vía `include`) un partner de otra empresa si se conoce su UUID. Riesgo bajo (UUID no adivinable) pero rompe el aislamiento; el módulo de OCs ya lo valida. Corregir en la próxima pasada.
+**Pendiente detectado** (referencias entre tenants en `bookings`/`invoices`/`quotes` y otros) — **corregido** el mismo día, ver la entrada siguiente.
 
 Totales: backend 18 unitarios + 64 e2e, frontend 8 e2e — todo en verde. Lint, `tsc` y build de producción limpios.
 

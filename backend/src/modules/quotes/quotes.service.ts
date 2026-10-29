@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 
@@ -28,6 +29,7 @@ export class QuotesService {
   }
 
   async create(tenantId: string, userId: string, dto: CreateQuoteDto) {
+    await assertTenantRefs(this.prisma, tenantId, { clienteId: dto.clienteId, carrierId: dto.carrierId });
     const numero = await this.generarNumero();
     return this.prisma.quote.create({
       data: { ...dto, tenantId, numero, creadoPorId: userId },
@@ -37,6 +39,7 @@ export class QuotesService {
 
   async update(tenantId: string, id: string, dto: UpdateQuoteDto) {
     await this.findOne(tenantId, id);
+    await assertTenantRefs(this.prisma, tenantId, { clienteId: dto.clienteId, carrierId: dto.carrierId });
     return this.prisma.quote.update({
       where: { id, tenantId },
       data: dto,

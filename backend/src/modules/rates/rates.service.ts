@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateRateDto } from './dto/create-rate.dto';
 import { UpdateRateDto } from './dto/update-rate.dto';
 
@@ -41,7 +42,8 @@ export class RatesService {
     return rate;
   }
 
-  create(tenantId: string, dto: CreateRateDto) {
+  async create(tenantId: string, dto: CreateRateDto) {
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     return this.prisma.rate.create({
       data: { ...dto, tenantId },
       include: { carrier: true },
@@ -50,6 +52,7 @@ export class RatesService {
 
   async update(tenantId: string, id: string, dto: UpdateRateDto) {
     await this.findOwned(tenantId, id);
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     return this.prisma.rate.update({
       where: { id, tenantId },
       data: dto,

@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { randomBytes } from 'crypto';
 import { Booking, Partner } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { TrackingEventsService } from '../tracking-events/tracking-events.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
@@ -33,6 +34,7 @@ export class ShipmentsService {
   }
 
   async create(tenantId: string, dto: CreateShipmentDto) {
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     const codigoGuia = await this.generarCodigoGuia();
     return this.prisma.shipment.create({
       data: { ...dto, tenantId, codigoGuia },
@@ -41,6 +43,7 @@ export class ShipmentsService {
 
   async update(tenantId: string, id: string, dto: UpdateShipmentDto) {
     await this.findOne(tenantId, id);
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     return this.prisma.shipment.update({ where: { id, tenantId }, data: dto });
   }
 

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateContainerDto } from './dto/create-container.dto';
 import { UpdateContainerDto } from './dto/update-container.dto';
 
@@ -26,7 +27,8 @@ export class ContainersService {
     return container;
   }
 
-  create(tenantId: string, dto: CreateContainerDto) {
+  async create(tenantId: string, dto: CreateContainerDto) {
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     return this.prisma.container.create({
       data: { ...dto, tenantId },
       include: { carrier: true },
@@ -35,6 +37,7 @@ export class ContainersService {
 
   async update(tenantId: string, id: string, dto: UpdateContainerDto) {
     await this.findOne(tenantId, id);
+    await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     return this.prisma.container.update({
       where: { id, tenantId },
       data: dto,

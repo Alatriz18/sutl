@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { CreateDriverDto } from './dto/create-driver.dto';
@@ -63,6 +64,7 @@ export class FleetService {
     if (!vehicle) {
       throw new NotFoundException('Vehículo no encontrado');
     }
+    await assertTenantRefs(this.prisma, tenantId, { driverId: dto.driverId, shipmentId: dto.shipmentId });
     const [assignment] = await this.prisma.$transaction([
       this.prisma.vehicleAssignment.create({
         data: { ...dto, tenantId },

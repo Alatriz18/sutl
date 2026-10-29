@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Shipment } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { UpdateAlertDto } from './dto/update-alert.dto';
 
@@ -26,7 +27,8 @@ export class AlertsService {
     return alert;
   }
 
-  create(tenantId: string, dto: CreateAlertDto) {
+  async create(tenantId: string, dto: CreateAlertDto) {
+    await assertTenantRefs(this.prisma, tenantId, { shipmentId: dto.shipmentId });
     return this.prisma.alert.create({
       data: { ...dto, tenantId, condicion: dto.condicion as Prisma.InputJsonValue },
     });
@@ -34,6 +36,7 @@ export class AlertsService {
 
   async update(tenantId: string, id: string, dto: UpdateAlertDto) {
     await this.findOne(tenantId, id);
+    await assertTenantRefs(this.prisma, tenantId, { shipmentId: dto.shipmentId });
     return this.prisma.alert.update({
       where: { id, tenantId },
       data: { ...dto, condicion: dto.condicion as Prisma.InputJsonValue | undefined },

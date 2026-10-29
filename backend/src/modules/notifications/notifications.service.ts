@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 
 @Injectable()
@@ -14,7 +15,8 @@ export class NotificationsService {
     });
   }
 
-  create(tenantId: string, dto: CreateNotificationDto) {
+  async create(tenantId: string, dto: CreateNotificationDto) {
+    await assertTenantRefs(this.prisma, tenantId, { userId: dto.userId });
     return this.prisma.notification.create({
       data: { ...dto, tenantId },
       include: { user: true },

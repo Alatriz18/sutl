@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertTenantRefs } from '../../common/tenant-refs';
 import { ShipmentsService } from '../shipments/shipments.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -30,7 +31,8 @@ export class BookingsService {
     return booking;
   }
 
-  create(tenantId: string, dto: CreateBookingDto) {
+  async create(tenantId: string, dto: CreateBookingDto) {
+    await assertTenantRefs(this.prisma, tenantId, { clienteId: dto.clienteId, quoteId: dto.quoteId, carrierId: dto.carrierId });
     return this.prisma.booking.create({
       data: { ...dto, tenantId },
       include: { cliente: true, carrier: true },
@@ -39,6 +41,7 @@ export class BookingsService {
 
   async update(tenantId: string, id: string, dto: UpdateBookingDto) {
     await this.findOne(tenantId, id);
+    await assertTenantRefs(this.prisma, tenantId, { clienteId: dto.clienteId, quoteId: dto.quoteId, carrierId: dto.carrierId });
     return this.prisma.booking.update({
       where: { id, tenantId },
       data: dto,
