@@ -14,6 +14,7 @@ import { ProgressBar } from '@/components/purchase-orders/progress-bar';
 import { cn } from '@/lib/utils';
 import { extractApiError, formatDate, formatMoney } from '@/lib/format';
 import { ESTADO_OC_LABELS, alertaFecha, avanceRecepcion, totalOc } from '@/lib/purchase-orders';
+import { useTenantConfig } from '@/lib/tenant-config';
 import { EstadoOrdenCompra, PurchaseOrder } from '@/types';
 
 type Filtro = 'todas' | 'abiertas' | EstadoOrdenCompra;
@@ -39,6 +40,7 @@ export default function ComprasPage() {
   const [error, setError] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>('abiertas');
   const [busqueda, setBusqueda] = useState('');
+  const { config } = useTenantConfig();
 
   useEffect(() => {
     api
@@ -65,7 +67,7 @@ export default function ComprasPage() {
 
   const abiertas = ordenes.filter((o) => !CERRADAS.includes(o.estado));
   const enCamino = ordenes.filter((o) => o.estado === 'despachada').length;
-  const conAlerta = abiertas.filter((o) => alertaFecha(o)).length;
+  const conAlerta = abiertas.filter((o) => alertaFecha(o, config.compras.diasAlertaAnticipada)).length;
   const recibidasParcial = ordenes.filter((o) => o.estado === 'recibida_parcial').length;
 
   return (
@@ -156,7 +158,7 @@ export default function ComprasPage() {
                 </tr>
               )}
               {visibles.map((o) => {
-                const alerta = alertaFecha(o);
+                const alerta = alertaFecha(o, config.compras.diasAlertaAnticipada);
                 const avance = avanceRecepcion(o);
                 return (
                   <tr key={o.id} className="border-t border-navy/5 hover:bg-navy/[0.02]">

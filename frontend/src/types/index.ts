@@ -449,6 +449,9 @@ export interface PurchaseOrderReceipt {
   purchaseOrderLineId: string;
   cantidad: number;
   responsableId: string | null;
+  // Bodega a la que entró al inventario; null si la recepción no movió stock.
+  warehouseId: string | null;
+  warehouse?: Pick<Warehouse, 'id' | 'nombre'> | null;
   notas: string | null;
   fecha: string;
   createdAt: string;
@@ -488,4 +491,36 @@ export interface PurchaseOrder {
   lineas: PurchaseOrderLine[];
   createdAt: string;
   updatedAt: string;
+}
+
+// Configuración de la operación por tenant (ver backend/src/modules/tenant-config).
+export type ModoRecepcionInventario = 'automatico' | 'a_eleccion' | 'nunca';
+
+export interface ConfigOperacion {
+  compras: {
+    toleranciaSobreRecepcionPct: number;
+    diasAlertaAnticipada: number;
+    exigirFechaConfirmacion: boolean;
+  };
+  inventario: {
+    recepcionActualizaInventario: ModoRecepcionInventario;
+  };
+}
+
+export type AjustesOperacion = {
+  [S in keyof ConfigOperacion]?: Partial<ConfigOperacion[S]>;
+};
+
+export interface PerfilOperacion {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  config: ConfigOperacion;
+}
+
+export interface TenantConfigResponse {
+  perfil: string;
+  configuracion: ConfigOperacion;
+  ajustes: AjustesOperacion;
+  perfiles: PerfilOperacion[];
 }

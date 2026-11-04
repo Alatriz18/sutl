@@ -163,6 +163,10 @@ model Tenant {
   ruc       String?  @unique
   plan      String   @default("trial")
   activo    Boolean  @default(true)
+  // Configuración de la operación: perfil de industria (valores sugeridos)
+  // + solo los ajustes que el tenant cambió. Ver modules/tenant-config.
+  perfilOperacion String @default("general")
+  configuracion   Json   @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -670,6 +674,7 @@ model Warehouse {
   tenant     Tenant              @relation(fields: [tenantId], references: [id])
   ubicaciones WarehouseLocation[]
   items       InventoryItem[]
+  recepcionesOc PurchaseOrderReceipt[]
 
   @@index([tenantId])
   @@map("warehouses")
@@ -698,7 +703,7 @@ model InventoryItem {
   ubicacionId  String?
   sku          String?
   descripcion  String
-  cantidad     Int
+  cantidad     Float
   unidad       String   @default("unidad")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -719,7 +724,7 @@ model StockMovement {
   tenantId        String
   inventoryItemId String
   tipo            TipoMovimientoInventario
-  cantidad        Int
+  cantidad        Float
   responsableId   String?
   notas           String?
   fecha           DateTime                 @default(now())
@@ -884,6 +889,9 @@ model PurchaseOrderReceipt {
   purchaseOrderLineId String
   cantidad            Float
   responsableId       String?
+  // Bodega a la que entró al inventario de SUTL; null si la recepción no
+  // movió inventario (según la configuración del tenant).
+  warehouseId         String?
   notas               String?
   fecha               DateTime @default(now())
   createdAt           DateTime @default(now())
@@ -891,6 +899,7 @@ model PurchaseOrderReceipt {
   tenant      Tenant            @relation(fields: [tenantId], references: [id])
   linea       PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Cascade)
   responsable User?             @relation("PurchaseOrderReceiptResponsable", fields: [responsableId], references: [id])
+  warehouse   Warehouse?        @relation(fields: [warehouseId], references: [id])
 
   @@index([tenantId])
   @@index([purchaseOrderLineId])

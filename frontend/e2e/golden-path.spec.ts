@@ -94,6 +94,41 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByLabel('Fecha de despacho comprometida por el proveedor')).toBeVisible();
   });
 
+  test('configuración de la operación: el perfil Manufactura hace que la recepción entre al inventario', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('admin@demo-transportes.com').fill('admin@demo-transportes.com');
+    await page.getByPlaceholder('••••••••').fill('Demo2026!');
+    await page.getByRole('button', { name: 'Ingresar' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    // Navegación por clics (no page.goto): el modo demo guarda los datos en memoria.
+    await page.getByRole('link', { name: 'Configuración de la operación' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Configuración de la operación' })).toBeVisible();
+    await expect(page.getByLabel('Tolerancia de sobre-recepción')).toHaveValue('0');
+    await page.getByText('Manufactura', { exact: true }).click();
+    await page.getByRole('button', { name: 'Aplicar perfil' }).click();
+    await expect(page.getByText('Perfil aplicado con sus valores sugeridos.')).toBeVisible();
+    await expect(page.getByLabel('Tolerancia de sobre-recepción')).toHaveValue('5');
+
+    // Ajuste propio encima del perfil.
+    await page.getByLabel('Alerta anticipada').fill('21');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Configuración guardada.')).toBeVisible();
+    await expect(page.getByText('Ajustado · sugerido: 14 días')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Órdenes de compra' }).first().click();
+    await page.getByRole('link', { name: 'OC-2026-0442' }).click();
+    await expect(page.getByLabel('Bodega de destino')).toHaveValue('wh-1');
+    await page.getByLabel('Cantidad recibida de CAJ-30x40').fill('8000');
+    await page.getByRole('button', { name: 'Registrar recepción' }).click();
+    await expect(page.getByText('Recepción registrada e ingresada al inventario.')).toBeVisible();
+    await expect(page.getByText('→ Bodega Guayaquil Central').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Almacén' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Almacén e inventario' })).toBeVisible();
+    await expect(page.getByRole('row', { name: /CAJ-30x40/ })).toContainText('8.000');
+  });
+
   test('tracking público encuentra un envío existente por código de guía', async ({ page }) => {
     await page.goto('/tracking/SUTL-DEMO-0003');
     await expect(page.getByText('SUTL-DEMO-0003')).toBeVisible();

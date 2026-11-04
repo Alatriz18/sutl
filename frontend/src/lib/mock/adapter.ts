@@ -22,6 +22,7 @@ import {
   Webhook,
 } from '@/types';
 import * as db from './data';
+import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
 
 // Adapter de Axios que simula la API REST de SUTL completamente en el
@@ -364,6 +365,21 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       return delay(ok(config, user));
     }
 
+    // --- TENANT CONFIG --- (mismas reglas que el backend real)
+    if (path === '/tenant-config') {
+      const rol = currentUser()?.rol;
+      if (method === 'get') {
+        if (rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
+        return delay(ok(config, configDemo()));
+      }
+      if (method === 'patch') {
+        if (rol !== 'admin_tenant' && rol !== 'super_admin') throw new MockApiError(403, 'Forbidden resource');
+        const error = actualizarConfigDemo(body);
+        if (error) throw new MockApiError(400, error);
+        return delay(ok(config, configDemo()), 280);
+      }
+    }
+
     // --- PURCHASE ORDERS --- (mismas reglas que el backend real)
     if (path.startsWith('/purchase-orders') && currentUser()?.rol === 'cliente_final') {
       throw new MockApiError(403, 'Forbidden resource');
@@ -463,8 +479,10 @@ export const mockAdapter: AxiosAdapter = async (config) => {
         }
         if (destino === 'confirmada') {
           const fecha = (body.fechaConfirmadaProveedor as string) || oc.fechaConfirmadaProveedor;
-          if (!fecha) throw new MockApiError(400, 'Para confirmar la OC indica la fecha comprometida por el proveedor');
-          oc.fechaConfirmadaProveedor = fecha;
+          if (!fecha && configEfectivaDemo().compras.exigirFechaConfirmacion) {
+            throw new MockApiError(400, 'Para confirmar la OC indica la fecha comprometida por el proveedor');
+          }
+          oc.fechaConfirmadaProveedor = fecha || null;
         }
         if (destino === 'despachada') oc.fechaDespacho = (body.fechaDespacho as string) || nowIso();
         if (destino === 'cancelada') {
@@ -480,21 +498,76 @@ export const mockAdapter: AxiosAdapter = async (config) => {
           throw new MockApiError(400, `No se puede registrar recepción en una OC ${oc.estado}`);
         }
         const items = (body.lineas as Array<{ lineaId: string; cantidad: number }>) ?? [];
+        const cfg = configEfectivaDemo();
+        const tolerancia = cfg.compras.toleranciaSobreRecepcionPct;
+        const modo = cfg.inventario.recepcionActualizaInventario;
         // Validar todo antes de aplicar nada (mismo comportamiento transaccional que el backend).
         const acumulado = new Map<string, number>();
         for (const item of items) {
           const linea = oc.lineas.find((l) => l.id === item.lineaId);
           if (!linea) throw new MockApiError(400, `La línea ${item.lineaId} no pertenece a esta OC`);
           const total = (acumulado.get(linea.id) ?? linea.cantidadRecibida) + Number(item.cantidad);
-          if (Number(item.cantidad) <= 0 || total > linea.cantidad + 1e-9) {
-            throw new MockApiError(400, `La recepción de ${linea.sku} excede la cantidad pendiente de la OC`);
+          if (Number(item.cantidad) <= 0 || total > linea.cantidad * (1 + tolerancia / 100) + 1e-9) {
+            throw new MockApiError(
+              400,
+              `La recepción de ${linea.sku} excede la cantidad pendiente de la OC` +
+                (tolerancia > 0 ? ` (incluida la tolerancia de ${tolerancia}%)` : ''),
+            );
           }
           acumulado.set(linea.id, total);
+        }
+        const warehouseId = (body.warehouseId as string) || null;
+        let bodega: Warehouse | null = null;
+        if (modo === 'nunca' && (body.actualizarInventario || warehouseId)) {
+          throw new MockApiError(400, 'Tu empresa está configurada para no mover inventario al recibir OCs (el inventario se lleva en otro sistema)');
+        }
+        if (modo === 'a_eleccion' && !body.actualizarInventario && warehouseId) {
+          throw new MockApiError(400, 'Indicaste una bodega pero no actualizarInventario: true; confirma si lo recibido entra al inventario');
+        }
+        if (modo === 'automatico' && body.actualizarInventario === false) {
+          throw new MockApiError(400, 'Tu empresa está configurada para que toda recepción de OC entre al inventario');
+        }
+        const mueve = modo === 'automatico' || (modo === 'a_eleccion' && body.actualizarInventario === true);
+        if (mueve) {
+          if (!warehouseId) throw new MockApiError(400, 'Indica la bodega a la que entra lo recibido (warehouseId)');
+          bodega = db.warehouses.find((w) => w.id === warehouseId && w.activo) ?? null;
+          if (!bodega) throw new MockApiError(404, 'Bodega no encontrada');
+          for (const item of items) {
+            const linea = oc.lineas.find((l) => l.id === item.lineaId)!;
+            const existente = db.inventoryItems.find((i) => i.warehouseId === bodega!.id && i.sku === linea.sku);
+            if (existente && existente.unidad !== linea.unidad) {
+              throw new MockApiError(
+                400,
+                `El SKU ${linea.sku} está en inventario en "${existente.unidad}" y la OC lo pide en "${linea.unidad}"; unifica la unidad antes de ingresarlo`,
+              );
+            }
+          }
         }
         for (const item of items) {
           const linea = oc.lineas.find((l) => l.id === item.lineaId);
           if (!linea) continue;
           linea.cantidadRecibida += Number(item.cantidad);
+          if (bodega) {
+            const existente = db.inventoryItems.find((i) => i.warehouseId === bodega!.id && i.sku === linea.sku);
+            if (existente) {
+              existente.cantidad += Number(item.cantidad);
+              existente.updatedAt = nowIso();
+            } else {
+              db.inventoryItems.push({
+                id: nextId('inv-item'),
+                tenantId: oc.tenantId,
+                warehouseId: bodega.id,
+                ubicacionId: null,
+                shipmentId: null,
+                sku: linea.sku,
+                descripcion: linea.descripcion,
+                cantidad: Number(item.cantidad),
+                unidad: linea.unidad,
+                createdAt: nowIso(),
+                updatedAt: nowIso(),
+              });
+            }
+          }
           linea.recepciones = [
             {
               id: nextId('ocr'),
@@ -502,6 +575,8 @@ export const mockAdapter: AxiosAdapter = async (config) => {
               purchaseOrderLineId: linea.id,
               cantidad: Number(item.cantidad),
               responsableId: currentUser()?.id ?? null,
+              warehouseId: bodega?.id ?? null,
+              warehouse: bodega ? { id: bodega.id, nombre: bodega.nombre } : null,
               notas: (body.notas as string) || null,
               fecha: nowIso(),
               createdAt: nowIso(),

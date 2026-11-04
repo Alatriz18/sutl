@@ -68,7 +68,7 @@ Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemp
 
 | Módulo del plan (§7.1) | Estado en el repo |
 |---|---|
-| Control de OCs (órdenes de compra, líneas, proveedor, responsable) | **Hecho (2026-10-28)**: módulo `purchase-orders` con ciclo de vida, recepciones parciales e historial, aislado por tenant y con tests. Falta vínculo OC ↔ embarque ↔ inventario (siguiente paso). |
+| Control de OCs (órdenes de compra, líneas, proveedor, responsable) | **Hecho (2026-10-28)**: módulo `purchase-orders` con ciclo de vida, recepciones parciales e historial, aislado por tenant y con tests. Recepción → inventario **hecho (2026-11-03)**, configurable por empresa. Falta vínculo OC ↔ embarque (siguiente paso). |
 | Inventario & cobertura (stock, consumo, safety stock, días de cobertura) | Parcial: `warehouses` tiene inventario/stock; falta consumo, cobertura y safety stock. |
 | Shipment tracking (hitos, ETD/ETA, BL/AWB, contenedor) | Existe: `shipments`, `tracking-events`, `containers`, `carriers`. Falta enlazar embarque ↔ OC. |
 | Movimientos nacionales (despacho, recepción, POD) | Parcial: `fleet`. Falta POD y recepción conectada a OC. |
@@ -84,6 +84,73 @@ Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemp
 Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contratos de naviera, flota) responden al cliente *transportista* anterior. No se borran, pero dejan de ser el foco; el backlog nuevo arranca por **OCs → vínculo OC↔embarque↔inventario → motor de riesgo → centro de excepciones + tareas**.
 
 ## Historial de cambios
+
+### 2026-11-03 — Configuración de la operación por empresa + recepción de OC → inventario
+Pedido de Kevin: cada industria trabaja distinto (unas quieren que la recepción mueva inventario y otras no, algunas llevan el stock en su ERP), así que las reglas que varían entre clientes deben ser **configurables por empresa** en vez de estar fijas en el código.
+
+**Modelo** (`backend/src/modules/tenant-config`):
+- **Perfil de industria con valores sugeridos**: `general`, `manufactura`, `comercio`, `erp_externo` (inventario en ERP propio).
+- **Ajustes propios del tenant** encima del perfil. Se guardan solo las diferencias, en `Tenant.configuracion` (JSON) + `Tenant.perfilOperacion`.
+- Un ajuste nuevo que se agregue a futuro toma el valor del perfil sin migrar datos.
+- El JSON guardado se lee de forma defensiva: se descartan claves desconocidas y tipos incorrectos.
+
+**Ajustes de esta primera versión** (todos se aplican de verdad; ninguno es solo visual):
+- `compras.toleranciaSobreRecepcionPct` (0–50%): cuánto más de lo pedido se acepta recibir por línea. Se aplica en el incremento atómico de la recepción.
+- `compras.diasAlertaAnticipada` (1–90): umbral de la alerta ámbar de OCs sin confirmar, en la lista y en el detalle.
+- `compras.exigirFechaConfirmacion`: si confirmar una OC exige la fecha comprometida por el proveedor.
+- `inventario.recepcionActualizaInventario`:
+  - `automatico`: toda recepción entra a una bodega, que es obligatoria.
+  - `a_eleccion`: quien recibe decide.
+  - `nunca`: el inventario vive en otro sistema.
+  - Pedidos contradictorios con la configuración se rechazan con 400; no se ignoran en silencio.
+
+**API**:
+- `GET /tenant-config` (admin_tenant, operador, super_admin).
+- `PATCH /tenant-config` (solo admin_tenant/super_admin):
+  - `perfil` aplica el perfil y descarta los ajustes.
+  - `restablecer` + `configuracion` reemplaza los ajustes de forma atómica.
+  - Validación estricta con DTO anidado y `forbidNonWhitelisted`.
+- Siempre actúa sobre el tenant del JWT; nunca por parámetro.
+
+**Recepción de OC → inventario** (`purchase-orders.service.ts`), en la misma transacción que la recepción:
+- Suma al ítem del SKU en la bodega, o lo crea si no existe, y registra el `StockMovement` de entrada con nota "Recepción OC <número>".
+- `PurchaseOrderReceipt.warehouseId` guarda a qué bodega entró; es null si no movió stock.
+- La bodega debe ser activa y del tenant (404 si no).
+- Si la unidad del SKU en inventario no coincide con la de la OC, responde 400 y la transacción se revierte entera.
+- Dos recepciones simultáneas del mismo SKU nuevo no crean ítems duplicados: lock `pg_advisory_xact_lock` por tenant+bodega+SKU. Lo cubre una prueba e2e de concurrencia.
+
+**Inventario con decimales**: `InventoryItem.cantidad` y `StockMovement.cantidad` pasan de `Int` a `Float`, para kg, m³ y litros de materia prima. Los DTOs de almacén aceptan hasta 4 decimales.
+
+Migración `20261028150000_configuracion_operacion`.
+
+**Frontend**:
+- Nueva pantalla **Administración → Configuración de la operación** (`/dashboard/configuracion`):
+  - Tarjetas de perfil con confirmación antes de aplicar.
+  - Campos con la etiqueta "Ajustado · sugerido: X" cuando difieren del perfil.
+  - Botón "Volver a los valores del perfil".
+  - El operador la ve en solo lectura.
+- El detalle de OC se adapta a la configuración:
+  - Casilla "Ingresar lo recibido al inventario" en `a_eleccion`.
+  - Selector de bodega, con preselección si hay una sola.
+  - Aviso de que no se mueve stock en `nunca`.
+  - Máximo por línea con la tolerancia aplicada.
+  - Fecha de confirmación opcional cuando la empresa no la exige.
+  - El historial muestra la bodega de cada recepción.
+- Modo demo: mismas reglas en `src/lib/mock/tenant-config.ts` y `adapter.ts`.
+- Corregido en Almacén (bug previo):
+  - La unidad se pluralizaba pegando una "s" ("unidads", "kgs").
+  - El campo de cantidad no aceptaba decimales.
+
+**Tests**:
+- Backend:
+  - 28 unitarias (nuevas: `tenant-config.defaults.spec.ts` y 5 casos de OC según la configuración).
+  - 99 e2e. Nuevo `test/tenant-config.e2e-spec.ts` con 17 casos: perfiles, ajustes, validación, roles, aislamiento entre tenants y cada modo de recepción contra Postgres real, incluida la concurrencia.
+- Frontend:
+  - Playwright 9/9. Nuevo flujo: aplicar Manufactura → ajuste propio → recibir OC → ver el SKU en Almacén.
+  - tsc, lint y build limpios.
+  - Verificado en navegador en modo real, escritorio y móvil, sin desborde horizontal.
+
+**Pendiente**: vínculo OC ↔ envío (qué cantidad de cada línea viaja en cada embarque). La configuración está pensada para crecer: nuevos ajustes se agregan en `tenant-config.defaults.ts` + DTO + pantalla.
 
 ### 2026-10-28 (cont. 2) — Aislamiento multi-tenant en las referencias (fuga corregida)
 Kevin definió que por ahora se trabaja **solo en local** (el deploy en línea no está disponible).

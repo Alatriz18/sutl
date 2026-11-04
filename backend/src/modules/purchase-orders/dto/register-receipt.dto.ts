@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  IsBoolean,
   ArrayMinSize,
   IsArray,
   IsNumber,
@@ -33,4 +34,15 @@ export class RegisterReceiptDto {
   @IsString()
   @MaxLength(1000)
   notas?: string;
+
+  // Bodega a la que entra lo recibido. Obligatoria cuando la recepción mueve
+  // inventario (según la configuración del tenant).
+  @IsOptional()
+  @IsUUID()
+  warehouseId?: string;
+
+  // Solo aplica con la configuración "a_eleccion": quien recibe decide.
+  @IsOptional()
+  @IsBoolean()
+  actualizarInventario?: boolean;
 }

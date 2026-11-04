@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class CreateInventoryItemDto {
   @IsUUID()
@@ -20,7 +20,8 @@ export class CreateInventoryItemDto {
   @IsNotEmpty()
   descripcion: string;
 
-  @IsInt()
+  // Decimales para unidades como kg, m3 o litros.
+  @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0)
   cantidad: number;
 

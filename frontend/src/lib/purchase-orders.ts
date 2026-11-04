@@ -42,6 +42,16 @@ export function pendiente(linea: Pick<PurchaseOrderLine, 'cantidad' | 'cantidadR
   return Math.max(linea.cantidad - linea.cantidadRecibida, 0);
 }
 
+// Máximo que se puede recibir ahora en la línea, con la tolerancia de
+// sobre-recepción que configuró la empresa (mismo cálculo que el backend).
+export function maximoRecepcion(
+  linea: Pick<PurchaseOrderLine, 'cantidad' | 'cantidadRecibida'>,
+  toleranciaPct: number,
+) {
+  const limite = linea.cantidad * (1 + toleranciaPct / 100) - linea.cantidadRecibida;
+  return Math.max(Math.round(limite * 10000) / 10000, 0);
+}
+
 // Avance de recepción de toda la OC, de 0 a 1 (promedio por línea, para que
 // una línea en kg no pese más que otra en unidades).
 export function avanceRecepcion(oc: Pick<PurchaseOrder, 'lineas'>) {
@@ -58,9 +68,11 @@ export function totalOc(oc: Pick<PurchaseOrder, 'lineas'>) {
 export type AlertaFechaOc = { nivel: 'rojo' | 'ambar'; texto: string } | null;
 
 // Señal temprana simple (no es el motor de riesgo completo): compara lo que
-// la planta necesita con lo que el proveedor prometió.
+// la planta necesita con lo que el proveedor prometió. diasAlerta viene de la
+// configuración de la empresa (compras.diasAlertaAnticipada).
 export function alertaFecha(
   oc: Pick<PurchaseOrder, 'estado' | 'fechaRequerida' | 'fechaConfirmadaProveedor'>,
+  diasAlerta = 7,
   ahora = Date.now(),
 ): AlertaFechaOc {
   if (oc.estado === 'recibida' || oc.estado === 'cancelada' || !oc.fechaRequerida) return null;
@@ -75,7 +87,7 @@ export function alertaFecha(
     }
   }
   const diasRestantes = Math.ceil((requerida - ahora) / 86400000);
-  if (diasRestantes <= 7 && ['borrador', 'emitida'].includes(oc.estado)) {
+  if (diasRestantes <= diasAlerta && ['borrador', 'emitida'].includes(oc.estado)) {
     return { nivel: 'ambar', texto: `Faltan ${diasRestantes} días y el proveedor aún no confirma` };
   }
   return null;

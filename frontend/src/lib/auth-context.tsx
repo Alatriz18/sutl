@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from './api';
+import { limpiarTenantConfig } from './tenant-config';
 import { setAccessToken, clearAccessToken } from './token-store';
 import { decodeJwt } from './jwt';
 import { RolUsuario } from '@/types';
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const res = await api.post('/auth/login', { email, password });
+      limpiarTenantConfig();
       applyToken(res.data.accessToken);
       router.push('/dashboard');
     },
@@ -62,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await api.post('/auth/logout').catch(() => undefined);
     clearAccessToken();
+    limpiarTenantConfig();
     setUser(null);
     router.push('/login');
   }, [router]);

@@ -23,10 +23,12 @@ import {
   avanceRecepcion,
   fechaInputAIso,
   isoAFechaInput,
+  maximoRecepcion,
   pendiente,
   totalOc,
 } from '@/lib/purchase-orders';
-import { PurchaseOrder } from '@/types';
+import { useTenantConfig } from '@/lib/tenant-config';
+import { PurchaseOrder, Warehouse } from '@/types';
 
 export default function OrdenCompraDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -40,12 +42,20 @@ export default function OrdenCompraDetallePage() {
   const [motivo, setMotivo] = useState('');
   const [recepcion, setRecepcion] = useState<Record<string, string>>({});
   const [notasRecepcion, setNotasRecepcion] = useState('');
+  const [ingresarInventario, setIngresarInventario] = useState(false);
+  const [bodegaId, setBodegaId] = useState('');
+  const [bodegas, setBodegas] = useState<Warehouse[]>([]);
+  const { config } = useTenantConfig();
+  const modoInventario = config.inventario.recepcionActualizaInventario;
+  const tolerancia = config.compras.toleranciaSobreRecepcionPct;
+  const mueveInventario = modoInventario === 'automatico' || (modoInventario === 'a_eleccion' && ingresarInventario);
 
   const aplicar = useCallback((data: PurchaseOrder) => {
     setOc(data);
     setFechaConfirmada(isoAFechaInput(data.fechaConfirmadaProveedor));
     setRecepcion({});
     setNotasRecepcion('');
+    setIngresarInventario(false);
   }, []);
 
   useEffect(() => {
@@ -54,6 +64,19 @@ export default function OrdenCompraDetallePage() {
       .then((res) => aplicar(res.data))
       .catch(() => setNotFound(true));
   }, [id, aplicar]);
+
+  // Bodegas solo si la configuración de la empresa permite ingresar al inventario.
+  useEffect(() => {
+    if (modoInventario === 'nunca') return;
+    api
+      .get<Warehouse[]>('/warehouses')
+      .then((res) => {
+        const activas = res.data.filter((w) => w.activo);
+        setBodegas(activas);
+        setBodegaId((actual) => actual || (activas.length === 1 ? activas[0].id : ''));
+      })
+      .catch(() => setBodegas([]));
+  }, [modoInventario]);
 
   async function ejecutar(fn: () => Promise<{ data: PurchaseOrder }>, exito: string, fallo: string) {
     setBusy(true);
@@ -76,7 +99,9 @@ export default function OrdenCompraDetallePage() {
   async function handleConfirmar(e: FormEvent) {
     e.preventDefault();
     await transicion(
-      { estado: 'confirmada', fechaConfirmadaProveedor: fechaInputAIso(fechaConfirmada) },
+      fechaConfirmada
+        ? { estado: 'confirmada', fechaConfirmadaProveedor: fechaInputAIso(fechaConfirmada) }
+        : { estado: 'confirmada' },
       'OC confirmada por el proveedor.',
     );
   }
@@ -111,13 +136,19 @@ export default function OrdenCompraDetallePage() {
       toast.error('Indica la cantidad recibida en al menos una línea.');
       return;
     }
+    if (mueveInventario && !bodegaId) {
+      toast.error('Elige la bodega a la que entra lo recibido.');
+      return;
+    }
     await ejecutar(
       () =>
         api.post<PurchaseOrder>(`/purchase-orders/${id}/recepciones`, {
           lineas,
           notas: notasRecepcion.trim() || undefined,
+          ...(modoInventario === 'a_eleccion' ? { actualizarInventario: ingresarInventario } : {}),
+          ...(mueveInventario ? { warehouseId: bodegaId } : {}),
         }),
-      'Recepción registrada.',
+      mueveInventario ? 'Recepción registrada e ingresada al inventario.' : 'Recepción registrada.',
       'No se pudo registrar la recepción.',
     );
   }
@@ -147,7 +178,7 @@ export default function OrdenCompraDetallePage() {
     );
   }
 
-  const alerta = alertaFecha(oc);
+  const alerta = alertaFecha(oc, config.compras.diasAlertaAnticipada);
   const avance = avanceRecepcion(oc);
   const siguientes = TRANSICIONES_OC[oc.estado];
   const puedeRecibir = ESTADOS_RECEPCION_OC.includes(oc.estado);
@@ -214,6 +245,7 @@ export default function OrdenCompraDetallePage() {
                 <tbody>
                   {oc.lineas.map((l) => {
                     const falta = pendiente(l);
+                    const maximo = maximoRecepcion(l, tolerancia);
                     return (
                       <tr key={l.id} className="border-b border-navy/5 last:border-0">
                         <td className="px-5 py-3">
@@ -241,10 +273,10 @@ export default function OrdenCompraDetallePage() {
                               <Input
                                 type="number"
                                 min="0"
-                                max={falta}
+                                max={maximo}
                                 step="any"
                                 aria-label={`Cantidad recibida de ${l.sku}`}
-                                placeholder={`máx. ${formatNumber(falta)}`}
+                                placeholder={`máx. ${formatNumber(maximo)}`}
                                 className="w-32"
                                 value={recepcion[l.id] ?? ''}
                                 onChange={(e) => setRecepcion((r) => ({ ...r, [l.id]: e.target.value }))}
@@ -263,7 +295,22 @@ export default function OrdenCompraDetallePage() {
               <span className="font-semibold text-navy">{formatMoney(totalOc(oc), oc.moneda)}</span>
             </div>
             {puedeRecibir && (
-              <div className="mt-4 flex flex-col gap-3 rounded-lg bg-sky/5 p-3 sm:flex-row sm:items-end">
+              <div className="mt-4 flex flex-col gap-3 rounded-lg bg-sky/5 p-3">
+                <InventarioRecepcion
+                  formId={formId}
+                  modo={modoInventario}
+                  ingresar={ingresarInventario}
+                  onIngresar={setIngresarInventario}
+                  bodegas={bodegas}
+                  bodegaId={bodegaId}
+                  onBodega={setBodegaId}
+                />
+                {tolerancia > 0 && (
+                  <p className="text-xs text-navy/60">
+                    Tu empresa acepta recibir hasta un {formatNumber(tolerancia)}% más de lo pedido en cada línea.
+                  </p>
+                )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1">
                   <label htmlFor={`${formId}-notas-rec`} className="mb-1 block text-sm font-medium text-navy">
                     Nota de recepción (opcional)
@@ -279,6 +326,7 @@ export default function OrdenCompraDetallePage() {
                 <Button type="submit" variant="secondary" disabled={busy}>
                   Registrar recepción
                 </Button>
+                </div>
               </div>
             )}
           </form>
@@ -301,11 +349,14 @@ export default function OrdenCompraDetallePage() {
                   <form onSubmit={handleConfirmar} className="flex flex-col gap-2">
                     <label htmlFor={`${formId}-fconf`} className="font-medium text-navy">
                       Fecha de despacho comprometida por el proveedor
+                      {!config.compras.exigirFechaConfirmacion && (
+                        <span className="font-normal text-navy/50"> (opcional)</span>
+                      )}
                     </label>
                     <Input
                       id={`${formId}-fconf`}
                       type="date"
-                      required
+                      required={config.compras.exigirFechaConfirmacion}
                       value={fechaConfirmada}
                       onChange={(e) => setFechaConfirmada(e.target.value)}
                     />
@@ -427,6 +478,7 @@ export default function OrdenCompraDetallePage() {
                     {formatNumber(r.cantidad)} {r.unidad}
                   </strong>{' '}
                   <span className="text-navy/60">de {r.sku}</span>
+                  {r.warehouse && <span className="text-navy/60"> → {r.warehouse.nombre}</span>}
                   {r.notas && <span className="text-navy/50"> · {r.notas}</span>}
                 </span>
                 <span className="text-xs text-navy/50">{formatDateTime(r.fecha)}</span>
@@ -435,6 +487,80 @@ export default function OrdenCompraDetallePage() {
           </ol>
         )}
       </div>
+    </div>
+  );
+}
+
+// Qué pasa con el inventario al recibir, según la configuración de la empresa.
+function InventarioRecepcion({
+  formId,
+  modo,
+  ingresar,
+  onIngresar,
+  bodegas,
+  bodegaId,
+  onBodega,
+}: {
+  formId: string;
+  modo: 'automatico' | 'a_eleccion' | 'nunca';
+  ingresar: boolean;
+  onIngresar: (v: boolean) => void;
+  bodegas: Warehouse[];
+  bodegaId: string;
+  onBodega: (id: string) => void;
+}) {
+  if (modo === 'nunca') {
+    return (
+      <p className="text-xs text-navy/60">
+        Tu empresa lleva el inventario en su propio sistema: esta recepción no mueve stock en SUTL.
+      </p>
+    );
+  }
+  const mostrarBodega = modo === 'automatico' || ingresar;
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
+      {modo === 'a_eleccion' && (
+        <label className="flex items-center gap-2 text-sm font-medium text-navy sm:pb-2">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky"
+            checked={ingresar}
+            onChange={(e) => onIngresar(e.target.checked)}
+          />
+          Ingresar lo recibido al inventario
+        </label>
+      )}
+      {mostrarBodega && (
+        <div className="flex-1">
+          <label htmlFor={`${formId}-bodega`} className="mb-1 block text-sm font-medium text-navy">
+            Bodega de destino
+          </label>
+          {bodegas.length === 0 ? (
+            <p className="text-xs text-navy/60">
+              No hay bodegas activas.{' '}
+              <Link href="/dashboard/almacen" className="text-sky hover:underline">
+                Crea una en Almacén
+              </Link>
+              .
+            </p>
+          ) : (
+            <select
+              id={`${formId}-bodega`}
+              required
+              value={bodegaId}
+              onChange={(e) => onBodega(e.target.value)}
+              className="w-full rounded-md border border-navy/20 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">Elige una bodega</option>
+              {bodegas.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.nombre}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
     </div>
   );
 }

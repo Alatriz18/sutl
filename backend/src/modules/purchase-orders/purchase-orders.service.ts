@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { EstadoOrdenCompra, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantConfigService } from '../tenant-config/tenant-config.service';
+import { ModoRecepcionInventario } from '../tenant-config/tenant-config.defaults';
 import { CreatePurchaseOrderDto, PurchaseOrderLineDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
 import { TransitionPurchaseOrderDto } from './dto/transition-purchase-order.dto';
@@ -36,13 +38,21 @@ const INCLUDE_DETALLE = {
   proveedor: { select: { id: true, nombre: true, taxId: true, email: true, contactoNombre: true } },
   lineas: {
     orderBy: { createdAt: 'asc' },
-    include: { recepciones: { orderBy: { fecha: 'desc' } } },
+    include: {
+      recepciones: {
+        orderBy: { fecha: 'desc' },
+        include: { warehouse: { select: { id: true, nombre: true } } },
+      },
+    },
   },
 } satisfies Prisma.PurchaseOrderInclude;
 
 @Injectable()
 export class PurchaseOrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantConfig: TenantConfigService,
+  ) {}
 
   findAll(tenantId: string, query: QueryPurchaseOrdersDto = {}) {
     const where: Prisma.PurchaseOrderWhereInput = { tenantId };
@@ -145,12 +155,13 @@ export class PurchaseOrdersService {
     const data: Prisma.PurchaseOrderUpdateManyMutationInput = { estado: destino };
     if (destino === 'confirmada') {
       const fecha = dto.fechaConfirmadaProveedor ?? orden.fechaConfirmadaProveedor;
-      if (!fecha) {
+      const config = await this.tenantConfig.getEfectiva(tenantId);
+      if (!fecha && config.compras.exigirFechaConfirmacion) {
         throw new BadRequestException(
           'Para confirmar la OC indica la fecha comprometida por el proveedor (fechaConfirmadaProveedor)',
         );
       }
-      data.fechaConfirmadaProveedor = fecha;
+      if (fecha) data.fechaConfirmadaProveedor = fecha;
     }
     if (destino === 'despachada') {
       data.fechaDespacho = dto.fechaDespacho ?? new Date();
@@ -194,23 +205,33 @@ export class PurchaseOrdersService {
       }
     }
 
+    const config = await this.tenantConfig.getEfectiva(tenantId);
+    const factorTolerancia = 1 + config.compras.toleranciaSobreRecepcionPct / 100;
+    const bodegaId = await this.resolverBodegaRecepcion(
+      tenantId,
+      config.inventario.recepcionActualizaInventario,
+      dto,
+    );
+
     await this.prisma.$transaction(async (tx) => {
       for (const item of dto.lineas) {
         const linea = lineasPorId.get(item.lineaId)!;
         // Incremento condicional y atómico: dos recepciones simultáneas no
-        // pueden sumar más de lo pedido.
+        // pueden sumar más de lo pedido (+ la tolerancia que acepte el tenant).
         const { count } = await tx.purchaseOrderLine.updateMany({
           where: {
             id: item.lineaId,
             tenantId,
             purchaseOrderId: id,
-            cantidadRecibida: { lte: linea.cantidad - item.cantidad + EPSILON },
+            cantidadRecibida: { lte: linea.cantidad * factorTolerancia - item.cantidad + EPSILON },
           },
           data: { cantidadRecibida: { increment: item.cantidad } },
         });
         if (count === 0) {
+          const tolerancia = config.compras.toleranciaSobreRecepcionPct;
           throw new BadRequestException(
-            `La recepción de ${linea.sku} excede la cantidad pendiente de la OC`,
+            `La recepción de ${linea.sku} excede la cantidad pendiente de la OC` +
+              (tolerancia > 0 ? ` (incluida la tolerancia de ${tolerancia}%)` : ''),
           );
         }
         await tx.purchaseOrderReceipt.create({
@@ -219,9 +240,13 @@ export class PurchaseOrdersService {
             purchaseOrderLineId: item.lineaId,
             cantidad: item.cantidad,
             responsableId: userId,
+            warehouseId: bodegaId,
             notas: dto.notas,
           },
         });
+        if (bodegaId) {
+          await this.ingresarAInventario(tx, tenantId, userId, bodegaId, orden.numero, linea, item.cantidad);
+        }
       }
 
       const lineas = await tx.purchaseOrderLine.findMany({
@@ -240,6 +265,100 @@ export class PurchaseOrdersService {
     });
 
     return this.findOne(tenantId, id);
+  }
+
+  // Decide, según la configuración del tenant, si la recepción suma al
+  // inventario de SUTL. Devuelve la bodega destino, o null si no lo mueve.
+  // Pedidos contradictorios con la configuración se rechazan en vez de
+  // ignorarse en silencio.
+  private async resolverBodegaRecepcion(
+    tenantId: string,
+    modo: ModoRecepcionInventario,
+    dto: RegisterReceiptDto,
+  ): Promise<string | null> {
+    if (modo === 'nunca') {
+      if (dto.actualizarInventario || dto.warehouseId) {
+        throw new BadRequestException(
+          'Tu empresa está configurada para no mover inventario al recibir OCs (el inventario se lleva en otro sistema)',
+        );
+      }
+      return null;
+    }
+    if (modo === 'a_eleccion' && !dto.actualizarInventario) {
+      if (dto.warehouseId) {
+        throw new BadRequestException(
+          'Indicaste una bodega pero no actualizarInventario: true; confirma si lo recibido entra al inventario',
+        );
+      }
+      return null;
+    }
+    if (modo === 'automatico' && dto.actualizarInventario === false) {
+      throw new BadRequestException(
+        'Tu empresa está configurada para que toda recepción de OC entre al inventario',
+      );
+    }
+    if (!dto.warehouseId) {
+      throw new BadRequestException('Indica la bodega a la que entra lo recibido (warehouseId)');
+    }
+    const bodega = await this.prisma.warehouse.count({
+      where: { id: dto.warehouseId, tenantId, activo: true },
+    });
+    if (bodega === 0) {
+      throw new NotFoundException('Bodega no encontrada');
+    }
+    return dto.warehouseId;
+  }
+
+  // Suma lo recibido al ítem del SKU en esa bodega (lo crea si no existe) y
+  // deja el movimiento de entrada con la OC como referencia.
+  private async ingresarAInventario(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+    warehouseId: string,
+    numeroOc: string,
+    linea: { sku: string; descripcion: string; unidad: string },
+    cantidad: number,
+  ) {
+    // Serializa ingresos simultáneos del mismo SKU en la misma bodega para no
+    // crear dos ítems duplicados; el lock se libera al cerrar la transacción.
+    const clave = `${tenantId}:${warehouseId}:${linea.sku}`;
+    await tx.$queryRaw`SELECT 1 FROM (SELECT pg_advisory_xact_lock(hashtext(${clave}))) AS l`;
+
+    const existente = await tx.inventoryItem.findFirst({
+      where: { tenantId, warehouseId, sku: linea.sku },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (existente && existente.unidad !== linea.unidad) {
+      throw new BadRequestException(
+        `El SKU ${linea.sku} está en inventario en "${existente.unidad}" y la OC lo pide en "${linea.unidad}"; unifica la unidad antes de ingresarlo`,
+      );
+    }
+    const item = existente
+      ? await tx.inventoryItem.update({
+          where: { id: existente.id, tenantId },
+          data: { cantidad: { increment: cantidad } },
+        })
+      : await tx.inventoryItem.create({
+          data: {
+            tenantId,
+            warehouseId,
+            sku: linea.sku,
+            descripcion: linea.descripcion,
+            unidad: linea.unidad,
+            cantidad,
+          },
+        });
+    await tx.stockMovement.create({
+      data: {
+        tenantId,
+        inventoryItemId: item.id,
+        tipo: 'entrada',
+        cantidad,
+        responsableId: userId,
+        notas: `Recepción OC ${numeroOc}`,
+      },
+    });
   }
 
   // El proveedor debe ser un Partner de tipo proveedor del mismo tenant.

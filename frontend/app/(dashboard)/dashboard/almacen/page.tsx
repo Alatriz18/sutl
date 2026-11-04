@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/lib/toast-context';
-import { extractApiError } from '@/lib/format';
+import { extractApiError, formatNumber } from '@/lib/format';
 import { InventoryItem, Warehouse } from '@/types';
 
 export default function AlmacenPage() {
@@ -145,9 +145,8 @@ export default function AlmacenPage() {
                       <td className="px-4 py-3 text-navy/70">{i.descripcion}</td>
                       <td className="px-4 py-3 text-navy/60">{i.warehouse?.nombre ?? '—'}</td>
                       <td className="px-4 py-3 text-navy/60">{i.ubicacion?.codigo ?? '—'}</td>
-                      <td className="px-4 py-3 text-navy">
-                        {i.cantidad} {i.unidad}
-                        {i.cantidad !== 1 ? 's' : ''}
+                      <td className="px-4 py-3 tabular-nums text-navy">
+                        {formatNumber(i.cantidad)} <span className="text-navy/50">{i.unidad}</span>
                       </td>
                     </tr>
                   ))}
@@ -208,6 +207,8 @@ export default function AlmacenPage() {
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="number"
+                  min="0"
+                  step="any"
                   placeholder="Cantidad"
                   required
                   value={itemForm.cantidad}

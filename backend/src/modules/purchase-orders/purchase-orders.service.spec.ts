@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PurchaseOrdersService, TRANSICIONES } from './purchase-orders.service';
+import { TenantConfigService } from '../tenant-config/tenant-config.service';
+import { ConfigOperacion, PERFILES } from '../tenant-config/tenant-config.defaults';
 
 // Prueba unitaria con Prisma mockeado: cubre las reglas de negocio de la OC
 // (máquina de estados, recepciones, proveedor del mismo tenant). El flujo real
@@ -18,8 +20,10 @@ describe('PurchaseOrdersService', () => {
     purchaseOrderLine: { updateMany: jest.Mock; findMany: jest.Mock };
     purchaseOrderReceipt: { create: jest.Mock };
     partner: { findFirst: jest.Mock };
+    warehouse: { count: jest.Mock };
     $transaction: jest.Mock;
   };
+  let config: ConfigOperacion;
 
   const ordenBase = {
     id: 'oc-1',
@@ -43,12 +47,18 @@ describe('PurchaseOrdersService', () => {
       },
       purchaseOrderReceipt: { create: jest.fn() },
       partner: { findFirst: jest.fn() },
+      warehouse: { count: jest.fn().mockResolvedValue(1) },
       $transaction: jest.fn(),
     };
+    config = structuredClone(PERFILES.general.config);
     prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma));
 
     const moduleRef = await Test.createTestingModule({
-      providers: [PurchaseOrdersService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        PurchaseOrdersService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: TenantConfigService, useValue: { getEfectiva: jest.fn(async () => config) } },
+      ],
     }).compile();
 
     service = moduleRef.get(PurchaseOrdersService);
@@ -115,6 +125,15 @@ describe('PurchaseOrdersService', () => {
       await expect(
         service.transicion('tenant-a', 'oc-1', { estado: 'confirmada' }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('si la empresa no exige fecha de confirmación, se puede confirmar sin ella', async () => {
+      config.compras.exigirFechaConfirmacion = false;
+      prisma.purchaseOrder.findFirst.mockResolvedValue({ ...ordenBase, estado: 'emitida' });
+      await service.transicion('tenant-a', 'oc-1', { estado: 'confirmada' });
+      expect(prisma.purchaseOrder.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { estado: 'confirmada' } }),
+      );
     });
 
     it('cancelar exige motivo', async () => {
@@ -194,6 +213,55 @@ describe('PurchaseOrdersService', () => {
       expect(prisma.purchaseOrder.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ data: { estado: 'recibida_parcial' } }),
       );
+    });
+
+    it('la tolerancia de sobre-recepción del tenant amplía el límite del incremento condicional', async () => {
+      config.compras.toleranciaSobreRecepcionPct = 5;
+      prisma.purchaseOrder.findFirst.mockResolvedValue(despachada);
+      prisma.purchaseOrderLine.findMany.mockResolvedValue([{ cantidad: 100, cantidadRecibida: 104 }]);
+      await service.registrarRecepcion('tenant-a', 'user-1', 'oc-1', {
+        lineas: [{ lineaId: 'linea-1', cantidad: 104 }],
+      });
+      const where = prisma.purchaseOrderLine.updateMany.mock.calls[0][0].where;
+      // límite = 100 * 1.05 - 104 = 1 (+ epsilon)
+      expect(where.cantidadRecibida.lte).toBeCloseTo(1, 6);
+    });
+
+    it('con inventario "nunca" rechaza que se indique una bodega', async () => {
+      config.inventario.recepcionActualizaInventario = 'nunca';
+      prisma.purchaseOrder.findFirst.mockResolvedValue(despachada);
+      await expect(
+        service.registrarRecepcion('tenant-a', 'user-1', 'oc-1', {
+          lineas: [{ lineaId: 'linea-1', cantidad: 10 }],
+          warehouseId: 'bodega-1',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('con inventario "automatico" exige la bodega', async () => {
+      config.inventario.recepcionActualizaInventario = 'automatico';
+      prisma.purchaseOrder.findFirst.mockResolvedValue(despachada);
+      await expect(
+        service.registrarRecepcion('tenant-a', 'user-1', 'oc-1', {
+          lineas: [{ lineaId: 'linea-1', cantidad: 10 }],
+        }),
+      ).rejects.toThrow(/bodega/);
+    });
+
+    it('la bodega debe ser del tenant', async () => {
+      config.inventario.recepcionActualizaInventario = 'automatico';
+      prisma.purchaseOrder.findFirst.mockResolvedValue(despachada);
+      prisma.warehouse.count.mockResolvedValue(0);
+      await expect(
+        service.registrarRecepcion('tenant-a', 'user-1', 'oc-1', {
+          lineas: [{ lineaId: 'linea-1', cantidad: 10 }],
+          warehouseId: 'bodega-de-otro',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.warehouse.count).toHaveBeenCalledWith({
+        where: { id: 'bodega-de-otro', tenantId: 'tenant-a', activo: true },
+      });
     });
 
     it('recepción completa cierra la OC como recibida', async () => {
