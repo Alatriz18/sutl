@@ -1,0 +1,10 @@
+# Todo cambio necesita revisión del responsable técnico.
+# Con "Require review from Code Owners" activado en la protección de la rama
+# main (ver docs/CONTRIBUTING.md), ningún PR se une sin su aprobación.
+*       @Alatriz18
+
+# Lo más sensible queda explícito, aunque hoy tenga el mismo dueño:
+/backend/prisma/                 @Alatriz18
+/backend/src/common/             @Alatriz18
+/backend/src/modules/auth/       @Alatriz18
+/.github/                        @Alatriz18

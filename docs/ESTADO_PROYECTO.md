@@ -68,9 +68,9 @@ Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemp
 
 | Módulo del plan (§7.1) | Estado en el repo |
 |---|---|
-| Control de OCs (órdenes de compra, líneas, proveedor, responsable) | **Hecho (2026-10-28)**: módulo `purchase-orders` con ciclo de vida, recepciones parciales e historial, aislado por tenant y con tests. Recepción → inventario **hecho (2026-11-03)**, configurable por empresa. Falta vínculo OC ↔ embarque (siguiente paso). |
-| Inventario & cobertura (stock, consumo, safety stock, días de cobertura) | Parcial: `warehouses` tiene inventario/stock; falta consumo, cobertura y safety stock. |
-| Shipment tracking (hitos, ETD/ETA, BL/AWB, contenedor) | Existe: `shipments`, `tracking-events`, `containers`, `carriers`. Falta enlazar embarque ↔ OC. |
+| Control de OCs (órdenes de compra, líneas, proveedor, responsable) | **Hecho (2026-10-28)**: módulo `purchase-orders` con ciclo de vida, recepciones parciales e historial, aislado por tenant y con tests. Recepción → inventario **hecho (2026-11-03)**, configurable por empresa. Vínculo OC ↔ embarque e importación desde CSV **hechos (2026-11-06)**. |
+| Inventario & cobertura (stock, consumo, safety stock, días de cobertura) | **Hecho v1 (2026-11-06)**: parámetros por SKU (consumo, stock de seguridad, lead time), días de cobertura con alerta configurable y entradas previstas desde OCs y embarques. Falta el motor de riesgo que los consume (B1). |
+| Shipment tracking (hitos, ETD/ETA, BL/AWB, contenedor) | Existe: `shipments`, `tracking-events`, `containers`, `carriers`. Embarque ↔ OC **enlazado (2026-11-06)**. |
 | Movimientos nacionales (despacho, recepción, POD) | Parcial: `fleet`. Falta POD y recepción conectada a OC. |
 | Documentos (factura, packing list, BL, certificados) | Existe `documents`. Falta checklist por operación y vencimientos. |
 | Exception engine (reglas, severidad, SLA, responsable, escalamiento) | Parcial: `alerts`. Falta SLA, responsable y escalamiento. |
@@ -84,6 +84,72 @@ Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemp
 Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contratos de naviera, flota) responden al cliente *transportista* anterior. No se borran, pero dejan de ser el foco; el backlog nuevo arranca por **OCs → vínculo OC↔embarque↔inventario → motor de riesgo → centro de excepciones + tareas**.
 
 ## Historial de cambios
+
+### 2026-11-06 — Vínculo OC ↔ embarque, cobertura de inventario, importación CSV, ADRs y proceso de PR
+Tareas del cronograma A1, A3, A5 (CSV) y A6 cerradas en la semana 5, adelantadas respecto del plan; A2 queda a falta de un paso en GitHub.
+
+**Vínculo OC ↔ embarque (A1)**
+- Modelo `ShipmentPurchaseOrderLine`: cantidad de cada línea de OC que viaja en cada embarque. Una línea se reparte en varios embarques y un embarque trae líneas de varias OCs. Un solo registro por par embarque + línea.
+- API: `POST /purchase-orders/:id/embarques` (cantidad 0 quita la línea) y `DELETE /purchase-orders/:id/embarques/:shipmentId`. El detalle del envío lista la carga de OCs que trae.
+- Reglas:
+  - Solo OCs emitida, confirmada, despachada o recibida parcial.
+  - El embarque no puede estar entregado y debe ser del tenant (404 si no).
+  - La suma asignada de una línea no puede superar lo pedido más la tolerancia de la empresa.
+  - Las filas de la línea se bloquean (`FOR UPDATE`), así que dos asignaciones simultáneas no sobrepasan lo pedido; lo cubre una prueba de concurrencia.
+- Ajuste configurable nuevo `compras.vincularEmbarqueDespachaOc`: al vincular un embarque a una OC confirmada la marca como despachada. Por perfil: manufactura y comercio sí; general y ERP propio no.
+- Web:
+  - La OC muestra la columna «En camino» y la tarjeta «Embarques», con el formulario para vincular o quitar carga.
+  - La alerta de fecha ahora usa la **ETA real** del embarque, que pesa más que la promesa del proveedor.
+  - El detalle del envío muestra las OCs que viajan en él.
+
+**Cobertura de inventario (A6)**
+- Modelo `InventoryPolicy` por SKU: consumo diario, stock de seguridad, lead time y existencias externas.
+- API: `GET /inventory-coverage`, `GET|PUT /inventory-policies`, `DELETE /inventory-policies/:id` e `importar`.
+- Cada fila trae stock, días de cobertura, bajo seguridad, bajo umbral, lo pendiente de OCs vivas, lo que ya viaja y la próxima ETA. Es el insumo del motor de riesgo (B1).
+- Ajuste configurable nuevo `inventario.diasCoberturaAlerta`: umbral de alerta, 15 días en general, 30 en manufactura, 20 en comercio.
+- **Empresas con inventario en su ERP (modo «nunca»)**: el stock sale de las existencias que reportan por SKU (a mano o por CSV), no de Almacén; en los otros modos esas existencias se rechazan.
+- Pantalla nueva `/dashboard/cobertura` (Supply Control), con filtros, búsqueda y edición de parámetros.
+
+**Importación desde CSV (A5)**
+- `POST /purchase-orders/importar` y `POST /inventory-policies/importar`.
+  - Cada fila se valida con las mismas reglas que la API normal y los errores se informan fila por fila.
+  - `simular` valida sin guardar.
+  - Las filas con el mismo N° de OC forman una OC; una OC con una fila inválida no se importa a medias.
+  - Las OCs que ya existen se omiten, así que la carga es repetible.
+  - Proveedor por RUC o nombre, solo del propio tenant; opción de crear los que no existan, y solo si su OC se importa.
+- `ImportMapping`: el mapeo de columnas se guarda **por empresa** (`GET|PUT /import-mappings/:tipo`), sanitizado.
+- Asistente en la web: detecta el separador (Excel en español usa «;») y la codificación (UTF-8 o Windows-1252), sugiere columnas por nombre, interpreta números como 1.234,56 y fechas como 15/12/2026, muestra una vista previa, valida y luego importa. Pantallas `/dashboard/compras/importar` y `/dashboard/cobertura/importar`.
+- **Limitación conocida**: lee CSV, no `.xlsx` directo (en Excel: Guardar como → CSV). Queda como tarea A12. Un número con un separador y exactamente tres dígitos detrás, como «1.234», se lee como 1234 (lo habitual en la región); la vista previa muestra cómo se interpretó.
+
+**Defectos corregidos al probar las importaciones**
+- Un lote de miles de filas devolvía **500**: Express limita el cuerpo JSON a 100 KB y el filtro global convertía ese error en un 500 genérico. Ahora solo las dos rutas de importación aceptan hasta 5 MB (`common/body-limits.ts`) y el resto de la API conserva su límite.
+- El filtro global de excepciones (`http-exception.filter.ts`) respeta los 4xx del parser (413 cuerpo demasiado grande, 400 JSON mal formado) en vez de dar 500, y **registra en el log los errores inesperados**, que antes se perdían en silencio.
+- Trampa de Nest: para decidir si ya hay un parser JSON mira el *nombre* de la función del middleware. Montar el de Express directo (se llama `jsonParser`) hacía que Nest no registrara el global y toda la API dejara de leer el cuerpo. Se envuelve en una función anónima; está comentado en el código.
+- En la pantalla de cobertura el texto `sr-only` de la tabla estiraba toda la página en celular (427 px de desborde): el contenedor con scroll ahora es `relative`.
+
+**Proceso y documentación (A2 parcial, A3)**
+- ADRs en `docs/adr/`: 001 multi-tenancy por fila (con las reglas obligatorias de aislamiento), 002 Postgres + Mongo y 003 configuración por empresa.
+- `.github/pull_request_template.md` con la Definición de Hecho, `.github/CODEOWNERS`, `docs/CONTRIBUTING.md` y badge de CI en el README. El CI ahora corre también en `develop` y ejecuta las pruebas unitarias del frontend (`npm run test:unit`).
+- **Falta (solo el dueño del repo)**: activar la protección de `main` y `develop` en GitHub y crear `develop`; los pasos están en `docs/CONTRIBUTING.md`. `gh` no tiene sesión en esta máquina y no se puede hacer desde aquí.
+
+**Seed**: 3 embarques (SUTL-DEMO-0011 a 0013) con sus vínculos, existencias en la bodega demo y 6 parámetros por SKU, de modo que la demo muestra la alerta por ETA real y varios SKUs bajo el umbral. Idempotente; verificado corriéndolo dos veces. Migraciones `20261106120000_vinculo_embarques_politicas_importacion` y `20261106130000_existencias_externas_politicas`. Modo demo del frontend al día con las mismas reglas (`src/lib/mock/supply.ts`).
+
+**Tests**
+- Backend: 28 unitarias y 151 e2e, todas en verde. Nuevas: `purchase-order-shipments` (17, incluida concurrencia), `inventory-coverage` (18), `purchase-orders-import` (17, incluidos los mapeos).
+- Frontend: 10 unitarias del lector de CSV y de la normalización de números y fechas (`npm run test:unit`) y 12 de navegador con Playwright, con 3 flujos nuevos.
+- Lint, `tsc` y builds limpios. Verificado además en navegador contra el backend real, en escritorio y celular, sin desborde horizontal.
+- No verifiqué que las pruebas de concurrencia de las asignaciones fallen si se quita el bloqueo (sí lo hice con la de inventario del 3 de nov).
+
+**Re-planificación**: al ir adelantados, la Fase A se cierra en la semana 9 y la Fase B se adelanta 2 semanas (motor de riesgo desde la semana 8). Los hitos del Plan Maestro no se mueven: quedan con colchón. Detalle en `docs/Cronograma_SUTL.pdf`. El PDF pasó a 10 páginas: la nueva segunda página resume la semana 5 y detalla el plan de la semana 6 (9–13 nov); también se adelantaron C1, C2, C5 y C7 para repartir la carga (ninguna semana pasa de 6 tareas en paralelo) y se agregó A12 (leer .xlsx directo).
+
+### 2026-11-04 — Cronograma y hoja de ruta (PDF)
+Pedido de Kevin: un cronograma tipo proyecto con lo que ya existe, lo que falta, tareas y semanas.
+
+- **`docs/Cronograma_SUTL.pdf`** (9 páginas, A4 apaisado): resumen con mapa de cobertura del Business Plan e hitos, lo que ya funciona y lo que no existe, Gantt por semanas (semana 1 = 5 oct 2026, hasta la salida a producción en la semana 25 = 22 mar 2027), detalle de 37 tareas con responsable y dependencias, riesgos, decisiones pendientes y horizonte posterior al go-live.
+- **Fases**: A (MVP operable de abastecimiento, hasta el 11 dic), B (Control Tower: riesgo, excepciones y trabajo humano, hasta el 22 ene), C (portal colaborativo, analítica y panel SaaS, hasta el 19 feb), D (nube, seguridad y salida, en paralelo) y E (comercial y piloto con design partners, en paralelo). Las fechas de hitos son las del Plan Maestro v1.0; el contenido se ajustó al giro del Business Plan 2026.
+- **Ruta crítica**: decidir dónde vive el staging (D1, antes de la Sem 6) → staging en línea (D2) → piloto con un cliente real (E3). Hoy el único entorno activo es local.
+- **Para actualizarlo**: editar `docs/cronograma/data.js` (tareas, semanas, estados) y correr `node docs/cronograma/build.js`; usa el Chromium de Playwright del frontend.
+- Las estimaciones son propuestas mías (±1 semana, equipo de dos personas con Claude Code), no compromisos; las semanas de lo ya hecho son aproximadas.
 
 ### 2026-11-03 — Configuración de la operación por empresa + recepción de OC → inventario
 Pedido de Kevin: cada industria trabaja distinto (unas quieren que la recepción mueva inventario y otras no, algunas llevan el stock en su ERP), así que las reglas que varían entre clientes deben ser **configurables por empresa** en vez de estar fijas en el código.

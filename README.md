@@ -1,5 +1,7 @@
 # SUTL — Sistema Universal de Tracking Logístico
 
+[![CI](https://github.com/Alatriz18/sutl/actions/workflows/ci.yml/badge.svg)](https://github.com/Alatriz18/sutl/actions/workflows/ci.yml)
+
 Plataforma SaaS B2B de tracking logístico multi-tenant para Ecuador/LATAM.
 
 Desarrollado por **SVK Solutions** — Kevin Santana

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   backend:
@@ -93,6 +93,8 @@ jobs:
       - run: npm ci
 
       - run: npm run lint
+
+      - run: npm run test:unit
 
       - run: npm run build
         env:
