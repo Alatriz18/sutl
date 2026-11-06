@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, ClipboardList, PackageCheck, Truck } from 'lucide-react';
+import { AlertTriangle, ClipboardList, PackageCheck, Truck, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,9 +79,17 @@ export default function ComprasPage() {
             Qué se compró, a quién, para cuándo se necesita y cuánto ha llegado.
           </p>
         </div>
-        <Button className="w-full sm:w-auto" onClick={() => router.push('/dashboard/compras/nueva')}>
-          + Nueva OC
-        </Button>
+        <div className="flex gap-2">
+          <Link
+            href="/dashboard/compras/importar"
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-navy/20 bg-white px-3 py-2 text-sm font-medium text-navy hover:bg-navy/5"
+          >
+            <Upload size={14} aria-hidden /> Importar CSV
+          </Link>
+          <Button className="w-full sm:w-auto" onClick={() => router.push('/dashboard/compras/nueva')}>
+            + Nueva OC
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

@@ -20,6 +20,7 @@ import {
   Plug,
   ClipboardList,
   SlidersHorizontal,
+  Gauge,
   type LucideIcon,
 } from 'lucide-react';
 import { RolUsuario } from '@/types';
@@ -52,6 +53,12 @@ export const navGroups: NavGroup[] = [
         href: '/dashboard/compras',
         label: 'Órdenes de compra',
         icon: ClipboardList,
+        roles: ['admin_tenant', 'operador', 'super_admin'],
+      },
+      {
+        href: '/dashboard/cobertura',
+        label: 'Cobertura de inventario',
+        icon: Gauge,
         roles: ['admin_tenant', 'operador', 'super_admin'],
       },
     ],

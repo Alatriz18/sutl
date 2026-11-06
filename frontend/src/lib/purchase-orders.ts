@@ -1,4 +1,4 @@
-import { EstadoOrdenCompra, PurchaseOrder, PurchaseOrderLine } from '@/types';
+import { EmbarqueDeLinea, EstadoOrdenCompra, PurchaseOrder, PurchaseOrderLine } from '@/types';
 
 export const ESTADO_OC_LABELS: Record<EstadoOrdenCompra, string> = {
   borrador: 'Borrador',
@@ -52,6 +52,43 @@ export function maximoRecepcion(
   return Math.max(Math.round(limite * 10000) / 10000, 0);
 }
 
+type ConEmbarques = Pick<PurchaseOrderLine, 'cantidad' | 'cantidadRecibida'> & { embarques?: EmbarqueDeLinea[] };
+
+const redondear = (n: number) => Math.round(n * 10000) / 10000;
+
+// Cantidad de la línea ya asignada a algún embarque (entregado o no).
+export function cantidadAsignada(linea: ConEmbarques) {
+  return redondear((linea.embarques ?? []).reduce((s, e) => s + e.cantidad, 0));
+}
+
+// Lo que viaja ahora mismo: asignado a embarques que aún no se entregan, sin
+// pasar de lo que falta recibir (lo ya entregado y recibido no está «en camino»).
+export function cantidadEnCamino(linea: ConEmbarques) {
+  const enRuta = (linea.embarques ?? []).filter((e) => e.shipment.estado !== 'entregado');
+  return redondear(Math.min(enRuta.reduce((s, e) => s + e.cantidad, 0), pendiente(linea)));
+}
+
+// Lo que todavía se puede asignar a embarques, con la tolerancia de sobre-recepción
+// que acepta la empresa (mismo cálculo que el backend).
+export function porAsignar(linea: ConEmbarques, toleranciaPct: number) {
+  return Math.max(redondear(linea.cantidad * (1 + toleranciaPct / 100) - cantidadAsignada(linea)), 0);
+}
+
+// Llegada más tardía entre los embarques en ruta que traen carga pendiente de
+// esta OC: es lo que realmente determina cuándo estará completa.
+export function etaMasTardia(oc: { lineas?: ConEmbarques[] }): { eta: number; codigoGuia: string } | null {
+  let peor: { eta: number; codigoGuia: string } | null = null;
+  for (const l of oc.lineas ?? []) {
+    if (pendiente(l) <= 0) continue;
+    for (const e of l.embarques ?? []) {
+      if (e.shipment.estado === 'entregado' || !e.shipment.fechaEstimadaLlegada) continue;
+      const eta = new Date(e.shipment.fechaEstimadaLlegada).getTime();
+      if (!peor || eta > peor.eta) peor = { eta, codigoGuia: e.shipment.codigoGuia };
+    }
+  }
+  return peor;
+}
+
 // Avance de recepción de toda la OC, de 0 a 1 (promedio por línea, para que
 // una línea en kg no pese más que otra en unidades).
 export function avanceRecepcion(oc: Pick<PurchaseOrder, 'lineas'>) {
@@ -71,7 +108,7 @@ export type AlertaFechaOc = { nivel: 'rojo' | 'ambar'; texto: string } | null;
 // la planta necesita con lo que el proveedor prometió. diasAlerta viene de la
 // configuración de la empresa (compras.diasAlertaAnticipada).
 export function alertaFecha(
-  oc: Pick<PurchaseOrder, 'estado' | 'fechaRequerida' | 'fechaConfirmadaProveedor'>,
+  oc: Pick<PurchaseOrder, 'estado' | 'fechaRequerida' | 'fechaConfirmadaProveedor'> & { lineas?: ConEmbarques[] },
   diasAlerta = 7,
   ahora = Date.now(),
 ): AlertaFechaOc {
@@ -79,6 +116,14 @@ export function alertaFecha(
   const requerida = new Date(oc.fechaRequerida).getTime();
   if (requerida < ahora) {
     return { nivel: 'rojo', texto: 'Vencida: la fecha requerida ya pasó sin recepción completa' };
+  }
+  // La llegada prevista de un embarque real pesa más que la promesa del proveedor.
+  const tardia = etaMasTardia(oc);
+  if (tardia) {
+    const dias = Math.round((tardia.eta - requerida) / 86400000);
+    if (dias > 0) {
+      return { nivel: 'rojo', texto: `El embarque ${tardia.codigoGuia} llega ${dias} día${dias === 1 ? '' : 's'} después de la fecha requerida` };
+    }
   }
   if (oc.fechaConfirmadaProveedor) {
     const dias = Math.round((new Date(oc.fechaConfirmadaProveedor).getTime() - requerida) / 86400000);

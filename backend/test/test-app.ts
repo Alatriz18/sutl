@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from '../src/app.module';
+import { configurarLimitesImportacion } from '../src/common/body-limits';
 
 // Levanta la app completa (mismo bootstrap que main.ts) contra la base real
 // de Docker Compose (Postgres + Mongo locales) para las pruebas e2e. No usa
@@ -15,6 +16,7 @@ export async function createTestApp(): Promise<INestApplication> {
   const app = moduleRef.createNestApplication();
   app.use(helmet());
   app.use(cookieParser());
+  configurarLimitesImportacion(app);
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
   );

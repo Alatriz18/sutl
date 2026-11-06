@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { configurarLimitesImportacion } from './common/body-limits';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +19,7 @@ async function bootstrap() {
   // documentación de la API de todas formas.
   app.use(helmet(isProduction ? undefined : { contentSecurityPolicy: false }));
   app.use(cookieParser());
+  configurarLimitesImportacion(app);
 
   app.useGlobalPipes(
     new ValidationPipe({

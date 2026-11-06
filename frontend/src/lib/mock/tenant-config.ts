@@ -8,8 +8,8 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     nombre: 'General',
     descripcion: 'Reglas estrictas por defecto: se recibe exactamente lo pedido y cada recepción decide si entra al inventario.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'a_eleccion' },
+      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
+      inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
     },
   },
   {
@@ -17,8 +17,8 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     nombre: 'Manufactura',
     descripcion: 'Materia prima a granel con variación de peso, planificación con más anticipación y recepción directa a bodega.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'automatico' },
+      compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
+      inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
     },
   },
   {
@@ -26,8 +26,8 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     nombre: 'Comercio y distribución',
     descripcion: 'Producto terminado por unidad: se recibe exactamente lo pedido y entra directo al inventario.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'automatico' },
+      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
+      inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
     },
   },
   {
@@ -35,8 +35,8 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     nombre: 'Inventario en ERP propio',
     descripcion: 'La empresa lleva su inventario en su propio ERP o WMS: SUTL controla las OCs y su llegada, pero no mueve stock.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'nunca' },
+      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
+      inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
     },
   },
 ];
@@ -74,6 +74,10 @@ export function actualizarConfigDemo(body: {
   }
   if (c?.diasAlertaAnticipada !== undefined && (!Number.isInteger(c.diasAlertaAnticipada) || c.diasAlertaAnticipada < 1 || c.diasAlertaAnticipada > 90)) {
     return 'Los días de alerta deben ser un entero entre 1 y 90';
+  }
+  const inv = body.configuracion?.inventario;
+  if (inv?.diasCoberturaAlerta !== undefined && (!Number.isInteger(inv.diasCoberturaAlerta) || inv.diasCoberturaAlerta < 1 || inv.diasCoberturaAlerta > 365)) {
+    return 'Los días de cobertura deben ser un entero entre 1 y 365';
   }
   const cambiaPerfil = body.perfil !== undefined && body.perfil !== estado.perfil;
   const base = cambiaPerfil || body.restablecer ? {} : estado.ajustes;

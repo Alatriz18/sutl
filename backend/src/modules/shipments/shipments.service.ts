@@ -25,7 +25,32 @@ export class ShipmentsService {
   async findOne(tenantId: string, id: string) {
     const shipment = await this.prisma.shipment.findFirst({
       where: { id, tenantId },
-      include: { carrier: true, booking: true },
+      include: {
+        carrier: true,
+        booking: true,
+        // Carga de órdenes de compra que viaja en este embarque.
+        ordenesCompraLineas: {
+          where: { tenantId },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            cantidad: true,
+            linea: {
+              select: {
+                id: true,
+                sku: true,
+                descripcion: true,
+                unidad: true,
+                cantidad: true,
+                cantidadRecibida: true,
+                purchaseOrder: {
+                  select: { id: true, numero: true, estado: true, proveedor: { select: { nombre: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
     });
     if (!shipment) {
       throw new NotFoundException('Envío no encontrado');

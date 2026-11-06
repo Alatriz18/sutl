@@ -126,7 +126,95 @@ test.describe('Flujo principal (modo demo)', () => {
 
     await page.getByRole('link', { name: 'Almacén' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Almacén e inventario' })).toBeVisible();
-    await expect(page.getByRole('row', { name: /CAJ-30x40/ })).toContainText('8.000');
+    // CAJ-30x40 ya tenía 12.000 en Almacén: lo recibido (8.000) se suma al mismo ítem.
+    await expect(page.getByRole('row', { name: /CAJ-30x40/ })).toContainText('20.000');
+  });
+
+  // Los datos del modo demo viven en memoria: dentro de cada prueba se navega
+  // por clics (no con page.goto) para no reiniciarlos.
+  async function entrar(page: import('@playwright/test').Page) {
+    await page.goto('/login');
+    await page.getByPlaceholder('admin@demo-transportes.com').fill('admin@demo-transportes.com');
+    await page.getByPlaceholder('••••••••').fill('Demo2026!');
+    await page.getByRole('button', { name: 'Ingresar' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+  }
+
+  test('vínculo OC ↔ embarque: alerta por la ETA real y vincular carga a un embarque', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Órdenes de compra' }).first().click();
+    await page.getByRole('link', { name: 'OC-2026-0418' }).click();
+    await expect(page.getByRole('heading', { name: 'OC-2026-0418' })).toBeVisible();
+    // Un embarque llega 6 días después de la fecha requerida: la alerta usa la ETA real.
+    await expect(page.getByText(/El embarque SUTL-DEMO-0012 llega 6 días después de la fecha requerida/)).toBeVisible();
+    await expect(page.getByRole('link', { name: 'SUTL-DEMO-0011' })).toBeVisible();
+
+    // No se puede asignar más de lo pedido.
+    await page.getByLabel('Vincular un embarque').selectOption({ label: 'SUTL-DEMO-0013 · Guayaquil, EC → Guayaquil, EC' });
+    await page.getByLabel('Cantidad de RES-PET-01 en este embarque').fill('100');
+    await page.getByRole('button', { name: 'Guardar vínculo' }).click();
+    await expect(page.getByText(/excede lo pedido/)).toBeVisible();
+
+    // Una OC confirmada sin embarques: se le vincula uno y el envío muestra la OC.
+    await page.getByRole('link', { name: 'Órdenes de compra' }).first().click();
+    await page.getByRole('link', { name: 'OC-2026-0431' }).click();
+    await page.getByLabel('Vincular un embarque').selectOption({ label: 'SUTL-DEMO-0011 · Ningbo, CN → Guayaquil, EC' });
+    await expect(page.getByLabel('Cantidad de PIG-AZ-02 en este embarque')).toHaveValue('800');
+    await page.getByRole('button', { name: 'Guardar vínculo' }).click();
+    await expect(page.getByText('Embarque vinculado.')).toBeVisible();
+    await page.getByRole('link', { name: 'SUTL-DEMO-0011' }).click();
+    await expect(page.getByRole('heading', { name: 'Órdenes de compra en este embarque' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'OC-2026-0431' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'OC-2026-0418' }).first()).toBeVisible();
+  });
+
+  test('cobertura de inventario: días de cobertura, filtro en riesgo y edición de parámetros', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Cobertura de inventario' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Cobertura de inventario' })).toBeVisible();
+    const fila = (sku: string) => page.getByRole('row', { name: new RegExp(sku) });
+    await expect(fila('RES-PET-01')).toContainText('12 días'); // 18.000 kg / 1.500 por día
+    await expect(fila('RES-PP-07')).toContainText('22,5 días');
+
+    await page.getByRole('button', { name: 'En riesgo' }).click();
+    await expect(fila('PIG-AZ-02')).toBeVisible();
+    await expect(page.getByRole('row', { name: /RES-PP-07/ })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Todos' }).click();
+
+    await page.getByRole('button', { name: 'Editar parámetros de RES-PET-01' }).click();
+    await page.getByLabel('Consumo diario').fill('1000');
+    await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+    await expect(page.getByText('Parámetros guardados.')).toBeVisible();
+    await expect(fila('RES-PET-01')).toContainText('18 días');
+  });
+
+  test('importar OCs desde un CSV de Excel: mapeo automático, validación y carga', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Órdenes de compra' }).first().click();
+    await page.getByRole('link', { name: 'Importar CSV' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Importar órdenes de compra' })).toBeVisible();
+
+    // CSV como lo exporta Excel en español: «;», fechas dd/mm/aaaa y decimales con coma.
+    const csv = [
+      'N° Pedido;Proveedor;Fecha requerida;Código;Descripción;Cantidad;Precio',
+      'OC-CSV-001;Empaques del Litoral S.A.;20/12/2026;TAP-28;Tapa rosca 28 mm;"10.000";0,05',
+      'OC-CSV-001;;;TAP-30;Tapa rosca 30 mm;5000;0,06',
+      'OC-CSV-002;Proveedor Inexistente;20/12/2026;X-1;Algo;10;1',
+    ].join('\r\n');
+    await page.getByLabel('Elegir archivo CSV').setInputFiles({ name: 'pedidos.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf8') });
+
+    await expect(page.getByLabel('N° de OC *')).toHaveValue('N° Pedido');
+    await expect(page.getByLabel('Cantidad *')).toHaveValue('Cantidad');
+    await page.getByRole('button', { name: 'Validar archivo' }).click();
+    await expect(page.getByText('Resultado de la validación')).toBeVisible();
+    await expect(page.getByText(/Proveedor no encontrado: «Proveedor Inexistente»/)).toBeVisible();
+    await expect(page.getByText('Se importará')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Importar 1 OC' }).click();
+    await expect(page.getByText('Importación terminada')).toBeVisible();
+    await page.getByRole('link', { name: /Ver órdenes de compra/ }).click();
+    await expect(page.getByRole('link', { name: 'OC-CSV-001' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'OC-CSV-002' })).toHaveCount(0);
   });
 
   test('tracking público encuentra un envío existente por código de guía', async ({ page }) => {

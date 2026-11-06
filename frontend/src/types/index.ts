@@ -61,6 +61,7 @@ export interface Shipment {
   fechaEstimadaSalida: string | null;
   fechaEstimadaLlegada: string | null;
   estado: EstadoEnvio;
+  ordenesCompraLineas?: CargaOcDeEnvio[];
   createdAt: string;
   updatedAt: string;
 }
@@ -468,8 +469,43 @@ export interface PurchaseOrderLine {
   precioUnitario: number | null;
   cantidadRecibida: number;
   recepciones?: PurchaseOrderReceipt[];
+  // Embarques que traen esta línea y cuánto de ella en cada uno.
+  embarques?: EmbarqueDeLinea[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface EmbarqueDeLinea {
+  id?: string;
+  cantidad: number;
+  shipment: {
+    id: string;
+    codigoGuia: string;
+    estado: EstadoEnvio;
+    fechaEstimadaLlegada: string | null;
+    origen?: string;
+    destino?: string;
+  };
+}
+
+// Carga de órdenes de compra que viaja en un embarque (detalle del envío).
+export interface CargaOcDeEnvio {
+  id: string;
+  cantidad: number;
+  linea: {
+    id: string;
+    sku: string;
+    descripcion: string;
+    unidad: string;
+    cantidad: number;
+    cantidadRecibida: number;
+    purchaseOrder: {
+      id: string;
+      numero: string;
+      estado: EstadoOrdenCompra;
+      proveedor: { nombre: string } | null;
+    };
+  };
 }
 
 export interface PurchaseOrder {
@@ -501,9 +537,11 @@ export interface ConfigOperacion {
     toleranciaSobreRecepcionPct: number;
     diasAlertaAnticipada: number;
     exigirFechaConfirmacion: boolean;
+    vincularEmbarqueDespachaOc: boolean;
   };
   inventario: {
     recepcionActualizaInventario: ModoRecepcionInventario;
+    diasCoberturaAlerta: number;
   };
 }
 
@@ -523,4 +561,50 @@ export interface TenantConfigResponse {
   configuracion: ConfigOperacion;
   ajustes: AjustesOperacion;
   perfiles: PerfilOperacion[];
+}
+
+// Cobertura de inventario (ver backend/src/modules/inventory-coverage).
+export interface FilaCobertura {
+  sku: string;
+  descripcion: string | null;
+  unidad: string | null;
+  stock: number | null;
+  stockOrigen: 'sutl' | 'externo';
+  consumoDiario: number | null;
+  stockSeguridad: number | null;
+  leadTimeDias: number | null;
+  diasCobertura: number | null;
+  bajoSeguridad: boolean;
+  bajoCobertura: boolean;
+  sinPolitica: boolean;
+  unidadesMezcladas: boolean;
+  pendienteOc: number;
+  enCamino: number;
+  proximaEta: string | null;
+  policyId: string | null;
+  existenciasExternasAt: string | null;
+}
+
+export interface CoberturaResponse {
+  umbralDias: number;
+  modoInventario: ModoRecepcionInventario;
+  resumen: { skus: number; conPolitica: number; sinPolitica: number; bajoSeguridad: number; bajoCobertura: number };
+  filas: FilaCobertura[];
+}
+
+export interface InventoryPolicy {
+  id: string;
+  sku: string;
+  consumoDiario: number;
+  stockSeguridad: number;
+  leadTimeDias: number | null;
+  existenciasExternas: number | null;
+  existenciasExternasAt: string | null;
+}
+
+export type TipoImportacion = 'ordenes_compra' | 'politicas_inventario';
+
+export interface ImportMappingResponse {
+  tipo: TipoImportacion;
+  mapeo: Record<string, string> | null;
 }

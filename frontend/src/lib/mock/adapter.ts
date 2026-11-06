@@ -22,6 +22,8 @@ import {
   Webhook,
 } from '@/types';
 import * as db from './data';
+import { MockApiError } from './errors';
+import * as supply from './supply';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
 
@@ -81,13 +83,6 @@ function mintToken(user: User): string {
   return `${header}.${payload}.demo`;
 }
 
-class MockApiError extends Error {
-  response: { status: number; data: { message: string } };
-  constructor(status: number, message: string) {
-    super(message);
-    this.response = { status, data: { message } };
-  }
-}
 
 function ok<T>(config: AxiosRequestConfig, data: T, status = 200): AxiosResponse<T> {
   return {
@@ -212,7 +207,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     if (method === 'get' && m) {
       const shipment = db.shipments.find((s) => s.id === m![1]);
       if (!shipment) throw new MockApiError(404, 'Envío no encontrado.');
-      return delay(ok(config, db.shipmentWithCarrier(shipment)));
+      return delay(ok(config, db.shipmentDetalle(shipment)));
     }
 
     if (method === 'post' && path === '/shipments') {
@@ -380,6 +375,23 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       }
     }
 
+    // --- COBERTURA / POLÍTICAS / MAPEOS --- (mismas reglas que el backend real)
+    if (
+      (path === '/inventory-coverage' || path.startsWith('/inventory-policies') || path.startsWith('/import-mappings')) &&
+      currentUser()?.rol === 'cliente_final'
+    ) {
+      throw new MockApiError(403, 'Forbidden resource');
+    }
+    if (method === 'get' && path === '/inventory-coverage') return delay(ok(config, supply.cobertura()));
+    if (method === 'get' && path === '/inventory-policies') return delay(ok(config, supply.listarPoliticas()));
+    if (method === 'put' && path === '/inventory-policies') return delay(ok(config, supply.guardarPolitica(body)), 240);
+    if (method === 'post' && path === '/inventory-policies/importar') return delay(ok(config, supply.importarPoliticas(body), 201), 320);
+    m = match(path, /^\/inventory-policies\/([^/]+)$/);
+    if (method === 'delete' && m) return delay(ok(config, supply.eliminarPolitica(m[1])));
+    m = match(path, /^\/import-mappings\/([^/]+)$/);
+    if (m && method === 'get') return delay(ok(config, supply.obtenerMapeo(m[1])));
+    if (m && method === 'put') return delay(ok(config, supply.guardarMapeo(m[1], body)));
+
     // --- PURCHASE ORDERS --- (mismas reglas que el backend real)
     if (path.startsWith('/purchase-orders') && currentUser()?.rol === 'cliente_final') {
       throw new MockApiError(403, 'Forbidden resource');
@@ -443,6 +455,14 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       };
       db.purchaseOrders.push(oc);
       return delay(ok(config, db.purchaseOrderExpanded(oc), 201), 280);
+    }
+    if (method === 'post' && path === '/purchase-orders/importar') {
+      return delay(ok(config, supply.importarOcs(body, currentUser()?.tenantId ?? 't-demo', currentUser()?.id ?? null), 201), 320);
+    }
+    m = match(path, /^\/purchase-orders\/([^/]+)\/embarques(?:\/([^/]+))?$/);
+    if (m) {
+      if (method === 'post' && !m[2]) return delay(ok(config, supply.vincularEmbarque(m[1], body), 201), 280);
+      if (method === 'delete' && m[2]) return delay(ok(config, supply.desvincularEmbarque(m[1], m[2])));
     }
     m = match(path, /^\/purchase-orders\/([^/]+)(?:\/(transicion|recepciones))?$/);
     if (m) {

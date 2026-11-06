@@ -200,6 +200,10 @@ model Tenant {
   purchaseOrderLines    PurchaseOrderLine[]
   purchaseOrderReceipts PurchaseOrderReceipt[]
 
+  shipmentPurchaseOrderLines ShipmentPurchaseOrderLine[]
+  inventoryPolicies          InventoryPolicy[]
+  importMappings             ImportMapping[]
+
   @@map("tenants")
 }
 
@@ -307,6 +311,7 @@ model Shipment {
   invoices            Invoice[]
   inventoryItems      InventoryItem[]
   vehicleAssignments  VehicleAssignment[]
+  ordenesCompraLineas ShipmentPurchaseOrderLine[]
 
   @@index([tenantId])
   @@index([carrierId])
@@ -874,6 +879,7 @@ model PurchaseOrderLine {
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   recepciones PurchaseOrderReceipt[]
+  embarques   ShipmentPurchaseOrderLine[]
 
   @@index([tenantId])
   @@index([purchaseOrderId])
@@ -904,4 +910,65 @@ model PurchaseOrderReceipt {
   @@index([tenantId])
   @@index([purchaseOrderLineId])
   @@map("purchase_order_receipts")
+}
+
+// Qué cantidad de cada línea de OC viaja en cada embarque. Una línea puede
+// repartirse en varios embarques y un embarque (o contenedor) puede traer
+// líneas de varias OCs. Un solo registro por par embarque + línea.
+model ShipmentPurchaseOrderLine {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  shipmentId          String
+  purchaseOrderLineId String
+  cantidad            Float
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id])
+  shipment Shipment          @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  linea    PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Cascade)
+
+  @@unique([shipmentId, purchaseOrderLineId])
+  @@index([tenantId])
+  @@index([purchaseOrderLineId])
+  @@map("shipment_purchase_order_lines")
+}
+
+// Parámetros de abastecimiento por SKU: consumo, stock de seguridad y lead
+// time del proveedor. Con el stock de las bodegas dan los días de cobertura.
+model InventoryPolicy {
+  id             String   @id @default(uuid())
+  tenantId       String
+  sku            String
+  consumoDiario  Float
+  stockSeguridad Float    @default(0)
+  leadTimeDias   Int?
+  // Existencias reportadas por el ERP/WMS del cliente. Solo se usan cuando la
+  // empresa configuró que el inventario vive en otro sistema (modo "nunca").
+  existenciasExternas       Float?
+  existenciasExternasAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@map("inventory_policies")
+}
+
+// Mapeo de columnas de las importaciones (Excel/CSV) guardado por empresa:
+// así un cliente con ERP propio carga siempre su mismo formato sin remapear.
+model ImportMapping {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tipo      String
+  mapeo     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, tipo])
+  @@map("import_mappings")
 }

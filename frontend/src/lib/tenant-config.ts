@@ -22,8 +22,8 @@ export const MODO_RECEPCION_LABELS: Record<ModoRecepcionInventario, { titulo: st
 // Lo que la UI asume mientras carga la configuración real. El backend aplica
 // siempre la configuración verdadera; esto solo evita una pantalla vacía.
 export const CONFIG_POR_DEFECTO: ConfigOperacion = {
-  compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true },
-  inventario: { recepcionActualizaInventario: 'a_eleccion' },
+  compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
+  inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
 };
 
 // Caché compartida entre pantallas: la configuración cambia poco y varias

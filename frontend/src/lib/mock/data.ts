@@ -11,6 +11,7 @@ import {
   IntegrationProvider,
   Invoice,
   InventoryItem,
+  InventoryPolicy,
   Partner,
   Payment,
   PurchaseOrder,
@@ -214,6 +215,33 @@ export const shipments: Shipment[] = [
     fechaEstimadaSalida: mesesAtras(5, 1), fechaEstimadaLlegada: mesesAtras(5, 6),
     estado: 'entregado', createdAt: mesesAtras(5, 6), updatedAt: mesesAtras(5, 6),
   },
+  {
+    id: 's11', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0011', tipo: 'importacion', modo: 'maritimo',
+    carrierId: 'c-maersk', bookingId: null, containerId: null, referenciaDocumento: 'MAEU7788110',
+    remitenteNombre: 'Ningbo Polymer Materials Co.', destinatarioNombre: 'Planta Guayaquil',
+    destinatarioEmail: null, origen: 'Ningbo, CN', destino: 'Guayaquil, EC',
+    puertoOrigen: 'Puerto de Ningbo', puertoDestino: 'Puerto de Guayaquil', pesoKg: null,
+    fechaEstimadaSalida: null, fechaEstimadaLlegada: diasAdelante(10),
+    estado: 'en_transito', createdAt: diasAtras(20), updatedAt: diasAtras(2),
+  },
+  {
+    id: 's12', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0012', tipo: 'importacion', modo: 'maritimo',
+    carrierId: 'c-maersk', bookingId: null, containerId: null, referenciaDocumento: 'MAEU7788122',
+    remitenteNombre: 'Ningbo Polymer Materials Co.', destinatarioNombre: 'Planta Guayaquil',
+    destinatarioEmail: null, origen: 'Ningbo, CN', destino: 'Guayaquil, EC',
+    puertoOrigen: 'Puerto de Ningbo', puertoDestino: 'Puerto de Guayaquil', pesoKg: null,
+    fechaEstimadaSalida: null, fechaEstimadaLlegada: diasAdelante(18),
+    estado: 'en_transito', createdAt: diasAtras(15), updatedAt: diasAtras(1),
+  },
+  {
+    id: 's13', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0013', tipo: 'importacion', modo: 'terrestre',
+    carrierId: null, bookingId: null, containerId: null, referenciaDocumento: null,
+    remitenteNombre: 'Empaques del Litoral S.A.', destinatarioNombre: 'Planta Guayaquil',
+    destinatarioEmail: null, origen: 'Guayaquil, EC', destino: 'Guayaquil, EC',
+    puertoOrigen: 'Planta Empaques del Litoral', puertoDestino: 'Puerto de Guayaquil', pesoKg: null,
+    fechaEstimadaSalida: null, fechaEstimadaLlegada: diasAdelante(2),
+    estado: 'en_transito', createdAt: diasAtras(3), updatedAt: diasAtras(1),
+  },
 ];
 
 export function shipmentWithCarrier(s: Shipment): Shipment {
@@ -368,6 +396,18 @@ export const inventoryItems: InventoryItem[] = [
     sku: 'ELEC-4471', descripcion: 'Componentes electrónicos (caja)', cantidad: 120, unidad: 'unidad',
     createdAt: mesesAtras(2), updatedAt: mesesAtras(2),
   },
+  ...(
+    [
+      ['RES-PET-01', 'Resina PET grado botella', 18000, 'kg'],
+      ['RES-PP-07', 'Polipropileno homopolímero', 9000, 'kg'],
+      ['PIG-AZ-02', 'Masterbatch azul', 150, 'kg'],
+      ['CAJ-30x40', 'Caja corrugada 30x40', 12000, 'unidad'],
+      ['ETQ-500', 'Etiqueta autoadhesiva 500 ml', 50000, 'unidad'],
+    ] as const
+  ).map(([sku, descripcion, cantidad, unidad]): InventoryItem => ({
+    id: `inv-${sku}`, tenantId: 't-demo', warehouseId: 'wh-1', ubicacionId: null, shipmentId: null,
+    sku, descripcion, cantidad, unidad, createdAt: mesesAtras(1), updatedAt: mesesAtras(1),
+  })),
 ];
 
 export function inventoryItemExpanded(i: InventoryItem): InventoryItem {
@@ -682,7 +722,78 @@ export const purchaseOrders: PurchaseOrder[] = [
   }),
 ];
 
+// Vínculo OC ↔ embarque: qué cantidad de cada línea de OC viaja en cada embarque.
+export interface ShipmentOcLink {
+  id: string;
+  shipmentId: string;
+  lineaId: string;
+  cantidad: number;
+}
+export const shipmentOcLinks: ShipmentOcLink[] = [
+  { id: 'lk1', shipmentId: 's11', lineaId: 'oc1-l1', cantidad: 25000 },
+  { id: 'lk2', shipmentId: 's11', lineaId: 'oc1-l2', cantidad: 12000 },
+  { id: 'lk3', shipmentId: 's12', lineaId: 'oc1-l1', cantidad: 15000 },
+  { id: 'lk4', shipmentId: 's13', lineaId: 'oc3-l1', cantidad: 8000 },
+];
+
 export function purchaseOrderExpanded(o: PurchaseOrder): PurchaseOrder {
   const prov = partner(o.proveedorId);
-  return { ...o, proveedor: prov ? { id: prov.id, nombre: prov.nombre, taxId: prov.taxId, email: prov.email, contactoNombre: prov.contactoNombre } : undefined };
+  return {
+    ...o,
+    lineas: o.lineas.map((l) => ({
+      ...l,
+      embarques: shipmentOcLinks
+        .filter((k) => k.lineaId === l.id)
+        .flatMap((k) => {
+          const s = shipments.find((x) => x.id === k.shipmentId);
+          return s
+            ? [{ id: k.id, cantidad: k.cantidad, shipment: { id: s.id, codigoGuia: s.codigoGuia, estado: s.estado, fechaEstimadaLlegada: s.fechaEstimadaLlegada, origen: s.origen, destino: s.destino } }]
+            : [];
+        }),
+    })),
+    proveedor: prov ? { id: prov.id, nombre: prov.nombre, taxId: prov.taxId, email: prov.email, contactoNombre: prov.contactoNombre } : undefined,
+  };
 }
+
+// Detalle de un envío con la carga de OCs que viaja en él.
+export function shipmentDetalle(s: Shipment): Shipment {
+  const ocs = purchaseOrders;
+  return {
+    ...shipmentWithCarrier(s),
+    ordenesCompraLineas: shipmentOcLinks
+      .filter((k) => k.shipmentId === s.id)
+      .flatMap((k) => {
+        const oc = ocs.find((o) => o.lineas.some((l) => l.id === k.lineaId));
+        const linea = oc?.lineas.find((l) => l.id === k.lineaId);
+        if (!oc || !linea) return [];
+        const prov = partner(oc.proveedorId);
+        return [
+          {
+            id: k.id,
+            cantidad: k.cantidad,
+            linea: {
+              id: linea.id, sku: linea.sku, descripcion: linea.descripcion, unidad: linea.unidad,
+              cantidad: linea.cantidad, cantidadRecibida: linea.cantidadRecibida,
+              purchaseOrder: { id: oc.id, numero: oc.numero, estado: oc.estado, proveedor: prov ? { nombre: prov.nombre } : null },
+            },
+          },
+        ];
+      }),
+  };
+}
+
+// Parámetros de abastecimiento por SKU (mismos que el seed).
+function politica(sku: string, consumoDiario: number, stockSeguridad: number, leadTimeDias: number): InventoryPolicy {
+  return { id: `pol-${sku}`, sku, consumoDiario, stockSeguridad, leadTimeDias, existenciasExternas: null, existenciasExternasAt: null };
+}
+export const inventoryPolicies: InventoryPolicy[] = [
+  politica('RES-PET-01', 1500, 15000, 45),
+  politica('RES-PP-07', 400, 3000, 45),
+  politica('PIG-AZ-02', 25, 100, 40),
+  politica('CAJ-30x40', 1200, 5000, 10),
+  politica('ETQ-500', 2500, 10000, 10),
+  politica('ELEC-4471', 6, 30, 20),
+];
+
+// Mapeos de columnas guardados por empresa para las importaciones (tipo → campo → columna).
+export const importMappings: Record<string, Record<string, string>> = {};

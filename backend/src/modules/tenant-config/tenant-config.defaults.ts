@@ -18,12 +18,17 @@ export interface ConfigOperacion {
     diasAlertaAnticipada: number;
     // Si confirmar una OC exige la fecha comprometida por el proveedor.
     exigirFechaConfirmacion: boolean;
+    // Si vincular un embarque a una OC confirmada la marca como despachada
+    // (el proveedor ya entregó la carga al transportista).
+    vincularEmbarqueDespachaOc: boolean;
   };
   inventario: {
     // automatico: cada recepción de OC suma al inventario de SUTL (exige bodega).
     // a_eleccion: quien registra la recepción decide si suma o no.
     // nunca: el inventario vive en otro sistema (ERP/WMS del cliente).
     recepcionActualizaInventario: ModoRecepcionInventario;
+    // Días de cobertura por debajo de los cuales un SKU se marca en riesgo.
+    diasCoberturaAlerta: number;
   };
 }
 
@@ -38,32 +43,32 @@ export const PERFILES = {
     nombre: 'General',
     descripcion: 'Reglas estrictas por defecto: se recibe exactamente lo pedido y cada recepción decide si entra al inventario.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'a_eleccion' },
+      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
+      inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
     },
   },
   manufactura: {
     nombre: 'Manufactura',
     descripcion: 'Materia prima a granel con variación de peso, planificación con más anticipación y recepción directa a bodega.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'automatico' },
+      compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
+      inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
     },
   },
   comercio: {
     nombre: 'Comercio y distribución',
     descripcion: 'Producto terminado por unidad: se recibe exactamente lo pedido y entra directo al inventario.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'automatico' },
+      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
+      inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
     },
   },
   erp_externo: {
     nombre: 'Inventario en ERP propio',
     descripcion: 'La empresa lleva su inventario en su propio ERP o WMS: SUTL controla las OCs y su llegada, pero no mueve stock.',
     config: {
-      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true },
-      inventario: { recepcionActualizaInventario: 'nunca' },
+      compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
+      inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
     },
   },
 } satisfies Record<string, PerfilOperacion>;

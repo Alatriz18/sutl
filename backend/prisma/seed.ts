@@ -775,6 +775,87 @@ async function main() {
     }
   }
 
+  // Vínculo OC ↔ embarque: la OC-0418 llega en dos embarques y uno de ellos
+  // arriba DESPUÉS de la fecha requerida (alerta por ETA real en la demo).
+  // Idempotente: embarques por código de guía y vínculos por (embarque, línea).
+  const embarquesOc = [
+    { codigoGuia: 'SUTL-DEMO-0011', origen: 'Ningbo, CN', puertoOrigen: 'Puerto de Ningbo', referenciaDocumento: 'MAEU7788110', estado: 'en_transito' as const, eta: enDias(10) },
+    { codigoGuia: 'SUTL-DEMO-0012', origen: 'Ningbo, CN', puertoOrigen: 'Puerto de Ningbo', referenciaDocumento: 'MAEU7788122', estado: 'en_transito' as const, eta: enDias(18) },
+    { codigoGuia: 'SUTL-DEMO-0013', origen: 'Guayaquil, EC', puertoOrigen: 'Planta Empaques del Litoral', referenciaDocumento: null, estado: 'en_transito' as const, eta: enDias(2) },
+  ];
+  const idEmbarqueOc: Record<string, string> = {};
+  for (const e of embarquesOc) {
+    const existente = await prisma.shipment.findUnique({ where: { codigoGuia: e.codigoGuia } });
+    const envio =
+      existente ??
+      (await prisma.shipment.create({
+        data: {
+          tenantId: demoTenant.id,
+          codigoGuia: e.codigoGuia,
+          tipo: 'importacion',
+          modo: e.codigoGuia === 'SUTL-DEMO-0013' ? 'terrestre' : 'maritimo',
+          remitenteNombre: e.codigoGuia === 'SUTL-DEMO-0013' ? 'Empaques del Litoral S.A.' : 'Ningbo Polymer Materials Co.',
+          destinatarioNombre: 'Planta Guayaquil',
+          origen: e.origen,
+          destino: 'Guayaquil, EC',
+          puertoOrigen: e.puertoOrigen,
+          puertoDestino: 'Puerto de Guayaquil',
+          referenciaDocumento: e.referenciaDocumento,
+          estado: e.estado,
+          fechaEstimadaLlegada: e.eta,
+        },
+      }));
+    idEmbarqueOc[e.codigoGuia] = envio.id;
+  }
+  const vinculosOc = [
+    { oc: 'OC-2026-0418', sku: 'RES-PET-01', guia: 'SUTL-DEMO-0011', cantidad: 25000 },
+    { oc: 'OC-2026-0418', sku: 'RES-PP-07', guia: 'SUTL-DEMO-0011', cantidad: 12000 },
+    { oc: 'OC-2026-0418', sku: 'RES-PET-01', guia: 'SUTL-DEMO-0012', cantidad: 15000 },
+    { oc: 'OC-2026-0442', sku: 'CAJ-30x40', guia: 'SUTL-DEMO-0013', cantidad: 8000 },
+  ];
+  for (const v of vinculosOc) {
+    const linea = await prisma.purchaseOrderLine.findFirst({
+      where: { tenantId: demoTenant.id, sku: v.sku, purchaseOrder: { numero: v.oc } },
+    });
+    if (!linea) continue;
+    await prisma.shipmentPurchaseOrderLine.upsert({
+      where: { shipmentId_purchaseOrderLineId: { shipmentId: idEmbarqueOc[v.guia], purchaseOrderLineId: linea.id } },
+      create: { tenantId: demoTenant.id, shipmentId: idEmbarqueOc[v.guia], purchaseOrderLineId: linea.id, cantidad: v.cantidad },
+      update: {},
+    });
+  }
+
+  // Cobertura de inventario: existencias en la bodega demo y políticas por SKU,
+  // con varios SKUs por debajo del umbral para que se vea la alerta.
+  const bodegaDemo = await prisma.warehouse.findFirst({ where: { tenantId: demoTenant.id, nombre: 'Bodega Guayaquil Central' } });
+  if (bodegaDemo) {
+    const existencias = [
+      { sku: 'RES-PET-01', descripcion: 'Resina PET grado botella', cantidad: 18000, unidad: 'kg' },
+      { sku: 'RES-PP-07', descripcion: 'Polipropileno homopolímero', cantidad: 9000, unidad: 'kg' },
+      { sku: 'PIG-AZ-02', descripcion: 'Masterbatch azul', cantidad: 150, unidad: 'kg' },
+      { sku: 'CAJ-30x40', descripcion: 'Caja corrugada 30x40', cantidad: 12000, unidad: 'unidad' },
+      { sku: 'ETQ-500', descripcion: 'Etiqueta autoadhesiva 500 ml', cantidad: 50000, unidad: 'unidad' },
+    ];
+    for (const e of existencias) {
+      const ya = await prisma.inventoryItem.findFirst({ where: { tenantId: demoTenant.id, warehouseId: bodegaDemo.id, sku: e.sku } });
+      if (!ya) await prisma.inventoryItem.create({ data: { ...e, tenantId: demoTenant.id, warehouseId: bodegaDemo.id } });
+    }
+  }
+  for (const pol of [
+    { sku: 'RES-PET-01', consumoDiario: 1500, stockSeguridad: 15000, leadTimeDias: 45 },
+    { sku: 'RES-PP-07', consumoDiario: 400, stockSeguridad: 3000, leadTimeDias: 45 },
+    { sku: 'PIG-AZ-02', consumoDiario: 25, stockSeguridad: 100, leadTimeDias: 40 },
+    { sku: 'CAJ-30x40', consumoDiario: 1200, stockSeguridad: 5000, leadTimeDias: 10 },
+    { sku: 'ETQ-500', consumoDiario: 2500, stockSeguridad: 10000, leadTimeDias: 10 },
+    { sku: 'ELEC-4471', consumoDiario: 6, stockSeguridad: 30, leadTimeDias: 20 },
+  ]) {
+    await prisma.inventoryPolicy.upsert({
+      where: { tenantId_sku: { tenantId: demoTenant.id, sku: pol.sku } },
+      create: { ...pol, tenantId: demoTenant.id },
+      update: {},
+    });
+  }
+
   // eslint-disable-next-line no-console
   console.log('Seed completado:', {
     superAdmin: 'admin@sutl.dev / SutlAdmin2026!',

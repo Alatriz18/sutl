@@ -10,7 +10,8 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { EstadoBadge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/lib/toast-context';
-import { extractApiError, formatDateTime, formatKg } from '@/lib/format';
+import { extractApiError, formatDateTime, formatKg, formatNumber } from '@/lib/format';
+import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
 import { EstadoEnvio, Shipment, TrackingEvent } from '@/types';
 
 const ESTADOS: EstadoEnvio[] = ['creado', 'en_transito', 'en_aduana', 'entregado', 'incidencia'];
@@ -172,6 +173,49 @@ export default function ShipmentDetailPage() {
           </form>
         </Card>
       </div>
+
+      {(shipment.ordenesCompraLineas?.length ?? 0) > 0 && (
+        <Card className="mt-6">
+          <CardTitle>Órdenes de compra en este embarque</CardTitle>
+          <p className="mt-1 text-sm text-navy/60">Qué carga de qué OC viaja aquí.</p>
+          <div className="-mx-5 mt-3 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="border-y border-navy/5 bg-navy/[0.03] text-navy/60">
+                <tr>
+                  <th className="px-5 py-2 font-medium">OC</th>
+                  <th className="px-3 py-2 font-medium">Proveedor</th>
+                  <th className="px-3 py-2 font-medium">SKU</th>
+                  <th className="px-3 py-2 text-right font-medium">En este embarque</th>
+                  <th className="px-5 py-2 font-medium">Estado de la OC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shipment.ordenesCompraLineas!.map((c) => (
+                  <tr key={c.id} className="border-b border-navy/5 last:border-0">
+                    <td className="px-5 py-3">
+                      <Link href={`/dashboard/compras/${c.linea.purchaseOrder.id}`} className="font-semibold text-sky hover:underline">
+                        {c.linea.purchaseOrder.numero}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3 text-navy/70">{c.linea.purchaseOrder.proveedor?.nombre ?? '—'}</td>
+                    <td className="px-3 py-3">
+                      <span className="font-medium text-navy">{c.linea.sku}</span>
+                      <span className="block text-xs text-navy/50">{c.linea.descripcion}</span>
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      {formatNumber(c.cantidad)} <span className="text-navy/40">{c.linea.unidad}</span>
+                      <span className="block text-xs text-navy/40">de {formatNumber(c.linea.cantidad)} pedidos</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <EstadoOcBadge estado={c.linea.purchaseOrder.estado} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       <div className="mt-6">
         <CardTitle className="mb-3">Historial de eventos</CardTitle>

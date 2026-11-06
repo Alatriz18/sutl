@@ -43,6 +43,24 @@ const INCLUDE_DETALLE = {
         orderBy: { fecha: 'desc' },
         include: { warehouse: { select: { id: true, nombre: true } } },
       },
+      // Embarques que traen esta línea y cuánto de ella (para "en camino" y la ETA real).
+      embarques: {
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          cantidad: true,
+          shipment: {
+            select: {
+              id: true,
+              codigoGuia: true,
+              estado: true,
+              origen: true,
+              destino: true,
+              fechaEstimadaLlegada: true,
+            },
+          },
+        },
+      },
     },
   },
 } satisfies Prisma.PurchaseOrderInclude;
@@ -69,7 +87,19 @@ export class PurchaseOrdersService {
       include: {
         proveedor: { select: { id: true, nombre: true } },
         lineas: {
-          select: { id: true, sku: true, cantidad: true, cantidadRecibida: true, precioUnitario: true },
+          select: {
+            id: true,
+            sku: true,
+            cantidad: true,
+            cantidadRecibida: true,
+            precioUnitario: true,
+            embarques: {
+              select: {
+                cantidad: true,
+                shipment: { select: { id: true, codigoGuia: true, estado: true, fechaEstimadaLlegada: true } },
+              },
+            },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },

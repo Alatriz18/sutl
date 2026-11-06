@@ -3,13 +3,14 @@
 import { FormEvent, useCallback, useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { AlertTriangle, Check } from 'lucide-react';
+import { AlertTriangle, Check, Truck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
+import { EstadoBadge } from '@/components/ui/badge';
 import { ProgressBar } from '@/components/purchase-orders/progress-bar';
 import { useToast } from '@/lib/toast-context';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,9 @@ import {
   TRANSICIONES_OC,
   alertaFecha,
   avanceRecepcion,
+  cantidadAsignada,
+  cantidadEnCamino,
+  porAsignar,
   fechaInputAIso,
   isoAFechaInput,
   maximoRecepcion,
@@ -28,7 +32,9 @@ import {
   totalOc,
 } from '@/lib/purchase-orders';
 import { useTenantConfig } from '@/lib/tenant-config';
-import { PurchaseOrder, Warehouse } from '@/types';
+import { PurchaseOrder, Shipment, Warehouse } from '@/types';
+
+const ESTADOS_VINCULO = ['emitida', 'confirmada', 'despachada', 'recibida_parcial'];
 
 export default function OrdenCompraDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +51,9 @@ export default function OrdenCompraDetallePage() {
   const [ingresarInventario, setIngresarInventario] = useState(false);
   const [bodegaId, setBodegaId] = useState('');
   const [bodegas, setBodegas] = useState<Warehouse[]>([]);
+  const [envios, setEnvios] = useState<Shipment[]>([]);
+  const [embarqueId, setEmbarqueId] = useState('');
+  const [asignacion, setAsignacion] = useState<Record<string, string>>({});
   const { config } = useTenantConfig();
   const modoInventario = config.inventario.recepcionActualizaInventario;
   const tolerancia = config.compras.toleranciaSobreRecepcionPct;
@@ -56,6 +65,8 @@ export default function OrdenCompraDetallePage() {
     setRecepcion({});
     setNotasRecepcion('');
     setIngresarInventario(false);
+    setEmbarqueId('');
+    setAsignacion({});
   }, []);
 
   useEffect(() => {
@@ -77,6 +88,16 @@ export default function OrdenCompraDetallePage() {
       })
       .catch(() => setBodegas([]));
   }, [modoInventario]);
+
+  // Embarques que aún admiten carga, solo si la OC permite vincularlos.
+  const puedeVincular = !!oc && ESTADOS_VINCULO.includes(oc.estado);
+  useEffect(() => {
+    if (!puedeVincular) return;
+    api
+      .get<Shipment[]>('/shipments')
+      .then((res) => setEnvios(res.data.filter((e) => e.estado !== 'entregado')))
+      .catch(() => setEnvios([]));
+  }, [puedeVincular]);
 
   async function ejecutar(fn: () => Promise<{ data: PurchaseOrder }>, exito: string, fallo: string) {
     setBusy(true);
@@ -125,6 +146,50 @@ export default function OrdenCompraDetallePage() {
       setCancelando(false);
       setMotivo('');
     }
+  }
+
+  // Al elegir un embarque se precarga lo ya asignado a él, o lo que falta por asignar.
+  function elegirEmbarque(shipmentId: string) {
+    setEmbarqueId(shipmentId);
+    if (!oc || !shipmentId) {
+      setAsignacion({});
+      return;
+    }
+    const inicial: Record<string, string> = {};
+    for (const l of oc.lineas) {
+      const actual = (l.embarques ?? []).find((x) => x.shipment.id === shipmentId)?.cantidad;
+      const sugerido = actual ?? porAsignar(l, tolerancia);
+      inicial[l.id] = sugerido > 0 ? String(sugerido) : '';
+    }
+    setAsignacion(inicial);
+  }
+
+  async function handleVincular(e: FormEvent) {
+    e.preventDefault();
+    if (!oc || !embarqueId) return;
+    const lineas = oc.lineas.flatMap((l) => {
+      const actual = (l.embarques ?? []).find((x) => x.shipment.id === embarqueId)?.cantidad ?? 0;
+      const nueva = Number(asignacion[l.id] ?? '') || 0;
+      // Una línea en blanco que antes tenía carga en este embarque la quita (cantidad 0).
+      return nueva > 0 || actual > 0 ? [{ lineaId: l.id, cantidad: nueva }] : [];
+    });
+    if (lineas.length === 0) {
+      toast.error('Indica la cantidad de al menos una línea que viaja en este embarque.');
+      return;
+    }
+    await ejecutar(
+      () => api.post<PurchaseOrder>(`/purchase-orders/${id}/embarques`, { shipmentId: embarqueId, lineas }),
+      'Embarque vinculado.',
+      'No se pudo vincular el embarque.',
+    );
+  }
+
+  async function handleDesvincular(shipmentId: string) {
+    await ejecutar(
+      () => api.delete<PurchaseOrder>(`/purchase-orders/${id}/embarques/${shipmentId}`),
+      'Carga quitada del embarque.',
+      'No se pudo quitar la carga del embarque.',
+    );
   }
 
   async function handleRecepcion(e: FormEvent) {
@@ -183,6 +248,18 @@ export default function OrdenCompraDetallePage() {
   const siguientes = TRANSICIONES_OC[oc.estado];
   const puedeRecibir = ESTADOS_RECEPCION_OC.includes(oc.estado);
   const cerrada = oc.estado === 'recibida' || oc.estado === 'cancelada';
+  // Carga agrupada por embarque para mostrarla como una lista de embarques.
+  const embarquesVinculados = Object.values(
+    oc.lineas
+      .flatMap((l) => (l.embarques ?? []).map((e) => ({ ...e, sku: l.sku, unidad: l.unidad })))
+      .reduce<Record<string, { shipment: NonNullable<typeof oc.lineas[number]['embarques']>[number]['shipment']; lineas: { sku: string; unidad: string; cantidad: number }[] }>>(
+        (acc, e) => {
+          (acc[e.shipment.id] ??= { shipment: e.shipment, lineas: [] }).lineas.push({ sku: e.sku, unidad: e.unidad, cantidad: e.cantidad });
+          return acc;
+        },
+        {},
+      ),
+  );
   const historial = oc.lineas
     .flatMap((l) => (l.recepciones ?? []).map((r) => ({ ...r, sku: l.sku, unidad: l.unidad })))
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
@@ -238,6 +315,7 @@ export default function OrdenCompraDetallePage() {
                     <th className="px-3 py-2 text-right font-medium">Pedido</th>
                     <th className="px-3 py-2 text-right font-medium">Recibido</th>
                     <th className="px-3 py-2 text-right font-medium">Pendiente</th>
+                    <th className="px-3 py-2 text-right font-medium">En camino</th>
                     <th className="px-3 py-2 text-right font-medium">Subtotal</th>
                     {puedeRecibir && <th className="px-5 py-2 font-medium">Recibir ahora</th>}
                   </tr>
@@ -267,6 +345,9 @@ export default function OrdenCompraDetallePage() {
                         <td className="px-3 py-3 text-right tabular-nums text-navy/70">
                           {l.precioUnitario == null ? '—' : formatMoney(l.cantidad * l.precioUnitario, oc.moneda)}
                         </td>
+                        <td className="px-3 py-3 text-right tabular-nums text-navy/70">
+                          {cantidadEnCamino(l) > 0 ? formatNumber(cantidadEnCamino(l)) : '—'}
+                        </td>
                         {puedeRecibir && (
                           <td className="px-5 py-3">
                             {falta > 0 && (
@@ -277,7 +358,7 @@ export default function OrdenCompraDetallePage() {
                                 step="any"
                                 aria-label={`Cantidad recibida de ${l.sku}`}
                                 placeholder={`máx. ${formatNumber(maximo)}`}
-                                className="w-32"
+                                className="w-28"
                                 value={recepcion[l.id] ?? ''}
                                 onChange={(e) => setRecepcion((r) => ({ ...r, [l.id]: e.target.value }))}
                               />
@@ -464,6 +545,108 @@ export default function OrdenCompraDetallePage() {
           </Card>
         </div>
       </div>
+
+      <Card className="mt-6">
+        <div className="flex items-center gap-2">
+          <Truck size={18} className="text-sky" aria-hidden />
+          <CardTitle>Embarques</CardTitle>
+        </div>
+        <p className="mt-1 text-sm text-navy/60">
+          Qué parte de cada línea viaja en cada embarque. La llegada prevista de los embarques alimenta la alerta de fecha.
+        </p>
+        {embarquesVinculados.length === 0 ? (
+          <p className="mt-3 text-sm text-navy/50">Todavía no se asignó carga de esta OC a ningún embarque.</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {embarquesVinculados.map((g) => (
+              <li key={g.shipment.id} className="rounded-lg border border-navy/10 p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link href={`/dashboard/shipments/${g.shipment.id}`} className="font-semibold text-sky hover:underline">
+                      {g.shipment.codigoGuia}
+                    </Link>
+                    <EstadoBadge estado={g.shipment.estado} />
+                    <span className="text-navy/60">
+                      Llegada prevista: {g.shipment.fechaEstimadaLlegada ? formatDate(g.shipment.fechaEstimadaLlegada) : 'sin fecha'}
+                    </span>
+                  </div>
+                  {puedeVincular && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => handleDesvincular(g.shipment.id)}
+                      className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                      aria-label={`Quitar la carga de esta OC del embarque ${g.shipment.codigoGuia}`}
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+                <ul className="mt-2 text-navy/70">
+                  {g.lineas.map((l) => (
+                    <li key={l.sku}>
+                      <strong className="text-navy">{formatNumber(l.cantidad)}</strong> {l.unidad} de {l.sku}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {puedeVincular && (
+          <form onSubmit={handleVincular} className="mt-4 border-t border-navy/5 pt-4">
+            <label htmlFor={`${formId}-embarque`} className="mb-1 block text-sm font-medium text-navy">
+              Vincular un embarque
+            </label>
+            <select
+              id={`${formId}-embarque`}
+              value={embarqueId}
+              onChange={(e) => elegirEmbarque(e.target.value)}
+              className="w-full max-w-xl rounded-md border border-navy/20 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">Elige un embarque</option>
+              {envios.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.codigoGuia} · {e.origen} → {e.destino}
+                </option>
+              ))}
+            </select>
+            {envios.length === 0 && (
+              <p className="mt-1 text-xs text-navy/50">
+                No hay embarques activos. <Link href="/dashboard/shipments/nuevo" className="text-sky hover:underline">Crea uno</Link> y vuelve.
+              </p>
+            )}
+            {embarqueId && (
+              <div className="mt-3">
+                <p className="mb-2 text-xs text-navy/60">Cantidad de cada línea que viaja en este embarque (deja en blanco las que no).</p>
+                <div className="space-y-2">
+                  {oc.lineas.map((l) => (
+                    <div key={l.id} className="flex flex-wrap items-center gap-3 text-sm">
+                      <span className="w-40 font-medium text-navy">{l.sku}</span>
+                      <span className="w-52 text-xs text-navy/50">
+                        Pedido {formatNumber(l.cantidad)} · asignado {formatNumber(cantidadAsignada(l))} {l.unidad}
+                      </span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="any"
+                        className="w-36"
+                        aria-label={`Cantidad de ${l.sku} en este embarque`}
+                        value={asignacion[l.id] ?? ''}
+                        onChange={(e) => setAsignacion((a) => ({ ...a, [l.id]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <Button type="submit" className="mt-3" disabled={busy}>
+                  Guardar vínculo
+                </Button>
+              </div>
+            )}
+          </form>
+        )}
+      </Card>
 
       <div className="mt-6">
         <CardTitle className="mb-3">Historial de recepciones</CardTitle>

@@ -263,6 +263,29 @@ export default function ConfiguracionPage() {
                 </label>
               </Campo>
             </div>
+            <div className="sm:col-span-2">
+              <Campo
+                label="Embarque vinculado"
+                sugerido={sugerido.compras.vincularEmbarqueDespachaOc ? 'marca la OC despachada' : 'no cambia la OC'}
+                ajustado={ajustado('compras', 'vincularEmbarqueDespachaOc')}
+              >
+                <label className="flex items-start gap-2 text-sm text-navy">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky"
+                    disabled={!puedeEditar}
+                    checked={form.compras.vincularEmbarqueDespachaOc}
+                    onChange={(e) => set('compras', { vincularEmbarqueDespachaOc: e.target.checked })}
+                  />
+                  <span>
+                    Al vincular un embarque a una OC confirmada, marcarla como despachada
+                    <span className="block text-xs text-navy/50">
+                      Úsalo si cargar un embarque significa que el proveedor ya entregó la carga al transportista.
+                    </span>
+                  </span>
+                </label>
+              </Campo>
+            </div>
           </div>
         </Card>
 
@@ -302,6 +325,31 @@ export default function ConfiguracionPage() {
               ))}
             </div>
           </fieldset>
+          <div className="mt-5 max-w-sm">
+            <Campo
+              htmlFor={`${id}-cobertura`}
+              label="Alerta de cobertura de inventario"
+              ayuda="Un SKU se marca en riesgo cuando sus días de cobertura bajan de este número."
+              sugerido={`${sugerido.inventario.diasCoberturaAlerta} días`}
+              ajustado={ajustado('inventario', 'diasCoberturaAlerta')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-cobertura`}
+                  type="number"
+                  min={1}
+                  max={365}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.inventario.diasCoberturaAlerta) ? '' : form.inventario.diasCoberturaAlerta}
+                  onChange={(e) => set('inventario', { diasCoberturaAlerta: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">días</span>
+              </div>
+            </Campo>
+          </div>
         </Card>
 
         {puedeEditar && (

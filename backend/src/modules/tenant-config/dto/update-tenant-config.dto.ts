@@ -27,12 +27,22 @@ export class ComprasConfigDto {
   @IsOptional()
   @IsBoolean()
   exigirFechaConfirmacion?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  vincularEmbarqueDespachaOc?: boolean;
 }
 
 export class InventarioConfigDto {
   @IsOptional()
   @IsIn(MODOS_RECEPCION_INVENTARIO)
   recepcionActualizaInventario?: ModoRecepcionInventario;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  diasCoberturaAlerta?: number;
 }
 
 export class ConfiguracionDto {
