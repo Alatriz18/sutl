@@ -33,6 +33,22 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: sutl_redis
+    restart: unless-stopped
+    # appendonly: los trabajos pendientes sobreviven a un reinicio del contenedor.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - sutl_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -47,6 +63,8 @@ services:
       postgres:
         condition: service_healthy
       mongo:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./backend:/app
@@ -72,3 +90,4 @@ services:
 volumes:
   sutl_postgres_data:
   sutl_mongo_data:
+  sutl_redis_data:

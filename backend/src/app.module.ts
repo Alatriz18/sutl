@@ -26,6 +26,7 @@ import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.
 import { TenantConfigModule } from './modules/tenant-config/tenant-config.module';
 import { InventoryCoverageModule } from './modules/inventory-coverage/inventory-coverage.module';
 import { ImportMappingsModule } from './modules/import-mappings/import-mappings.module';
+import { QueuesModule } from './modules/queues/queues.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -80,6 +81,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     TenantConfigModule,
     InventoryCoverageModule,
     ImportMappingsModule,
+    QueuesModule.forRoot(),
   ],
   providers: [
     // Orden importa: Throttler primero (corta abuso antes de tocar DB/JWT),

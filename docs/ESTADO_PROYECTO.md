@@ -18,7 +18,7 @@ El Plan Maestro es la referencia de timeline/roles/fases (ver PDF entregado por 
 - Sin Terraform / AWS — ECS, RDS, Atlas, S3, CloudFront, WAF, Secrets Manager: nada desplegado.
 - Sin Prisma baseline real contra una base gestionada (Supabase/Atlas) — el schema y las migraciones ya corren limpio contra Postgres real (hoy local), falta solo apuntar `DATABASE_URL`/`DIRECT_URL` a un proyecto Supabase real y repetir `prisma migrate deploy`.
 - Sin ADRs (`/docs` solo tiene `ARQUITECTURA.md`, falta ADR-001 multi-tenancy y ADR-002 Postgres+Mongo formales).
-- Sin Redis/BullMQ, sin WebSockets, sin integración real de couriers/pagos/SRI — estos módulos del backend existen como CRUDs pero sin las piezas de "Fase 2 avanzada" del plan (API keys/webhooks por tenant ya existen como UI de demo en el frontend — ver módulo Integraciones — pero no como backend real; adaptador de couriers real sigue pendiente).
+- Redis/BullMQ ya existe como base (2026-11-07); faltan las tareas que corren sobre él. Sin WebSockets, sin integración real de couriers/pagos/SRI — estos módulos del backend existen como CRUDs pero sin las piezas de "Fase 2 avanzada" del plan (API keys/webhooks por tenant ya existen como UI de demo en el frontend — ver módulo Integraciones — pero no como backend real; adaptador de couriers real sigue pendiente).
 - Sin observabilidad (Sentry, CloudWatch, Better Stack).
 - Cobertura de tests: el patrón de aislamiento por tenant ya tiene test e2e dedicado en los 17 módulos corregidos (`shipments`, `users`, `partners`, `invoices`, `contracts`, `rates`, `quotes`, `bookings`, `containers`, `fleet` (vehículos/conductores/asignaciones/mantenimiento), `warehouses`/inventario, `alerts`, `notifications`, `tracking-events`) — ver changelog de hoy. `shipments` además tiene test unitario. Lo que falta: cobertura unitaria del resto de servicios (solo hay e2e) y tests para módulos sin lógica de mutación propia (`documents`, `reports`, `subscriptions`, `audit` — CRUDs simples sin el patrón de riesgo que motivó esta pasada).
 - Deuda de dependencias: quedan 12 vulnerabilidades de `npm audit` en el backend sin resolver (bajaron de 31) — las que faltan requieren bumps mayores (`@nestjs/cli` v12, `@nestjs/platform-express` v12 por `multer`) que no se aplicaron a ciegas; revisar deliberadamente en una tarea aparte.
@@ -84,6 +84,15 @@ Fuente: `SUTL_Business_Plan_2026.pdf` entregado por Kevin el 2026-10-28. **Reemp
 Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contratos de naviera, flota) responden al cliente *transportista* anterior. No se borran, pero dejan de ser el foco; el backlog nuevo arranca por **OCs → vínculo OC↔embarque↔inventario → motor de riesgo → centro de excepciones + tareas**.
 
 ## Historial de cambios
+
+### 2026-11-07 — Redis + BullMQ: base de colas de trabajo (A7)
+
+- **Redis 7** en Docker Compose (puerto local 6380, persistencia `appendonly`) y como servicio en el CI. Variable `REDIS_URL` en `backend/.env.example`; sin ella las colas quedan deshabilitadas y la API sigue funcionando (aviso en el log).
+- Módulo `queues` (`@nestjs/bullmq` 11 + `bullmq` 6; la 12 de `@nestjs/bullmq` es solo ESM y no corre en este backend CommonJS): cola `mantenimiento` con reintentos con backoff exponencial, un trabajo programado «latido» cada minuto (idempotente al arrancar) y procesador que falla —no descarta— los trabajos desconocidos.
+- `QueuesService.encolar()` exige `tenantId`: todo trabajo de negocio debe declarar su empresa y su procesador filtrar por ella. Sobre esta base van el motor de reglas de riesgo (B1), las notificaciones (A11) y los webhooks (A10).
+- `GET /api/queues/estado`: solo `super_admin` (403 para admin de empresa, 401 sin token).
+- Las pruebas usan otro prefijo de Redis (`sutl-test`): vaciar su cola no borra el programador del entorno de desarrollo (error que me pasó en la primera corrida).
+- Verificado: 7 pruebas nuevas (158 e2e en total, verdes) y el latido corriendo solo en el backend real.
 
 ### 2026-11-06 — Vínculo OC ↔ embarque, cobertura de inventario, importación CSV, ADRs y proceso de PR
 Tareas del cronograma A1, A3, A5 (CSV) y A6 cerradas en la semana 5, adelantadas respecto del plan; A2 queda a falta de un paso en GitHub.
