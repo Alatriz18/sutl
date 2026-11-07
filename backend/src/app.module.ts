@@ -27,6 +27,7 @@ import { TenantConfigModule } from './modules/tenant-config/tenant-config.module
 import { InventoryCoverageModule } from './modules/inventory-coverage/inventory-coverage.module';
 import { ImportMappingsModule } from './modules/import-mappings/import-mappings.module';
 import { QueuesModule } from './modules/queues/queues.module';
+import { limiteGlobal } from './common/rate-limit';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -43,7 +44,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 120,
+        limit: limiteGlobal,
       },
     ]),
     MongooseModule.forRootAsync({

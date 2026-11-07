@@ -71,8 +71,8 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Email</label>
-              <Input
+              <label htmlFor="email-1" className="mb-1 block text-sm font-medium text-navy">Email</label>
+              <Input id="email-1"
                 type="email"
                 required
                 autoComplete="off"
@@ -82,8 +82,8 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Contraseña</label>
-              <Input
+              <label htmlFor="contrasena-2" className="mb-1 block text-sm font-medium text-navy">Contraseña</label>
+              <Input id="contrasena-2"
                 type="password"
                 required
                 autoComplete="new-password"

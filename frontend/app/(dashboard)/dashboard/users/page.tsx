@@ -117,6 +117,7 @@ export default function UsersPage() {
                           <span className="capitalize text-navy/60">super admin</span>
                         ) : (
                           <select
+                            aria-label={`Rol de ${u.nombre}`}
                             className="rounded-md border border-navy/20 px-2 py-1 text-xs capitalize"
                             value={u.rol}
                             disabled={busyId === u.id}
@@ -181,6 +182,7 @@ export default function UsersPage() {
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
             />
             <select
+              aria-label="Rol del usuario"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={form.rol}
               onChange={(e) => setForm((f) => ({ ...f, rol: e.target.value as RolUsuario }))}

@@ -203,6 +203,7 @@ export default function FacturacionPage() {
           <CardTitle>Nueva factura</CardTitle>
           <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
             <select
+              aria-label="Tipo de factura"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={form.tipo}
               onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as TipoFactura }))}
@@ -211,6 +212,7 @@ export default function FacturacionPage() {
               <option value="cxp">Cuenta por pagar (proveedor)</option>
             </select>
             <select
+              aria-label="Contraparte"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               required
               value={form.partnerId}
@@ -232,10 +234,11 @@ export default function FacturacionPage() {
               onChange={(e) => setForm((f) => ({ ...f, montoTotal: e.target.value }))}
             />
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">
+              <label htmlFor="fecha-vencimiento" className="mb-1 block text-sm font-medium text-navy">
                 Fecha de vencimiento (opcional)
               </label>
               <Input
+                id="fecha-vencimiento"
                 type="date"
                 value={form.fechaVencimiento}
                 onChange={(e) => setForm((f) => ({ ...f, fechaVencimiento: e.target.value }))}

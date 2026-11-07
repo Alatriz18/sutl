@@ -156,6 +156,7 @@ export default function TarifasPage() {
           <CardTitle>Nueva tarifa</CardTitle>
           <form onSubmit={handleSubmitRate} className="mt-3 flex flex-col gap-3">
             <select
+              aria-label="Naviera o aerolínea"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               required
               value={rateForm.carrierId}
@@ -184,6 +185,7 @@ export default function TarifasPage() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <select
+                aria-label="Modo de transporte"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 value={rateForm.modo}
                 onChange={(e) => setRateForm((f) => ({ ...f, modo: e.target.value as ModoTransporte }))}
@@ -193,6 +195,7 @@ export default function TarifasPage() {
                 <option value="terrestre">Terrestre</option>
               </select>
               <select
+                aria-label="Tipo de envío"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 value={rateForm.tipo}
                 onChange={(e) => setRateForm((f) => ({ ...f, tipo: e.target.value as TipoEnvio }))}

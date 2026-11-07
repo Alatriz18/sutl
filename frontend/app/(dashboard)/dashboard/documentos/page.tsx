@@ -172,6 +172,7 @@ export default function DocumentosPage() {
           <CardTitle>Subir documento</CardTitle>
           <form onSubmit={handleUpload} className="mt-3 flex flex-col gap-3">
             <select
+              aria-label="Envío del documento"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               required
               value={form.shipmentId}
@@ -185,6 +186,7 @@ export default function DocumentosPage() {
               ))}
             </select>
             <select
+              aria-label="Tipo de documento"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={form.tipo}
               onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as TipoDocumento }))}
@@ -196,6 +198,7 @@ export default function DocumentosPage() {
               ))}
             </select>
             <input
+              aria-label="Archivo del documento"
               ref={fileInputRef}
               type="file"
               required

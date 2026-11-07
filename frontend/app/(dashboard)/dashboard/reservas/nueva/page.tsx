@@ -90,8 +90,8 @@ function NuevaReservaForm() {
         </CardTitle>
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-navy">Cliente</label>
-            <select
+            <label htmlFor="cliente-1" className="mb-1 block text-sm font-medium text-navy">Cliente</label>
+            <select id="cliente-1"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               required
               value={form.clienteId}
@@ -107,8 +107,8 @@ function NuevaReservaForm() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Tipo</label>
-              <select
+              <label htmlFor="tipo-2" className="mb-1 block text-sm font-medium text-navy">Tipo</label>
+              <select id="tipo-2"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 value={form.tipo}
                 onChange={(e) => update('tipo', e.target.value as TipoEnvio)}
@@ -118,8 +118,8 @@ function NuevaReservaForm() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Modo</label>
-              <select
+              <label htmlFor="modo-3" className="mb-1 block text-sm font-medium text-navy">Modo</label>
+              <select id="modo-3"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 value={form.modo}
                 onChange={(e) => update('modo', e.target.value as ModoTransporte)}
@@ -131,8 +131,8 @@ function NuevaReservaForm() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-navy">Naviera/aerolínea (opcional)</label>
-            <select
+            <label htmlFor="naviera-aerolinea-opcional-4" className="mb-1 block text-sm font-medium text-navy">Naviera/aerolínea (opcional)</label>
+            <select id="naviera-aerolinea-opcional-4"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={form.carrierId}
               onChange={(e) => update('carrierId', e.target.value)}
@@ -147,19 +147,19 @@ function NuevaReservaForm() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Origen</label>
-              <Input required value={form.origen} onChange={(e) => update('origen', e.target.value)} />
+              <label htmlFor="origen-5" className="mb-1 block text-sm font-medium text-navy">Origen</label>
+              <Input id="origen-5" required value={form.origen} onChange={(e) => update('origen', e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Destino</label>
-              <Input required value={form.destino} onChange={(e) => update('destino', e.target.value)} />
+              <label htmlFor="destino-6" className="mb-1 block text-sm font-medium text-navy">Destino</label>
+              <Input id="destino-6" required value={form.destino} onChange={(e) => update('destino', e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-navy">
+            <label htmlFor="fecha-estimada-de-carga-opcion-7" className="mb-1 block text-sm font-medium text-navy">
               Fecha estimada de carga (opcional)
             </label>
-            <Input
+            <Input id="fecha-estimada-de-carga-opcion-7"
               type="date"
               value={form.fechaEstimadaCarga}
               onChange={(e) => update('fechaEstimadaCarga', e.target.value)}

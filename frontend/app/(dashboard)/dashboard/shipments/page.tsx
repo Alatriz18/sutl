@@ -70,6 +70,7 @@ export default function ShipmentsListPage() {
           />
         </div>
         <select
+          aria-label="Filtrar por estado"
           className="rounded-md border border-navy/20 px-3 py-2 text-sm sm:w-56"
           value={filtroEstado}
           onChange={(e) => setFiltroEstado(e.target.value as EstadoEnvio | 'todos')}

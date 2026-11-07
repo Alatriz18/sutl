@@ -85,6 +85,14 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-07 (cont.) — Accesibilidad, e2e contra el backend real y límites de login configurables (A8)
+
+- **Auditoría de accesibilidad con axe-core** (`frontend/e2e/accesibilidad.spec.ts`): 29 pantallas (landing, login y todo el panel, incluidos los formularios de alta y los detalles) con las reglas WCAG 2.0/2.1 A y AA. Encontró y se corrigieron: 25 `select`/`input` sin nombre accesible (ahora con `aria-label` o con `<label htmlFor>`), el interruptor de alertas sin nombre, 12 etiquetas que no estaban asociadas a su campo y un gráfico de pastel con sectores sin nombre (se oculta el SVG y se ofrece el mismo dato como texto para lectores de pantalla). Resultado: 0 violaciones. **Fuera de este corte: contraste de color** (se revisa aparte con el diseño de marca).
+- **Suite e2e contra el backend real** (`frontend/e2e-real/`, `npm run test:e2e:real`, config `playwright.real.config.ts`): 9 flujos con JWT y servidor reales — login válido e inválido, redirección sin sesión, crear envío → detalle → tracking público, crear y emitir OC, cobertura de inventario, **aislamiento entre empresas en el navegador** (otra empresa no ve los envíos de la demo) y visibilidad de secciones por rol (con control positivo). Falla rápido con un mensaje claro si el backend no está arriba o la base no está sembrada. **Pendiente:** correrla en el CI (necesita levantar backend + semilla + navegadores en el job).
+- **Límites de peticiones configurables por entorno** (`backend/src/common/rate-limit.ts`): `LOGIN_RATE_LIMIT` (defecto 5/min) y `RATE_LIMIT` (defecto 120/min). Un valor inválido usa el defecto y **en producción solo pueden endurecerse, nunca subir**. Hizo falta porque la suite de navegador hace más de 5 logins por minuto. Probado: 5 pruebas unitarias del parseo y una e2e que verifica el 429 al exceder el límite. En el `.env` local quedaron holgados (200 y 2000); el `.env.example` documenta los defaults.
+- **Hallazgo de proceso:** `next dev` en modo real ocupaba el puerto 3002 y Playwright lo reutilizó, así que la primera corrida de la auditoría se hizo en el modo equivocado y dio fallos falsos de login; ya está anotado en la memoria de trampas del entorno.
+- Verificado: backend 38 unitarias + 159 e2e; frontend 10 unitarias + 41 Playwright en modo demo + 9 contra el backend real; tsc y lint limpios. El cronograma (PDF) marca A7 y A8 como hechas.
+
 ### 2026-11-07 — Redis + BullMQ: base de colas de trabajo (A7)
 
 - **Redis 7** en Docker Compose (puerto local 6380, persistencia `appendonly`) y como servicio en el CI. Variable `REDIS_URL` en `backend/.env.example`; sin ella las colas quedan deshabilitadas y la API sigue funcionando (aviso en el log).

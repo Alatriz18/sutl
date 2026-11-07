@@ -43,7 +43,17 @@ function describirCondicion(alerta: Alert): string {
   return 'Sin evaluación automática';
 }
 
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
+function Toggle({
+  checked,
+  onChange,
+  disabled,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  label: string;
+}) {
   return (
     <button
       onClick={onChange}
@@ -53,6 +63,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
         checked ? 'bg-sky' : 'bg-navy/20',
       )}
       aria-pressed={checked}
+      aria-label={label}
     >
       <span
         className={cn(
@@ -170,7 +181,12 @@ export default function AlertasPage() {
                           <p className="mt-0.5 text-sm text-navy/60">{describirCondicion(a)}</p>
                         </div>
                       </div>
-                      <Toggle checked={a.activo} disabled={busyId === a.id} onChange={() => toggleActivo(a)} />
+                      <Toggle
+                        checked={a.activo}
+                        disabled={busyId === a.id}
+                        onChange={() => toggleActivo(a)}
+                        label={`Alerta: ${TIPO_LABEL[a.tipo]}`}
+                      />
                     </div>
                     {ev && ev.disparados.length > 0 && (
                       <div className="mt-3 border-t border-navy/5 pt-3">
@@ -201,6 +217,7 @@ export default function AlertasPage() {
           <CardTitle>Nueva regla</CardTitle>
           <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
             <select
+              aria-label="Tipo de alerta"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={tipo}
               onChange={(e) => setTipo(e.target.value as TipoAlerta)}
@@ -213,6 +230,7 @@ export default function AlertasPage() {
             {tipo === 'retraso' && (
               <>
                 <select
+                  aria-label="Estado que se vigila"
                   className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                   value={estado}
                   onChange={(e) => setEstado(e.target.value as EstadoEnvio)}
@@ -224,6 +242,7 @@ export default function AlertasPage() {
                   ))}
                 </select>
                 <Input
+                  aria-label="Días de umbral"
                   type="number"
                   min={1}
                   placeholder="Días de umbral"
@@ -236,6 +255,7 @@ export default function AlertasPage() {
             {tipo === 'documento_faltante' && (
               <>
                 <select
+                  aria-label="Tipo de documento requerido"
                   className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                   value={tipoDocumento}
                   onChange={(e) => setTipoDocumento(e.target.value as TipoDocumento)}

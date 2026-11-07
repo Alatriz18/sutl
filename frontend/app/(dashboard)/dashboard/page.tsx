@@ -225,9 +225,16 @@ export default function DashboardOverviewPage() {
                 Sin datos todavía
               </p>
             ) : (
+              <>
+              {/* Los sectores del gráfico no tienen nombre accesible: se oculta el SVG y se ofrece el mismo dato como texto. */}
+              <p className="sr-only">
+                Envíos por tipo: {porTipo.map((d) => `${d.name} ${d.value}`).join(', ')}
+              </p>
+              <div aria-hidden="true" className="h-full">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart accessibilityLayer={false}>
                   <Pie
+                    rootTabIndex={-1}
                     data={porTipo}
                     dataKey="value"
                     nameKey="name"
@@ -247,6 +254,8 @@ export default function DashboardOverviewPage() {
                   <Tooltip contentStyle={{ borderRadius: 8, borderColor: CHART_INK.gridline, fontSize: 13 }} />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
+              </>
             )}
           </div>
         </Card>

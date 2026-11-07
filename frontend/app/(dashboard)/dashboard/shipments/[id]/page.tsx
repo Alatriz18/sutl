@@ -138,8 +138,8 @@ export default function ShipmentDetailPage() {
           <CardTitle>Registrar evento de tracking</CardTitle>
           <form onSubmit={handleAddEvento} className="mt-3 flex flex-col gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Nuevo estado</label>
-              <select
+              <label htmlFor="nuevo-estado-1" className="mb-1 block text-sm font-medium text-navy">Nuevo estado</label>
+              <select id="nuevo-estado-1"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 value={form.estado}
                 onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value as EstadoEnvio }))}
@@ -152,16 +152,16 @@ export default function ShipmentDetailPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Ubicación</label>
-              <Input
+              <label htmlFor="ubicacion-2" className="mb-1 block text-sm font-medium text-navy">Ubicación</label>
+              <Input id="ubicacion-2"
                 value={form.ubicacion}
                 onChange={(e) => setForm((f) => ({ ...f, ubicacion: e.target.value }))}
                 placeholder="Ej. Bodega Guayaquil"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-navy">Descripción</label>
-              <Input
+              <label htmlFor="descripcion-3" className="mb-1 block text-sm font-medium text-navy">Descripción</label>
+              <Input id="descripcion-3"
                 value={form.descripcion}
                 onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
                 placeholder="Ej. Paquete recibido en bodega"

@@ -143,6 +143,7 @@ export default function ContenedoresPage() {
                     </ul>
                   )}
                   <select
+                    aria-label="Asignar un envío al contenedor"
                     className="mt-3 w-full rounded-md border border-navy/20 px-2 py-1.5 text-xs"
                     disabled={asignando === c.id}
                     value=""
@@ -176,6 +177,7 @@ export default function ContenedoresPage() {
               onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
             />
             <select
+              aria-label="Naviera"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={form.carrierId}
               onChange={(e) => setForm((f) => ({ ...f, carrierId: e.target.value }))}

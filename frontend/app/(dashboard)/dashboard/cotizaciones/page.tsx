@@ -156,6 +156,7 @@ export default function CotizacionesPage() {
           <CardTitle>Nueva cotización</CardTitle>
           <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
             <select
+              aria-label="Cliente"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               required
               value={form.clienteId}
@@ -170,6 +171,7 @@ export default function CotizacionesPage() {
             </select>
             <div className="grid grid-cols-2 gap-2">
               <select
+                aria-label="Tipo de envío"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 value={form.tipo}
                 onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as TipoEnvio }))}
@@ -178,6 +180,7 @@ export default function CotizacionesPage() {
                 <option value="importacion">Importación</option>
               </select>
               <select
+                aria-label="Modo de transporte"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 value={form.modo}
                 onChange={(e) => setForm((f) => ({ ...f, modo: e.target.value as ModoTransporte }))}
@@ -188,6 +191,7 @@ export default function CotizacionesPage() {
               </select>
             </div>
             <select
+              aria-label="Naviera o aerolínea"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={form.carrierId}
               onChange={(e) => setForm((f) => ({ ...f, carrierId: e.target.value }))}

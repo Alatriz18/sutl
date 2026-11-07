@@ -1,3 +1,4 @@
+import { limiteLogin } from '../../common/rate-limit';
 import {
   Body,
   Controller,
@@ -49,7 +50,7 @@ export class AuthController {
   // Anti fuerza bruta: 5 intentos por minuto por IP, mucho más estricto que
   // el límite global de la app (120/min) — el login es el endpoint más
   // valioso para un atacante.
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: limiteLogin, ttl: 60000 } })
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')

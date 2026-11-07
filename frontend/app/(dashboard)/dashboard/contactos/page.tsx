@@ -145,6 +145,7 @@ export default function ContactosPage() {
           <CardTitle>Nuevo contacto</CardTitle>
           <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
             <select
+              aria-label="Tipo de contacto"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
               value={form.tipo}
               onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as TipoPartner }))}

@@ -181,6 +181,7 @@ export default function AlmacenPage() {
             <CardTitle>Nuevo ítem</CardTitle>
             <form onSubmit={handleCreateItem} className="mt-3 flex flex-col gap-3">
               <select
+                aria-label="Bodega"
                 className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
                 required
                 value={itemForm.warehouseId}
