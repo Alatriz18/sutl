@@ -68,7 +68,7 @@ const PHASES = [
       { id: 'A7', name: 'Redis + BullMQ (colas y tareas programadas)', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
         what: 'Redis en Docker y CI, cola de mantenimiento con un trabajo programado que corre solo, reintentos y estado solo para super_admin. Base para evaluar reglas y enviar notificaciones y webhooks sin frenar la API.', dep: '—' },
       { id: 'A9', name: 'Deuda técnica: npm audit y cobertura ≥ 70%', owner: 'Dev', s: 8, e: 9, st: 'pendiente',
-        what: '12 vulnerabilidades pendientes (piden subir @nestjs/cli y platform-express a v12) y pruebas unitarias de los servicios sin cobertura.', dep: '—' },
+        what: 'Avance 7 nov: se quitó la crítica del backend (bcrypt 6) y las 4 altas del frontend sin cambio de versión mayor. Quedan 12 en el backend (migrar NestJS 10 → 12) y 2 en el frontend (Next 14 → 16, el crítico es de next): requieren tu aprobación porque cambian el stack. Falta además subir la cobertura de pruebas unitarias a ≥ 70%.', dep: '—' },
       { id: 'A10', name: 'API pública v1: API keys y webhooks por empresa', owner: 'Kevin', s: 7, e: 8, st: 'pendiente',
         what: 'Claves por empresa con límite de uso y webhooks de cambios de OC y embarques; hoy solo existe la pantalla de demo.', dep: 'A7' },
       { id: 'A11', name: 'Notificaciones reales: correo y WhatsApp', owner: 'Dev', s: 7, e: 8, st: 'pendiente',

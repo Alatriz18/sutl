@@ -85,6 +85,13 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-07 (cont. 3) — Dependencias vulnerables: lo que se pudo arreglar sin cambiar el stack (parte de A9)
+
+- **Backend:** `bcrypt` 5 → 6 (API compatible; verificado hash/compare y los 159 e2e). Quita la vulnerabilidad **crítica** (`tar`, que llegaba por `node-pre-gyp` de bcrypt). `npm audit fix` sin `--force` no cambió más. De 1 crítica + 12 altas + 17 moderadas (con dev) quedan en producción **7 altas y 5 moderadas**.
+- **Frontend:** `npm audit fix` actualizó axios, follow-redirects, nanoid y source-map-js. Quedan 2 en producción: `next` (la crítica; DoS por Image Optimizer / Server Components y request smuggling en rewrites) y `postcss`, que solo se corrigen subiendo **Next 14 → 16**.
+- **Decisión pendiente de Kevin:** subir NestJS 10 → 12 en el backend (arregla las 12 restantes; hay que revisar `@nestjs/bullmq`, que hoy va en la 11 por ser la 12 solo ESM) y Next 14 → 16 en el frontend. Ambas cambian el stack fijado en CLAUDE.md, por eso no las hice. Mitigación mientras tanto: el despliegue es solo local, así que la exposición actual es baja; **deben resolverse antes del staging (D1)**.
+- Verificado: tsc, lint, build, 38 unitarias + 159 e2e del backend y 13 unitarias del frontend, todo en verde.
+
 ### 2026-11-07 (cont. 2) — Importación desde Excel (.xlsx) (A12)
 
 - El asistente de importación (OCs y parámetros por SKU) acepta **.xlsx** además de CSV, con `read-excel-file` 9 (carga diferida: solo se descarga al elegir un Excel). Lee la primera hoja; la fila 1 son los encabezados.
