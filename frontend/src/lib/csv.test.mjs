@@ -2,7 +2,7 @@
 // Ejecutar: npm run test:unit (usa el ejecutor de pruebas integrado de Node).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizarFecha, normalizarNumero, parseCsv } from './csv.ts';
+import { celdaATexto, normalizarFecha, normalizarNumero, parseCsv, tablaDesdeHoja } from './csv.ts';
 
 test('detecta el delimitador: punto y coma (Excel en español), coma, tabulador y barra', () => {
   assert.equal(parseCsv('a;b;c\n1;2;3').delimitador, ';');
@@ -81,3 +81,37 @@ test('normalizarFecha rechaza fechas que no existen y textos', () => {
     assert.equal(normalizarFecha(x), null, `«${x}»`);
   }
 });
+
+test('celdas de Excel: los números reales no se reinterpretan como miles', () => {
+  assert.equal(normalizarNumero(celdaATexto(1.234)), 1.234);
+  assert.equal(normalizarNumero(celdaATexto(0.125)), 0.125);
+  assert.equal(normalizarNumero(celdaATexto(1234.567)), 1234.567);
+  assert.equal(normalizarNumero(celdaATexto(1234)), 1234);
+  assert.equal(normalizarNumero(celdaATexto(-2.5)), -2.5);
+  assert.equal(normalizarNumero(celdaATexto(1e-7)), 0.0000001);
+  assert.equal(celdaATexto(Number.NaN), '');
+});
+
+test('celdas de Excel: fechas, textos, vacíos y booleanos', () => {
+  assert.equal(celdaATexto(new Date(Date.UTC(2026, 10, 9))), '2026-11-09');
+  assert.equal(normalizarFecha(celdaATexto(new Date(Date.UTC(2026, 10, 9)))), '2026-11-09');
+  assert.equal(celdaATexto(new Date('x')), '');
+  assert.equal(celdaATexto('  hola '), 'hola');
+  assert.equal(celdaATexto(null), '');
+  assert.equal(celdaATexto(undefined), '');
+  assert.equal(celdaATexto(true), 'Sí');
+});
+
+test('hoja de Excel: encabezados únicos, filas vacías descartadas y línea real de la hoja', () => {
+  const t = tablaDesdeHoja([
+    ['SKU', 'SKU', null, 'Cantidad'],
+    ['A-1', 'x', null, 10],
+    [null, null, null, null],
+    ['A-2', 'y', null, 1.5],
+  ]);
+  assert.deepEqual(t.encabezados, ['SKU', 'SKU (2)', 'Columna 3', 'Cantidad']);
+  assert.deepEqual(t.filas, [['A-1', 'x', '', '10'], ['A-2', 'y', '', '1.5']]);
+  assert.deepEqual(t.lineas, [2, 4]);
+  assert.deepEqual(tablaDesdeHoja([]).filas, []);
+});
+

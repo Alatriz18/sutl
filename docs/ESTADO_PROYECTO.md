@@ -85,6 +85,14 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-07 (cont. 2) — Importación desde Excel (.xlsx) (A12)
+
+- El asistente de importación (OCs y parámetros por SKU) acepta **.xlsx** además de CSV, con `read-excel-file` 9 (carga diferida: solo se descarga al elegir un Excel). Lee la primera hoja; la fila 1 son los encabezados.
+- **Celdas tipadas, sin ambigüedad:** un número real de Excel nunca se reinterpreta (1,234 no se lee como 1234 por el criterio de miles del CSV: `celdaATexto` lo normaliza), las fechas llegan como fecha, las filas totalmente vacías se descartan y los errores reportan la **línea real de la hoja**.
+- **Límites:** 2 MB por .xlsx (es un zip; se limita más que el CSV para acotar archivos que se expanden mucho al abrirse), 5.000 filas. Un **.xls antiguo se rechaza** con instrucciones y un .xlsx dañado o con contraseña muestra un error claro.
+- Verificado: 3 pruebas unitarias nuevas (13 en total) y 2 de navegador nuevas con un .xlsx real generado con tipos de celda reales (número, fecha, fila vacía, cantidad inválida en la línea 6) y con un archivo dañado. `npm audit` no marca la librería nueva.
+- **Pendiente de seguridad (A9):** `npm audit --omit=dev` del frontend lista 6 vulnerabilidades ya existentes (1 crítica en `next` y 5 altas en axios, follow-redirects, nanoid, postcss y source-map-js); no vienen de este cambio. Requieren subir versiones y se atacan en A9.
+
 ### 2026-11-07 (cont.) — Accesibilidad, e2e contra el backend real y límites de login configurables (A8)
 
 - **Auditoría de accesibilidad con axe-core** (`frontend/e2e/accesibilidad.spec.ts`): 29 pantallas (landing, login y todo el panel, incluidos los formularios de alta y los detalles) con las reglas WCAG 2.0/2.1 A y AA. Encontró y se corrigieron: 25 `select`/`input` sin nombre accesible (ahora con `aria-label` o con `<label htmlFor>`), el interruptor de alertas sin nombre, 12 etiquetas que no estaban asociadas a su campo y un gráfico de pastel con sectores sin nombre (se oculta el SVG y se ofrece el mismo dato como texto para lectores de pantalla). Resultado: 0 violaciones. **Fuera de este corte: contraste de color** (se revisa aparte con el diseño de marca).

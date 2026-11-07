@@ -84,6 +84,12 @@ export function parseCsv(entrada: string): CsvParseado {
   }
   if (actual !== '' || celdas.length > 0) cerrarRegistro();
 
+  return construirTabla(delimitador, registros);
+}
+
+// Arma la tabla (encabezados únicos + filas del mismo ancho) desde registros
+// ya separados en celdas. Lo comparten el CSV y el Excel (.xlsx).
+function construirTabla(delimitador: string, registros: { celdas: string[]; linea: number }[]): CsvParseado {
   if (registros.length === 0) {
     return { delimitador, encabezados: [], filas: [], lineas: [] };
   }
@@ -105,6 +111,37 @@ export function parseCsv(entrada: string): CsvParseado {
     filas: datos.map((r) => encabezados.map((_, i) => r.celdas[i] ?? '')),
     lineas: datos.map((r) => r.linea),
   };
+}
+
+// Una celda de Excel (.xlsx) llega tipada: número, fecha, booleano o texto.
+// Se pasa a texto para reutilizar la misma validación que el CSV, cuidando que
+// un número real nunca se reinterprete: 1.234 (un mil doscientos treinta y
+// cuatro milésimas) no debe leerse como «1.234» = 1234 por el criterio de miles.
+export function celdaATexto(valor: unknown): string {
+  if (valor === null || valor === undefined) return '';
+  if (valor instanceof Date) {
+    if (Number.isNaN(valor.getTime())) return '';
+    return `${valor.getUTCFullYear()}-${pad(valor.getUTCMonth() + 1)}-${pad(valor.getUTCDate())}`;
+  }
+  if (typeof valor === 'number') {
+    if (!Number.isFinite(valor)) return '';
+    let t = String(valor);
+    if (/e/i.test(t)) t = valor.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
+    const m = /^-?\d{1,3}\.\d{3}$/.exec(t);
+    // Un cero final no cambia el valor y evita la ambigüedad con el separador de miles.
+    return m ? t + '0' : t;
+  }
+  if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
+  return String(valor).trim();
+}
+
+// Tabla desde la matriz de una hoja de Excel (fila 1 = encabezados). Las filas
+// totalmente vacías se descartan, pero la línea que se reporta es la real de la hoja.
+export function tablaDesdeHoja(matriz: unknown[][]): CsvParseado {
+  const registros = matriz
+    .map((fila, i) => ({ celdas: fila.map(celdaATexto), linea: i + 1 }))
+    .filter((r, i) => i === 0 || r.celdas.some((c) => c !== ''));
+  return construirTabla('xlsx', registros);
 }
 
 // «1.234,56», «1,234.56», «$ 12,50», «1234,5»… → número. null si no es un número.

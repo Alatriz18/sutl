@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { cn } from '@/lib/utils';
 import { extractApiError, formatNumber } from '@/lib/format';
-import { CsvParseado, normalizarFecha, normalizarNumero, parseCsv } from '@/lib/csv';
+import { CsvParseado, normalizarFecha, normalizarNumero, parseCsv, tablaDesdeHoja } from '@/lib/csv';
 import { CampoImportacion, sugerirMapeo } from '@/lib/import-campos';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -47,6 +47,8 @@ interface Props {
 
 const MAX_FILAS = 5000;
 const MAX_BYTES = 5 * 1024 * 1024;
+// Un .xlsx es un zip: pesa poco comprimido y mucho al abrirlo. Se limita más.
+const MAX_BYTES_XLSX = 2 * 1024 * 1024;
 const MAX_VISIBLES = 100;
 const VISTA_PREVIA = 3;
 const TONO: Record<NonNullable<ResultadoImportacion['resumen'][number]['tono']>, string> = {
@@ -64,6 +66,16 @@ async function leerTexto(archivo: File): Promise<string> {
   } catch {
     return new TextDecoder('windows-1252').decode(buffer);
   }
+}
+
+const esExcel = (f: File) => /\.xlsx$/i.test(f.name);
+
+// Lee el archivo según su tipo: Excel (.xlsx, primera hoja) o CSV. La librería
+// de Excel se carga solo cuando hace falta, para no pesar en el resto del panel.
+async function leerTabla(archivo: File): Promise<CsvParseado> {
+  if (!esExcel(archivo)) return parseCsv(await leerTexto(archivo));
+  const { readSheet } = await import('read-excel-file/browser');
+  return tablaDesdeHoja(await readSheet(archivo));
 }
 
 function aIso(fecha: string) {
@@ -125,13 +137,25 @@ export function CsvImportWizard({ tipo, campos, plantilla, evaluar, opciones, op
     if (!file) return;
     setError(null);
     setFinal(null);
-    if (file.size > MAX_BYTES) {
-      setError('El archivo pesa más de 5 MB. Divídelo en partes o quita columnas que no uses.');
+    if (/\.xls$/i.test(file.name)) {
+      setError('Los archivos .xls (Excel antiguo) no se leen. Ábrelo en Excel y guárdalo como .xlsx o como CSV.');
       return;
     }
-    const csv = parseCsv(await leerTexto(file));
+    const limite = esExcel(file) ? MAX_BYTES_XLSX : MAX_BYTES;
+    if (file.size > limite) {
+      setError(`El archivo pesa más de ${limite / 1024 / 1024} MB. Divídelo en partes o quita columnas que no uses.`);
+      return;
+    }
+    let csv: CsvParseado;
+    try {
+      csv = await leerTabla(file);
+    } catch {
+      setError('No pude leer el archivo. Si es Excel, comprueba que sea un .xlsx válido y no esté protegido con contraseña; si no, guárdalo como CSV.');
+      setArchivo(null);
+      return;
+    }
     if (csv.encabezados.length === 0 || csv.filas.length === 0) {
-      setError('No encontré datos: el archivo debe tener una fila de encabezados y al menos una fila de datos. Guárdalo como CSV desde Excel.');
+      setError('No encontré datos: el archivo debe tener una fila de encabezados y al menos una fila de datos. Revisa que la primera hoja tenga los encabezados en la fila 1.');
       setArchivo(null);
       return;
     }
@@ -219,7 +243,7 @@ export function CsvImportWizard({ tipo, campos, plantilla, evaluar, opciones, op
       <Card>
         <CardTitle>1. Elige el archivo</CardTitle>
         <p className="mt-1 text-sm text-navy/60">
-          Archivo CSV con una fila de encabezados (en Excel: Guardar como → CSV). Detecto solo el separador y los formatos de número y fecha.
+          Archivo Excel (.xlsx, primera hoja) o CSV, con una fila de encabezados. Detecto solo el separador y los formatos de número y fecha.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <label
@@ -227,8 +251,8 @@ export function CsvImportWizard({ tipo, campos, plantilla, evaluar, opciones, op
             className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-navy/20 bg-white px-3 py-2 text-sm font-medium text-navy hover:bg-navy/5 focus-within:ring-2 focus-within:ring-sky"
           >
             <FileSpreadsheet size={16} aria-hidden />
-            {archivo ? 'Elegir otro archivo' : 'Elegir archivo CSV'}
-            <input id={`${id}-archivo`} type="file" accept=".csv,.txt,text/csv" className="sr-only" onChange={handleArchivo} />
+            {archivo ? 'Elegir otro archivo' : 'Elegir archivo Excel o CSV'}
+            <input id={`${id}-archivo`} type="file" accept=".csv,.txt,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={handleArchivo} />
           </label>
           <Button type="button" variant="ghost" onClick={descargarPlantilla}>
             <Download size={14} className="mr-1.5" aria-hidden /> Descargar plantilla

@@ -201,7 +201,7 @@ test.describe('Flujo principal (modo demo)', () => {
       'OC-CSV-001;;;TAP-30;Tapa rosca 30 mm;5000;0,06',
       'OC-CSV-002;Proveedor Inexistente;20/12/2026;X-1;Algo;10;1',
     ].join('\r\n');
-    await page.getByLabel('Elegir archivo CSV').setInputFiles({ name: 'pedidos.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf8') });
+    await page.getByLabel('Elegir archivo Excel o CSV').setInputFiles({ name: 'pedidos.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf8') });
 
     await expect(page.getByLabel('N° de OC *')).toHaveValue('N° Pedido');
     await expect(page.getByLabel('Cantidad *')).toHaveValue('Cantidad');
@@ -215,6 +215,38 @@ test.describe('Flujo principal (modo demo)', () => {
     await page.getByRole('link', { name: /Ver órdenes de compra/ }).click();
     await expect(page.getByRole('link', { name: 'OC-CSV-001' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'OC-CSV-002' })).toHaveCount(0);
+  });
+
+  test('importar OCs desde un archivo Excel (.xlsx): números y fechas reales, fila vacía ignorada', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Órdenes de compra' }).first().click();
+    await page.getByRole('link', { name: 'Importar CSV' }).click();
+    await page.getByLabel('Elegir archivo Excel o CSV').setInputFiles('e2e/fixtures/pedidos.xlsx');
+
+    await expect(page.getByLabel('N° de OC *')).toHaveValue('N° Pedido');
+    await page.getByRole('button', { name: 'Validar archivo' }).click();
+    await expect(page.getByText('Resultado de la validación')).toBeVisible();
+    await expect(page.getByText(/Proveedor no encontrado: «Proveedor Inexistente»/)).toBeVisible();
+    // El error apunta a la fila real de la hoja (la 6), no a la posición tras descartar la vacía.
+    await expect(page.getByText('Línea 6 del archivo')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Importar 1 OC' }).click();
+    await expect(page.getByText('Importación terminada')).toBeVisible();
+    await page.getByRole('link', { name: /Ver órdenes de compra/ }).click();
+    await page.getByRole('link', { name: 'OC-XLSX-001' }).click();
+    // 10000 como número real de Excel (no «10.000» como texto) y la fecha 20/12/2026.
+    await expect(page.getByText('10.000').first()).toBeVisible();
+  });
+
+  test('importar: un .xlsx dañado muestra un error claro y un .xls antiguo se rechaza', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Órdenes de compra' }).first().click();
+    await page.getByRole('link', { name: 'Importar CSV' }).click();
+    const input = page.getByLabel('Elegir archivo Excel o CSV');
+    await input.setInputFiles({ name: 'roto.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('esto no es un zip') });
+    await expect(page.getByText(/No pude leer el archivo/)).toBeVisible();
+    await input.setInputFiles({ name: 'viejo.xls', mimeType: 'application/vnd.ms-excel', buffer: Buffer.from('x') });
+    await expect(page.getByText(/Excel antiguo/)).toBeVisible();
   });
 
   test('tracking público encuentra un envío existente por código de guía', async ({ page }) => {
