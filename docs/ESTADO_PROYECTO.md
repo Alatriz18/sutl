@@ -85,6 +85,17 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-10 — Motor de riesgo de abastecimiento v1 (B1)
+
+- **Motor puro** (`backend/src/modules/supply-risk/risk-engine.ts`, sin base de datos ni reloj propio): con el stock y el consumo diario proyecta cuándo se acaba cada SKU y suma, en su día, las reposiciones con fecha (embarques en camino con su ETA). Devuelve semáforo, primer día de quiebre, **días sin stock** antes de que llegue la reposición, hasta cuándo alcanza todo, fecha en que baja del stock de seguridad y una **acción recomendada**.
+- **Reglas:** rojo si el stock llega a cero antes de la reposición, ya no hay stock, o no hay nada en camino y el lead time del proveedor no alcanza; amarillo si baja del stock de seguridad, la cobertura total queda bajo el umbral de la empresa (`inventario.diasCoberturaAlerta`) o una ETA ya venció sin recibirse; verde si no; sin datos si falta consumo, stock o política.
+- **Acciones:** urgir al proveedor (hay OC sin despachar), partir el embarque (hay uno en camino que llega tarde), compra urgente (nada en camino), confirmar la fecha real, planificar la compra.
+- **Criterios conservadores (documentados en la pantalla):** una OC que todavía no viaja no cuenta como llegada (no hay fecha confiable) y una ETA vencida tampoco se cuenta.
+- API `GET /api/supply-risk` (admin_tenant, operador, super_admin; filtrada por empresa) y pantalla **Riesgo de abastecimiento** en la web (tarjetas por semáforo, filtros, motivo, acción y lo que viene; el color nunca va solo, siempre con texto). El modo demo usa una copia del motor (`frontend/src/lib/mock/risk-engine.ts`).
+- **Defecto encontrado en la primera revisión de la pantalla:** el tramo posterior a la última reposición marcaba siempre «bajará del stock de seguridad» aunque hubiera cobertura de sobra. Corregido, con 2 pruebas de regresión.
+- Verificado: 21 pruebas unitarias del motor, 8 e2e contra Postgres (rojo con días sin stock y OC sin despachar, compra urgente, verde, sin datos, orden, aislamiento entre empresas, 401), 1 de navegador en demo, 1 contra el backend real y la auditoría de accesibilidad con la pantalla nueva.
+- **Pendiente (B1b):** evaluación periódica con la cola, historial de cambios de semáforo y aviso al pasar a rojo; reglas configurables por empresa; fechas de llegada para OCs sin embarque.
+
 ### 2026-11-07 (cont. 3) — Dependencias vulnerables: lo que se pudo arreglar sin cambiar el stack (parte de A9)
 
 - **Backend:** `bcrypt` 5 → 6 (API compatible; verificado hash/compare y los 159 e2e). Quita la vulnerabilidad **crítica** (`tar`, que llegaba por `node-pre-gyp` de bcrypt). `npm audit fix` sin `--force` no cambió más. De 1 crítica + 12 altas + 17 moderadas (con dev) quedan en producción **7 altas y 5 moderadas**.

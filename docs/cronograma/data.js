@@ -78,8 +78,10 @@ const PHASES = [
   {
     key: 'B', name: 'Fase B · Control Tower: riesgo, excepciones y trabajo humano', range: 'Sem 8–14 · 23 nov – 8 ene', note: 'Hito H3 · 22 ene (2 sem. de colchón)',
     tasks: [
-      { id: 'B1', name: 'Motor de riesgo de abastecimiento v1', owner: 'Kevin', s: 8, e: 10, st: 'pendiente',
-        what: 'Fecha de quiebre de stock vs. ETA de reposición por SKU, semáforo y acción recomendada (adelantar, partir envío, compra urgente). Es el diferenciador del Business Plan.', dep: 'A1, A6, A7' },
+      { id: 'B1', name: 'Motor de riesgo de abastecimiento v1', owner: 'Kevin', s: 7, e: 7, st: 'hecho',
+        what: 'Proyecta cuándo se acaba cada SKU y lo compara con la ETA de lo que llega: semáforo, días sin stock y acción recomendada (urgir al proveedor, partir envío, compra urgente, confirmar fecha, planificar). Motor puro con 21 pruebas, API GET /supply-risk, pantalla propia y 9 pruebas e2e. Es el diferenciador del Business Plan.', dep: 'A1, A6, A7' },
+      { id: 'B1b', name: 'Riesgo: evaluación periódica y avisos', owner: 'Kevin', s: 8, e: 9, st: 'pendiente',
+        what: 'Correr el motor cada cierto tiempo con la cola (A7), guardar el historial de cambios de semáforo y avisar cuando un SKU pasa a rojo. Pendiente además: reglas del motor configurables por empresa (hoy usa el umbral de días y los parámetros por SKU) y fechas de llegada para OCs que aún no viajan.', dep: 'B1, A11' },
       { id: 'B2', name: 'Dashboard Control Tower (vista de riesgo)', owner: 'Dev', s: 10, e: 12, st: 'pendiente',
         what: 'Reemplaza el resumen centrado en envíos: SKUs en riesgo, OCs atrasadas, vencimientos próximos y tareas del día.', dep: 'B1' },
       { id: 'B3', name: 'Workflow humano: tareas, comentarios y bitácora', owner: 'Ambos', s: 11, e: 13, st: 'pendiente',

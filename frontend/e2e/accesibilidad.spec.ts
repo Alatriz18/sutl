@@ -14,6 +14,7 @@ const RUTAS = [
   '/dashboard/compras',
   '/dashboard/compras/importar',
   '/dashboard/cobertura',
+  '/dashboard/riesgo',
   '/dashboard/almacen',
   '/dashboard/configuracion',
   '/dashboard/users',

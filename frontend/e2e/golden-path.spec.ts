@@ -249,6 +249,27 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText(/Excel antiguo/)).toBeVisible();
   });
 
+  test('riesgo de abastecimiento: semáforo por SKU, acción recomendada y filtros', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Riesgo de abastecimiento' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Riesgo de abastecimiento' })).toBeVisible();
+
+    // Por defecto muestra lo que requiere atención: el rojo y el amarillo, no los verdes.
+    const fila = (sku: string) => page.getByRole('row').filter({ hasText: sku });
+    await expect(fila('PIG-AZ-02')).toContainText('Rojo');
+    await expect(fila('PIG-AZ-02')).toContainText('Urgir al proveedor que despache ya');
+    await expect(fila('PIG-AZ-02')).toContainText('sin fecha de llegada');
+    await expect(fila('RES-PET-01')).toContainText('Amarillo');
+    await expect(fila('ELEC-4471')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Verde', exact: true }).click();
+    await expect(fila('ELEC-4471')).toContainText('Verde');
+    await expect(fila('PIG-AZ-02')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Sin datos', exact: true }).click();
+    await expect(fila('FLM-STR-23')).toContainText('no tiene política');
+  });
+
   test('tracking público encuentra un envío existente por código de guía', async ({ page }) => {
     await page.goto('/tracking/SUTL-DEMO-0003');
     await expect(page.getByText('SUTL-DEMO-0003')).toBeVisible();

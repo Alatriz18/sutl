@@ -377,12 +377,13 @@ export const mockAdapter: AxiosAdapter = async (config) => {
 
     // --- COBERTURA / POLÍTICAS / MAPEOS --- (mismas reglas que el backend real)
     if (
-      (path === '/inventory-coverage' || path.startsWith('/inventory-policies') || path.startsWith('/import-mappings')) &&
+      (path === '/inventory-coverage' || path === '/supply-risk' || path.startsWith('/inventory-policies') || path.startsWith('/import-mappings')) &&
       currentUser()?.rol === 'cliente_final'
     ) {
       throw new MockApiError(403, 'Forbidden resource');
     }
     if (method === 'get' && path === '/inventory-coverage') return delay(ok(config, supply.cobertura()));
+    if (method === 'get' && path === '/supply-risk') return delay(ok(config, supply.riesgo()));
     if (method === 'get' && path === '/inventory-policies') return delay(ok(config, supply.listarPoliticas()));
     if (method === 'put' && path === '/inventory-policies') return delay(ok(config, supply.guardarPolitica(body)), 240);
     if (method === 'post' && path === '/inventory-policies/importar') return delay(ok(config, supply.importarPoliticas(body), 201), 320);

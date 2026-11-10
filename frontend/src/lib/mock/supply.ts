@@ -2,11 +2,12 @@
 // políticas por SKU, importaciones y mapeos. Reproduce las reglas del backend
 // real (backend/src/modules/purchase-orders, inventory-coverage, import-mappings)
 // para que la demo en línea se comporte igual, incluidos los mensajes de error.
-import { CoberturaResponse, FilaCobertura, InventoryPolicy, PurchaseOrder, PurchaseOrderLine, TipoImportacion } from '@/types';
+import { CoberturaResponse, FilaCobertura, FilaRiesgo, InventoryPolicy, PurchaseOrder, PurchaseOrderLine, RiesgoResponse, TipoImportacion } from '@/types';
 import { CAMPOS_POR_TIPO } from '../import-campos';
 import { INCOTERMS } from '../purchase-orders';
 import * as db from './data';
 import { MockApiError } from './errors';
+import { Reposicion, evaluarRiesgo } from './risk-engine';
 import { configEfectivaDemo } from './tenant-config';
 
 const ESTADOS_VINCULO = ['emitida', 'confirmada', 'despachada', 'recibida_parcial'];
@@ -163,6 +164,56 @@ export function cobertura(): CoberturaResponse {
     },
     filas,
   };
+}
+
+// ---------- Riesgo de abastecimiento ----------
+
+const ORDEN_SEMAFORO = { rojo: 0, amarillo: 1, verde: 2, sin_datos: 3 } as const;
+
+export function riesgo(): RiesgoResponse {
+  const cob = cobertura();
+  const hoy = new Date();
+  const porSku = new Map<string, Reposicion[]>();
+  const agregar = (sku: string, r: Reposicion) => porSku.set(sku, [...(porSku.get(sku) ?? []), r]);
+  for (const oc of db.purchaseOrders.filter((o) => ESTADOS_VINCULO.includes(o.estado))) {
+    for (const l of oc.lineas) {
+      let pendiente = Math.max(l.cantidad - l.cantidadRecibida, 0);
+      for (const k of db.shipmentOcLinks.filter((x) => x.lineaId === l.id)) {
+        const s = db.shipments.find((x) => x.id === k.shipmentId);
+        if (!s || s.estado === 'entregado') continue;
+        const cantidad = Math.min(k.cantidad, pendiente);
+        if (cantidad <= 0) continue;
+        pendiente -= cantidad;
+        agregar(l.sku, { fecha: s.fechaEstimadaLlegada ? new Date(s.fechaEstimadaLlegada) : null, cantidad, origen: 'embarque', referencia: s.codigoGuia });
+      }
+      if (pendiente > 0) agregar(l.sku, { fecha: null, cantidad: pendiente, origen: 'oc', referencia: oc.numero });
+    }
+  }
+  const filas: FilaRiesgo[] = cob.filas.map((f) => {
+    const reposiciones = porSku.get(f.sku) ?? [];
+    const r = f.sinPolitica
+      ? { semaforo: 'sin_datos' as const, accion: 'ninguna' as const, motivo: 'Este SKU no tiene política de inventario (consumo diario y stock de seguridad).', fechaQuiebre: null, diasSinStock: 0, cubiertoHasta: null, fechaBajoSeguridad: null, reposicionesSinFecha: 0, reposicionesVencidas: 0 }
+      : evaluarRiesgo({ hoy, stock: f.stock, consumoDiario: f.consumoDiario, stockSeguridad: f.stockSeguridad ?? 0, leadTimeDias: f.leadTimeDias, diasCoberturaAlerta: cob.umbralDias, reposiciones });
+    const iso = (d: Date | null) => (d ? d.toISOString() : null);
+    return {
+      sku: f.sku, descripcion: f.descripcion, unidad: f.unidad, stock: f.stock, consumoDiario: f.consumoDiario,
+      diasCobertura: f.diasCobertura, stockSeguridad: f.stockSeguridad, leadTimeDias: f.leadTimeDias,
+      semaforo: r.semaforo, accion: r.accion, motivo: r.motivo, diasSinStock: r.diasSinStock,
+      fechaQuiebre: iso(r.fechaQuiebre), cubiertoHasta: iso(r.cubiertoHasta), fechaBajoSeguridad: iso(r.fechaBajoSeguridad),
+      reposicionesSinFecha: r.reposicionesSinFecha, reposicionesVencidas: r.reposicionesVencidas,
+      reposiciones: reposiciones.map((x) => ({ origen: x.origen, referencia: x.referencia, cantidad: x.cantidad, fecha: iso(x.fecha) })),
+    };
+  });
+  filas.sort(
+    (a, b) =>
+      ORDEN_SEMAFORO[a.semaforo] - ORDEN_SEMAFORO[b.semaforo] ||
+      (a.fechaQuiebre ? Date.parse(a.fechaQuiebre) : Infinity) - (b.fechaQuiebre ? Date.parse(b.fechaQuiebre) : Infinity) ||
+      a.sku.localeCompare(b.sku),
+  );
+  const cuenta = (s: FilaRiesgo['semaforo']) => filas.filter((f) => f.semaforo === s).length;
+  const acciones: RiesgoResponse['resumen']['acciones'] = {};
+  for (const f of filas) if (f.accion !== 'ninguna') acciones[f.accion] = (acciones[f.accion] ?? 0) + 1;
+  return { evaluadoAt: hoy.toISOString(), umbralDias: cob.umbralDias, resumen: { rojo: cuenta('rojo'), amarillo: cuenta('amarillo'), verde: cuenta('verde'), sinDatos: cuenta('sin_datos'), acciones }, filas };
 }
 
 // ---------- Políticas por SKU ----------

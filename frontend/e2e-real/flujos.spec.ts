@@ -83,6 +83,17 @@ test.describe('Backend real', () => {
     await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15000 });
   });
 
+  test('riesgo de abastecimiento: el motor del servidor clasifica los SKU sembrados', async ({ page }) => {
+    await ingresar(page, DEMO.email, DEMO.password);
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20000 });
+    await page.goto('/dashboard/riesgo');
+    await expect(page.getByRole('heading', { level: 1, name: 'Riesgo de abastecimiento' })).toBeVisible();
+    await page.getByRole('button', { name: 'Todos', exact: true }).click();
+    await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15000 });
+    // Cada fila lleva su semáforo en texto (el color nunca va solo).
+    await expect(page.getByText(/^(Rojo|Amarillo|Verde|Sin datos)$/).first()).toBeVisible();
+  });
+
   test('aislamiento entre empresas: otra empresa no ve los envíos de la demo', async ({ page }) => {
     // Crea una empresa nueva (super_admin) con un usuario, vía la API real.
     const sa = await tokenApi('admin@sutl.dev', 'SutlAdmin2026!');

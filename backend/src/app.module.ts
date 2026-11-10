@@ -26,6 +26,7 @@ import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.
 import { TenantConfigModule } from './modules/tenant-config/tenant-config.module';
 import { InventoryCoverageModule } from './modules/inventory-coverage/inventory-coverage.module';
 import { ImportMappingsModule } from './modules/import-mappings/import-mappings.module';
+import { SupplyRiskModule } from './modules/supply-risk/supply-risk.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { limiteGlobal } from './common/rate-limit';
 import { PrismaModule } from './prisma/prisma.module';
@@ -82,6 +83,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     TenantConfigModule,
     InventoryCoverageModule,
     ImportMappingsModule,
+    SupplyRiskModule,
     QueuesModule.forRoot(),
   ],
   providers: [

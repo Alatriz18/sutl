@@ -592,6 +592,44 @@ export interface CoberturaResponse {
   filas: FilaCobertura[];
 }
 
+// Riesgo de abastecimiento (ver backend/src/modules/supply-risk).
+export type SemaforoRiesgo = 'rojo' | 'amarillo' | 'verde' | 'sin_datos';
+export type AccionRiesgo =
+  | 'adelantar_proveedor'
+  | 'partir_envio'
+  | 'compra_urgente'
+  | 'confirmar_fecha'
+  | 'planificar_compra'
+  | 'ninguna';
+
+export interface FilaRiesgo {
+  sku: string;
+  descripcion: string | null;
+  unidad: string | null;
+  stock: number | null;
+  consumoDiario: number | null;
+  diasCobertura: number | null;
+  stockSeguridad: number | null;
+  leadTimeDias: number | null;
+  semaforo: SemaforoRiesgo;
+  accion: AccionRiesgo;
+  motivo: string;
+  fechaQuiebre: string | null;
+  diasSinStock: number;
+  cubiertoHasta: string | null;
+  fechaBajoSeguridad: string | null;
+  reposicionesSinFecha: number;
+  reposicionesVencidas: number;
+  reposiciones: { origen: 'embarque' | 'oc'; referencia: string; cantidad: number; fecha: string | null }[];
+}
+
+export interface RiesgoResponse {
+  evaluadoAt: string;
+  umbralDias: number;
+  resumen: { rojo: number; amarillo: number; verde: number; sinDatos: number; acciones: Partial<Record<AccionRiesgo, number>> };
+  filas: FilaRiesgo[];
+}
+
 export interface InventoryPolicy {
   id: string;
   sku: string;
