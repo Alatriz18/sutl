@@ -994,29 +994,53 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     if (method === 'get' && path === '/notifications') {
       return delay(ok(config, db.notifications.map(db.notificationExpanded)));
     }
+    if (method === 'get' && path === '/notifications/canales') {
+      return delay(ok(config, { email: true, whatsapp: true, push: false, sms: false }));
+    }
     if (method === 'post' && path === '/notifications') {
+      // Mismas reglas que el backend real (backend/src/modules/notifications).
+      const canal = (body.canal as AppNotification['canal']) ?? 'email';
+      if (canal === 'push' || canal === 'sms') {
+        throw new MockApiError(400, `El canal ${canal} todavía no está disponible. Usa correo o WhatsApp.`);
+      }
+      const destino = typeof body.destino === 'string' ? body.destino.trim() : '';
+      if (!destino) {
+        throw new MockApiError(400, canal === 'email' ? 'Indica un correo de destino o elige un usuario.' : 'Indica el teléfono de destino en formato internacional (+593…).');
+      }
+      if (canal === 'email' && !/^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]+$/.test(destino)) {
+        throw new MockApiError(400, 'El correo de destino no es válido.');
+      }
+      if (canal === 'whatsapp' && !/^\+[1-9]\d{7,14}$/.test(destino)) {
+        throw new MockApiError(400, 'El teléfono debe estar en formato internacional, por ejemplo +593991234567.');
+      }
       const notif: AppNotification = {
         id: nextId('notif'),
         tenantId: currentUser()?.tenantId ?? 't-demo',
         userId: currentUser()?.id ?? null,
-        canal: (body.canal as AppNotification['canal']) ?? 'email',
+        canal,
         tipo: String(body.tipo ?? 'personalizada'),
         asunto: String(body.asunto ?? ''),
         mensaje: String(body.mensaje ?? ''),
-        estado: 'pendiente',
-        enviadoAt: null,
+        destino,
+        intentos: 1,
+        error: null,
+        // La demo no envía nada de verdad: se da por enviada al instante.
+        estado: 'enviado',
+        enviadoAt: nowIso(),
         createdAt: nowIso(),
       };
       db.notifications.push(notif);
       return delay(ok(config, db.notificationExpanded(notif)), 260);
     }
-    m = match(path, /^\/notifications\/([^/]+)\/marcar-enviada$/);
-    if (method === 'patch' && m) {
+    m = match(path, /^\/notifications\/([^/]+)\/reenviar$/);
+    if (method === 'post' && m) {
       const notif = db.notifications.find((n) => n.id === m![1]);
-      if (!notif) throw new MockApiError(404, 'Notificación no encontrada.');
+      if (!notif) throw new MockApiError(404, 'Notificación no encontrada');
+      if (notif.estado !== 'fallido') throw new MockApiError(400, 'Solo se puede reenviar una notificación fallida.');
       notif.estado = 'enviado';
       notif.enviadoAt = nowIso();
-      return delay(ok(config, db.notificationExpanded(notif)));
+      notif.error = null;
+      return delay(ok(config, db.notificationExpanded(notif)), 201);
     }
 
     // --- REPORTS ---

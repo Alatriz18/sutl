@@ -85,6 +85,19 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-10 (cont.) — Notificaciones reales: correo y WhatsApp (A11)
+
+- **El envío ya no es simulado.** Crear una notificación valida el destino, la guarda como pendiente y la encola (cola `notificaciones` de BullMQ, 3 intentos con espera creciente); la API no espera al proveedor. Sin Redis se envía en el momento. Un trabajo repetido no duplica el envío (si ya está enviada, no hace nada).
+- **Correo por SMTP** (`nodemailer`): sirve con SES, SendGrid, Mailgun o Google Workspace. En desarrollo apunta a **Mailpit** (Docker Compose, bandeja en http://localhost:8025): el correo sale de verdad pero no llega a nadie. Variables `SMTP_HOST/PORT/SECURE/USER/PASS/FROM`.
+- **WhatsApp Cloud API** (Meta) por `fetch`: variables `WHATSAPP_TOKEN` y `WHATSAPP_PHONE_ID`. Sin ellas el canal queda deshabilitado y la pantalla lo dice. **Limitación de Meta:** el texto libre solo llega si la persona escribió en las últimas 24 h; para iniciar conversación hacen falta plantillas aprobadas (siguiente paso, dependen de la cuenta de Meta del cliente). Probado contra un simulador local de la API, **no contra Meta real** (no hay credenciales).
+- **Reglas:** push y SMS se rechazan con un mensaje claro (no tienen proveedor). Un error definitivo (destino inválido, 4xx del proveedor salvo 429) no se reintenta; un 5xx o un corte sí. Los mensajes de error que se guardan y se muestran van recortados y sin tokens. Correo: validación estricta del destino (un solo correo) y asunto sin saltos de línea (sin inyección de cabeceras). Teléfono en formato internacional E.164.
+- **Reenvío:** `POST /notifications/:id/reenviar` para las fallidas (atómico: dos clics no encolan dos envíos). Se eliminó `marcar-enviada`, que era la simulación. `GET /notifications/canales` informa qué canales están conectados. Las rutas son de admin_tenant, operador y super_admin (el cliente_final ya no puede enviar mensajes).
+- **Esquema:** migración `20261110120000_notificaciones_reales` (canal `whatsapp`, `destino`, `intentos`, `error`).
+- **Defecto de pruebas encontrado y corregido:** las suites e2e compartían la misma cola de Redis y la app de otra suite procesaba los trabajos con SU configuración. Ahora cada worker de Jest usa su propio prefijo de cola.
+- Pantalla de Notificaciones rehecha: canal (correo/WhatsApp), destino, error visible, intentos, botón Reenviar y consulta automática mientras haya pendientes. En el modo demo se da por enviada al instante (no envía nada).
+- Verificado: 15 pruebas e2e de backend (correo real hacia Mailpit, WhatsApp contra el simulador con reintentos, 4xx definitivo, token sin filtrar, inyección de cabeceras, aislamiento, 401), 21 unitarias de validación y redacción, 1 de navegador en demo y 1 contra el backend real que comprueba que el correo llegó a Mailpit. CI: Mailpit agregado como servicio.
+- **Pendiente:** ajuste por empresa de qué canales usa (hoy los canales son de todo el servidor); credenciales y plantillas de WhatsApp de un cliente real; push/SMS.
+
 ### 2026-11-10 — Motor de riesgo de abastecimiento v1 (B1)
 
 - **Motor puro** (`backend/src/modules/supply-risk/risk-engine.ts`, sin base de datos ni reloj propio): con el stock y el consumo diario proyecta cuándo se acaba cada SKU y suma, en su día, las reposiciones con fecha (embarques en camino con su ETA). Devuelve semáforo, primer día de quiebre, **días sin stock** antes de que llegue la reposición, hasta cuándo alcanza todo, fecha en que baja del stock de seguridad y una **acción recomendada**.

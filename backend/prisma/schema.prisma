@@ -74,6 +74,7 @@ enum CanalNotificacion {
   email
   push
   sms
+  whatsapp
 }
 
 enum EstadoNotificacion {
@@ -353,8 +354,14 @@ model Notification {
   tipo          String
   asunto        String
   mensaje       String
+  // Dirección (email) o teléfono (E.164, WhatsApp) al que se envía. Si es null
+  // se usa el email del usuario destinatario.
+  destino       String?
   estado        EstadoNotificacion @default(pendiente)
   enviadoAt     DateTime?
+  intentos      Int                @default(0)
+  // Último error del proveedor (texto corto, sin credenciales).
+  error         String?
   createdAt     DateTime           @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])

@@ -48,8 +48,17 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      mailpit:
+        image: axllent/mailpit:v1.21
+        ports:
+          - 1025:1025
+          - 8025:8025
+
     env:
       REDIS_URL: redis://localhost:6379
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      SMTP_FROM: SUTL <notificaciones@sutl.local>
       DATABASE_URL: postgresql://sutl:sutl_ci_password@localhost:5432/sutl_db?schema=public
       DIRECT_URL: postgresql://sutl:sutl_ci_password@localhost:5432/sutl_db?schema=public
       MONGO_URI: mongodb://localhost:27017/sutl_tracking

@@ -71,8 +71,8 @@ const PHASES = [
         what: 'Avance 7 nov: se quitó la crítica del backend (bcrypt 6) y las 4 altas del frontend sin cambio de versión mayor. Quedan 12 en el backend (migrar NestJS 10 → 12) y 2 en el frontend (Next 14 → 16, el crítico es de next): requieren tu aprobación porque cambian el stack. Falta además subir la cobertura de pruebas unitarias a ≥ 70%.', dep: '—' },
       { id: 'A10', name: 'API pública v1: API keys y webhooks por empresa', owner: 'Kevin', s: 7, e: 8, st: 'pendiente',
         what: 'Claves por empresa con límite de uso y webhooks de cambios de OC y embarques; hoy solo existe la pantalla de demo.', dep: 'A7' },
-      { id: 'A11', name: 'Notificaciones reales: correo y WhatsApp', owner: 'Dev', s: 7, e: 8, st: 'pendiente',
-        what: 'Envío por correo y por WhatsApp Cloud API; hoy el «enviado» es simulado.', dep: 'A7' },
+      { id: 'A11', name: 'Notificaciones reales: correo y WhatsApp', owner: 'Dev', s: 7, e: 7, st: 'hecho',
+        what: 'Envío real por correo (SMTP; en desarrollo Mailpit) y por WhatsApp Cloud API, a través de la cola con 3 reintentos, reenvío manual de las fallidas y validación de destinos. Para que WhatsApp envíe de verdad faltan las credenciales de la cuenta de Meta del cliente y, fuera de la ventana de 24 h, plantillas aprobadas; push y SMS siguen sin proveedor.', dep: 'A7' },
     ],
   },
   {

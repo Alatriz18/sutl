@@ -94,6 +94,23 @@ test.describe('Backend real', () => {
     await expect(page.getByText(/^(Rojo|Amarillo|Verde|Sin datos)$/).first()).toBeVisible();
   });
 
+  test('notificaciones: un correo enviado desde la web llega de verdad (Mailpit)', async ({ page }) => {
+    const asunto = `Aviso E2E ${unico()}`;
+    await ingresar(page, DEMO.email, DEMO.password);
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20000 });
+    await page.goto('/dashboard/notificaciones');
+    await page.getByLabel('Correo de destino').fill('cliente-e2e@ejemplo.com');
+    await page.getByLabel('Asunto').fill(asunto);
+    await page.getByLabel('Mensaje').fill('Prueba de envío real.');
+    await page.getByRole('button', { name: 'Enviar notificación' }).click();
+    await expect(page.getByRole('row').filter({ hasText: asunto })).toContainText('Enviada', { timeout: 15000 });
+
+    const res = await fetch(`http://localhost:8025/api/v1/search?query=${encodeURIComponent(`subject:"${asunto}"`)}`);
+    const msgs = ((await res.json()) as { messages: { To: { Address: string }[] }[] }).messages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].To[0].Address).toBe('cliente-e2e@ejemplo.com');
+  });
+
   test('aislamiento entre empresas: otra empresa no ve los envíos de la demo', async ({ page }) => {
     // Crea una empresa nueva (super_admin) con un usuario, vía la API real.
     const sa = await tokenApi('admin@sutl.dev', 'SutlAdmin2026!');

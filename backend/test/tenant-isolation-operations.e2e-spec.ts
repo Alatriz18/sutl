@@ -171,7 +171,7 @@ describe('Aislamiento multi-tenant — módulos de operación (e2e)', () => {
     const notificationA = await request(app.getHttpServer())
       .post('/api/notifications')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ canal: 'email', tipo: 'envio_creado', asunto: 'Envío creado', mensaje: 'Tu envío fue creado' });
+      .send({ canal: 'email', tipo: 'envio_creado', asunto: 'Envío creado', mensaje: 'Tu envío fue creado', destino: 'cliente@e2e-test.com' });
     expect(notificationA.status).toBe(201);
     notificationAId = notificationA.body.id;
   });
@@ -338,12 +338,12 @@ describe('Aislamiento multi-tenant — módulos de operación (e2e)', () => {
   });
 
   describe('notifications', () => {
-    it('el tenant B no ve la notificación de A y no puede marcarla como enviada', async () => {
+    it('el tenant B no ve la notificación de A y no puede reenviarla', async () => {
       const list = await request(app.getHttpServer()).get('/api/notifications').set('Authorization', `Bearer ${tokenB}`);
       expect((list.body as Array<{ id: string }>).map((n) => n.id)).not.toContain(notificationAId);
 
       const marcar = await request(app.getHttpServer())
-        .patch(`/api/notifications/${notificationAId}/marcar-enviada`)
+        .post(`/api/notifications/${notificationAId}/reenviar`)
         .set('Authorization', `Bearer ${tokenB}`);
       expect(marcar.status).toBe(404);
     });

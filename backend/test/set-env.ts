@@ -2,3 +2,5 @@
 // valores holgados del .env local (dotenv no pisa variables ya definidas).
 process.env.LOGIN_RATE_LIMIT = '5';
 process.env.RATE_LIMIT = '120';
+// Reintentos de notificaciones rápidos en las pruebas (en producción: 5 s, 10 s…).
+process.env.NOTIFICACIONES_BACKOFF_MS = '50';

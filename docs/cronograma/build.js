@@ -236,7 +236,7 @@ const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>
   </div>
   <div class="kpis">
     <div class="kpi"><div class="n">23</div><div class="t">módulos de backend funcionando contra Postgres y Mongo reales</div></div>
-    <div class="kpi"><div class="n">294</div><div class="t">pruebas automáticas: 72 unitarias, 167 de punta a punta y 55 de navegador (45 en modo demo y 10 contra el backend real)</div></div>
+    <div class="kpi"><div class="n">332</div><div class="t">pruebas automáticas: 93 unitarias, 182 de punta a punta y 57 de navegador (46 en modo demo y 11 contra el backend real)</div></div>
     <div class="kpi"><div class="n">21</div><div class="t">secciones del panel, más landing, login, tracking público y modo demo</div></div>
     <div class="kpi"><div class="n" style="color:var(--red)">Local</div><div class="t">único entorno activo; staging y producción siguen sin desplegarse</div></div>
   </div>

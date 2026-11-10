@@ -358,8 +358,15 @@ export interface AlertaEvaluada {
   disparados: Shipment[];
 }
 
-export type CanalNotificacion = 'email' | 'push' | 'sms';
+export type CanalNotificacion = 'email' | 'push' | 'sms' | 'whatsapp';
 export type EstadoNotificacion = 'pendiente' | 'enviado' | 'fallido';
+
+export interface CanalesDisponibles {
+  email: boolean;
+  whatsapp: boolean;
+  push: boolean;
+  sms: boolean;
+}
 
 export interface AppNotification {
   id: string;
@@ -370,6 +377,9 @@ export interface AppNotification {
   tipo: string;
   asunto: string;
   mensaje: string;
+  destino?: string | null;
+  intentos?: number;
+  error?: string | null;
   estado: EstadoNotificacion;
   enviadoAt: string | null;
   createdAt: string;

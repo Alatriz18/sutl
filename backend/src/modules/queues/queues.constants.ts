@@ -1,6 +1,7 @@
 // Nombres de colas y de trabajos. Una cola por responsabilidad, para poder
 // escalar o pausar cada una por separado (reglas, notificaciones, webhooks).
 export const COLA_MANTENIMIENTO = 'mantenimiento';
+export const COLA_NOTIFICACIONES = 'notificaciones';
 
 export const TRABAJO_LATIDO = 'latido';
 

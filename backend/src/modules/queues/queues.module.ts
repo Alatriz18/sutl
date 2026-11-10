@@ -1,6 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { DynamicModule, Logger, Module } from '@nestjs/common';
-import { COLA_MANTENIMIENTO } from './queues.constants';
+import { COLA_MANTENIMIENTO, COLA_NOTIFICACIONES } from './queues.constants';
 import { QueuesController } from './queues.controller';
 import { QueuesService } from './queues.service';
 import { MantenimientoProcessor } from './mantenimiento.processor';
@@ -24,13 +24,17 @@ export class QueuesModule {
     }
     return {
       module: QueuesModule,
+      // Global: los módulos de negocio inyectan su cola sin importar este módulo.
+      global: true,
       imports: [
         BullModule.forRoot({
           // BullMQ acepta la URL completa; las credenciales van en REDIS_URL.
           connection: { url: redisUrl, maxRetriesPerRequest: null },
           // Las pruebas usan otro prefijo: así vaciar la cola de pruebas no
           // toca los trabajos ni los programadores del entorno de desarrollo.
-          prefix: process.env.NODE_ENV === 'test' ? 'sutl-test' : 'sutl',
+          // Cada worker de Jest, el suyo: si no, la app de otra suite procesaría
+          // estos trabajos con SU configuración (otro SMTP, otro simulador).
+          prefix: process.env.NODE_ENV === 'test' ? `sutl-test-${process.env.JEST_WORKER_ID ?? '0'}` : 'sutl',
         }),
         BullModule.registerQueue({
           name: COLA_MANTENIMIENTO,
@@ -41,10 +45,20 @@ export class QueuesModule {
             backoff: { type: 'exponential', delay: 2000 },
           },
         }),
+        BullModule.registerQueue({
+          name: COLA_NOTIFICACIONES,
+          defaultJobOptions: {
+            removeOnComplete: 100,
+            removeOnFail: 200,
+            // 3 intentos con espera creciente: cubre cortes cortos del proveedor.
+            attempts: 3,
+            backoff: { type: 'exponential', delay: Number(process.env.NOTIFICACIONES_BACKOFF_MS) > 0 ? Number(process.env.NOTIFICACIONES_BACKOFF_MS) : 5000 },
+          },
+        }),
       ],
       controllers: [QueuesController],
       providers: [QueuesService, MantenimientoProcessor],
-      exports: [QueuesService],
+      exports: [QueuesService, BullModule],
     };
   }
 }

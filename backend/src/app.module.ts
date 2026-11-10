@@ -77,7 +77,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     FleetModule,
     DocumentsModule,
     AlertsModule,
-    NotificationsModule,
+    NotificationsModule.forRoot(),
     ReportsModule,
     PurchaseOrdersModule,
     TenantConfigModule,

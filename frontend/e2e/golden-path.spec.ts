@@ -270,6 +270,32 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(fila('FLM-STR-23')).toContainText('no tiene política');
   });
 
+  test('notificaciones: correo y WhatsApp validan el destino y se registran como enviadas', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Notificaciones' }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Notificaciones' })).toBeVisible();
+    // Push y SMS ya no se ofrecen: no tienen proveedor.
+    await expect(page.getByLabel('Canal de notificación').locator('option')).toHaveText(['Email', 'WhatsApp']);
+
+    await page.getByLabel('Correo de destino').fill('cliente@ejemplo.com');
+    await page.getByLabel('Asunto').fill('Tu embarque salió');
+    await page.getByLabel('Mensaje').fill('Zarpó de Guayaquil.');
+    await page.getByRole('button', { name: 'Enviar notificación' }).click();
+    await expect(page.getByText('Notificación en cola de envío.')).toBeVisible();
+    await expect(page.getByRole('row').filter({ hasText: 'Tu embarque salió' })).toContainText('cliente@ejemplo.com');
+
+    await page.getByLabel('Canal de notificación').selectOption('whatsapp');
+    await expect(page.getByText(/solo entrega texto libre/)).toBeVisible();
+    await page.getByLabel('Teléfono de destino').fill('0991234567');
+    await page.getByLabel('Asunto').fill('Aviso WA');
+    await page.getByLabel('Mensaje').fill('Hola');
+    await page.getByRole('button', { name: 'Enviar notificación' }).click();
+    await expect(page.getByText(/formato internacional/).first()).toBeVisible();
+    await page.getByLabel('Teléfono de destino').fill('+593991234567');
+    await page.getByRole('button', { name: 'Enviar notificación' }).click();
+    await expect(page.getByRole('row').filter({ hasText: 'Aviso WA' })).toContainText('WhatsApp');
+  });
+
   test('tracking público encuentra un envío existente por código de guía', async ({ page }) => {
     await page.goto('/tracking/SUTL-DEMO-0003');
     await expect(page.getByText('SUTL-DEMO-0003')).toBeVisible();
