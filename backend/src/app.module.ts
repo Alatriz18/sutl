@@ -30,6 +30,8 @@ import { SupplyRiskModule } from './modules/supply-risk/supply-risk.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { limiteGlobal } from './common/rate-limit';
 import { PrismaModule } from './prisma/prisma.module';
@@ -89,6 +91,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     SupplyRiskModule,
     ApiKeysModule,
     LeadsModule,
+    AuditModule,
+    TasksModule,
     WebhooksModule.forRoot(),
     QueuesModule.forRoot(),
   ],

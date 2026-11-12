@@ -24,6 +24,7 @@ import {
 import * as db from './data';
 import { MockApiError } from './errors';
 import * as supply from './supply';
+import { manejarTareas } from './tasks';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
 
@@ -990,6 +991,15 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       if (!alerta) throw new MockApiError(404, 'Alerta no encontrada.');
       Object.assign(alerta, body, { updatedAt: nowIso() });
       return delay(ok(config, alerta));
+    }
+
+    // --- TAREAS y BITÁCORA ---
+    {
+      const usuario = currentUser();
+      if (usuario) {
+        const r = manejarTareas(method, path, Object.fromEntries(qs.entries()), body, usuario, db.users);
+        if (r) return delay(ok(config, r.data, r.status ?? 200), method === 'get' ? 220 : 260);
+      }
     }
 
     // --- CONTACTO DE LA LANDING --- (público; la demo no guarda ni envía nada)

@@ -85,6 +85,18 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-13 — B3: tareas, comentarios y bitácora (escrito SIN ejecutar el stack)
+
+**Qué hay.** Mismo acuerdo que el 12 nov (Docker apagado): código verificado con `tsc`, lint y **244 pruebas unitarias** del backend en verde; las e2e y de navegador nuevas están escritas pero **sin correr**, y la migración `20261113120000_tareas_comentarios` está escrita a mano (verificar con `prisma migrate diff --from-migrations … --shadow-database-url …`).
+
+- Modelos `Task` y `TaskComment` (estados abierta / en_curso / hecha / cancelada; prioridad baja / media / alta; responsable, fecha límite y vínculo opcional a `orden_compra`, `envio` o `sku`). Las tareas **no se borran**: se cancelan, para que la bitácora siga siendo cierta.
+- Reglas (backend): el responsable debe ser personal activo de la **misma empresa** y no un cliente final; la OC o el envío referido debe ser de la empresa (404 igual que si no existiera); un operador solo modifica tareas que creó o le asignaron (el administrador, todas); una tarea cancelada no se edita hasta reabrirla; el cambio es condicional en la versión leída (dos ediciones a la vez → 409, no se pisan); marcar «hecha» guarda cuándo, reabrir lo borra.
+- **Bitácora** (`AuditService`, global, sobre la tabla `audit_logs` que ya existía y nadie usaba): solo se agrega, guarda actor, acción, entidad y los cambios con valor anterior y nuevo; registrar nunca rompe la operación. `GET /api/audit` solo para el administrador de la empresa. Otros módulos pueden empezar a registrar con `AuditService.registrar` (base para C2).
+- API: `GET/POST /tasks`, `GET/PATCH /tasks/:id`, `POST /tasks/:id/comments` (no disponible para `cliente_final`).
+- Frontend: pantalla **Tareas** (pendientes / hechas / canceladas, «solo las mías», vencidas marcadas con texto, detalle con comentarios y bitácora) y su equivalente en modo demo.
+- Pruebas: 23 unitarias nuevas (tareas y bitácora), `backend/test/tasks.e2e-spec.ts` (aislamiento entre empresas, permisos, cancelada, bitácora) y un caso en `frontend/e2e/golden-path.spec.ts`.
+- **Pendiente de B3:** evidencia adjunta, aviso al responsable cuando se le asigna (usar notificaciones) y que B4 cree tareas automáticamente desde las excepciones.
+
 ### 2026-11-12 — Código para cerrar A10, B1b y A4 (escrito SIN ejecutar el stack: Docker apagado a pedido de Kevin)
 
 **Qué hay y qué falta verificar.** Por pedido de Kevin (la PC iba justa de recursos) esta tanda se escribió solo con código; se verificó con `tsc`, lint y pruebas **unitarias** (215+ en verde, sin base de datos). **Faltan por correr con Docker:** las pruebas e2e del backend y de navegador nuevas, y las dos migraciones escritas a mano (verificar con `prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url …` que no haya diferencias; la de API keys/webhooks sí se generó contra la base).

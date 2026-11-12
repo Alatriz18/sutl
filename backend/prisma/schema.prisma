@@ -208,6 +208,8 @@ model Tenant {
   riskStates                 RiskState[]
   riskChanges                RiskChange[]
   webhookEndpoints           WebhookEndpoint[]
+  tasks                      Task[]
+  taskComments               TaskComment[]
 
   @@map("tenants")
 }
@@ -234,6 +236,9 @@ model User {
   movimientosStock    StockMovement[] @relation("StockMovementResponsable")
   ordenesCompraCreadas PurchaseOrder[]        @relation("PurchaseOrderCreadoPor")
   recepcionesOc        PurchaseOrderReceipt[] @relation("PurchaseOrderReceiptResponsable")
+  tareasAsignadas      Task[]                 @relation("TareaAsignada")
+  tareasCreadas        Task[]                 @relation("TareaCreadaPor")
+  comentariosTarea     TaskComment[]          @relation("ComentarioAutor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1105,4 +1110,65 @@ model Lead {
 
   @@index([email, createdAt])
   @@map("leads")
+}
+
+// ---------- Workflow humano: tareas, comentarios y bitácora (B3) ----------
+
+enum EstadoTarea {
+  abierta
+  en_curso
+  hecha
+  cancelada
+}
+
+enum PrioridadTarea {
+  baja
+  media
+  alta
+}
+
+// Trabajo que alguien debe hacer sobre una operación (una OC, un envío o un SKU).
+// Las tareas no se borran: se cancelan, para que la bitácora siga siendo cierta.
+model Task {
+  id            String         @id @default(uuid())
+  tenantId      String
+  titulo        String
+  descripcion   String?
+  estado        EstadoTarea    @default(abierta)
+  prioridad     PrioridadTarea @default(media)
+  asignadoAId   String?
+  creadoPorId   String
+  fechaLimite   DateTime?
+  completadaAt  DateTime?
+  // A qué operación se refiere: 'orden_compra' | 'envio' | 'sku'.
+  entidadTipo   String?
+  entidadId     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+  asignadoA   User?         @relation("TareaAsignada", fields: [asignadoAId], references: [id])
+  creadoPor   User          @relation("TareaCreadaPor", fields: [creadoPorId], references: [id])
+  comentarios TaskComment[]
+
+  @@index([tenantId, estado])
+  @@index([tenantId, asignadoAId])
+  @@index([tenantId, entidadTipo, entidadId])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  tenantId  String
+  taskId    String
+  autorId   String
+  texto     String
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  autor  User   @relation("ComentarioAutor", fields: [autorId], references: [id])
+
+  @@index([taskId, createdAt])
+  @@map("task_comments")
 }

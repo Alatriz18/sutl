@@ -687,3 +687,54 @@ export interface ImportMappingResponse {
   tipo: TipoImportacion;
   mapeo: Record<string, string> | null;
 }
+
+// ---------- Workflow humano: tareas, comentarios y bitácora ----------
+
+export type EstadoTarea = 'abierta' | 'en_curso' | 'hecha' | 'cancelada';
+export type PrioridadTarea = 'baja' | 'media' | 'alta';
+export type EntidadTarea = 'orden_compra' | 'envio' | 'sku';
+
+export interface PersonaResumen {
+  id: string;
+  nombre: string;
+  email: string;
+}
+
+export interface Tarea {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  estado: EstadoTarea;
+  prioridad: PrioridadTarea;
+  asignadoAId: string | null;
+  asignadoA: PersonaResumen | null;
+  creadoPorId: string;
+  creadoPor: PersonaResumen;
+  fechaLimite: string | null;
+  completadaAt: string | null;
+  entidadTipo: EntidadTarea | null;
+  entidadId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { comentarios: number };
+}
+
+export interface ComentarioTarea {
+  id: string;
+  texto: string;
+  createdAt: string;
+  autor: PersonaResumen;
+}
+
+export interface EventoBitacora {
+  id: string;
+  accion: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  user: PersonaResumen | null;
+}
+
+export interface TareaDetalle extends Tarea {
+  comentarios: ComentarioTarea[];
+  bitacora: EventoBitacora[];
+}

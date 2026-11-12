@@ -85,7 +85,7 @@ const PHASES = [
       { id: 'B2', name: 'Dashboard Control Tower (vista de riesgo)', owner: 'Dev', s: 10, e: 12, st: 'pendiente',
         what: 'Reemplaza el resumen centrado en envíos: SKUs en riesgo, OCs atrasadas, vencimientos próximos y tareas del día.', dep: 'B1' },
       { id: 'B3', name: 'Workflow humano: tareas, comentarios y bitácora', owner: 'Ambos', s: 11, e: 13, st: 'pendiente',
-        what: 'Tareas con responsable y fecha, comentarios, evidencia adjunta y registro de quién hizo qué; base del servicio gestionado.', dep: 'A7' },
+        what: 'Código escrito el 13 nov (sin ejecutar el stack): tareas con responsable, prioridad, fecha límite y vínculo a una OC, envío o SKU; comentarios; bitácora de quién hizo qué y cuándo (solo se agrega); pantalla Tareas. Falta correr sus pruebas e2e y de navegador. Sigue pendiente: evidencia adjunta y avisos al asignar.', dep: 'A7' },
       { id: 'B4', name: 'Centro de excepciones: reglas, severidad, SLA y escalamiento', owner: 'Ambos', s: 12, e: 14, st: 'pendiente',
         what: 'Una excepción (OC atrasada, SKU en riesgo, documento faltante) abre una tarea con responsable y SLA; si vence, escala.', dep: 'B1, B3' },
       { id: 'B5', name: 'Roles analista_sutl y proveedor', owner: 'Kevin', s: 12, e: 13, st: 'pendiente',

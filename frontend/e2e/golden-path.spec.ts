@@ -376,6 +376,28 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('Entregado').first()).toBeVisible();
   });
 
+  test('tareas: crear con responsable, comentar, completar y ver la bitácora', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Tareas' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Tareas', level: 1 })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Nueva tarea' }).click();
+    await page.getByLabel('Qué hay que hacer').fill('Pedir factura al proveedor');
+    await page.getByLabel('Prioridad').selectOption('alta');
+    await page.getByRole('button', { name: 'Crear tarea' }).click();
+    await expect(page.getByText('Tarea creada.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Pedir factura al proveedor' }).click();
+    await page.getByLabel('Escribe un comentario').fill('Ya les escribí por correo');
+    await page.getByRole('button', { name: 'Enviar' }).click();
+    await expect(page.getByText('Ya les escribí por correo')).toBeVisible();
+
+    await page.getByLabel('Estado').selectOption('hecha');
+    await expect(page.getByText(/la marcó como hecha/)).toBeVisible();
+    await expect(page.getByText(/creó la tarea/)).toBeVisible();
+    await expect(page.getByText(/comentó/)).toBeVisible();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();
