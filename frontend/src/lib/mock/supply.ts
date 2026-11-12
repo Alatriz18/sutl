@@ -2,7 +2,7 @@
 // políticas por SKU, importaciones y mapeos. Reproduce las reglas del backend
 // real (backend/src/modules/purchase-orders, inventory-coverage, import-mappings)
 // para que la demo en línea se comporte igual, incluidos los mensajes de error.
-import { CoberturaResponse, FilaCobertura, FilaRiesgo, InventoryPolicy, PurchaseOrder, PurchaseOrderLine, RiesgoResponse, TipoImportacion } from '@/types';
+import { CambioRiesgo, CoberturaResponse, FilaCobertura, FilaRiesgo, InventoryPolicy, PurchaseOrder, PurchaseOrderLine, RiesgoResponse, TipoImportacion } from '@/types';
 import { CAMPOS_POR_TIPO } from '../import-campos';
 import { INCOTERMS } from '../purchase-orders';
 import * as db from './data';
@@ -214,6 +214,32 @@ export function riesgo(): RiesgoResponse {
   const acciones: RiesgoResponse['resumen']['acciones'] = {};
   for (const f of filas) if (f.accion !== 'ninguna') acciones[f.accion] = (acciones[f.accion] ?? 0) + 1;
   return { evaluadoAt: hoy.toISOString(), umbralDias: cob.umbralDias, resumen: { rojo: cuenta('rojo'), amarillo: cuenta('amarillo'), verde: cuenta('verde'), sinDatos: cuenta('sin_datos'), acciones }, filas };
+}
+
+// Historial de cambios de semáforo (en la demo vive en memoria): la primera
+// evaluación registra el estado de cada SKU; después solo lo que cambia.
+const estadosRiesgo = new Map<string, FilaRiesgo['semaforo']>();
+const historialRiesgo: CambioRiesgo[] = [];
+
+export function cambiosRiesgo(): CambioRiesgo[] {
+  return historialRiesgo;
+}
+
+export function evaluarRiesgoAhora(): { cambios: CambioRiesgo[] } {
+  const nuevos: CambioRiesgo[] = [];
+  for (const f of riesgo().filas) {
+    const previo = estadosRiesgo.get(f.sku) ?? null;
+    if (previo === f.semaforo) continue;
+    estadosRiesgo.set(f.sku, f.semaforo);
+    nuevos.push({
+      id: `rc-${historialRiesgo.length + nuevos.length + 1}`,
+      sku: f.sku, desde: previo, hacia: f.semaforo, accion: f.accion, motivo: f.motivo,
+      fechaQuiebre: f.fechaQuiebre, avisado: f.semaforo === 'rojo' && configEfectivaDemo().riesgo.avisarAlPasarARojo,
+      createdAt: new Date().toISOString(),
+    });
+  }
+  historialRiesgo.unshift(...nuevos.reverse());
+  return { cambios: nuevos };
 }
 
 // ---------- Políticas por SKU ----------

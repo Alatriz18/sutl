@@ -27,6 +27,9 @@ import { TenantConfigModule } from './modules/tenant-config/tenant-config.module
 import { InventoryCoverageModule } from './modules/inventory-coverage/inventory-coverage.module';
 import { ImportMappingsModule } from './modules/import-mappings/import-mappings.module';
 import { SupplyRiskModule } from './modules/supply-risk/supply-risk.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { LeadsModule } from './modules/leads/leads.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { limiteGlobal } from './common/rate-limit';
 import { PrismaModule } from './prisma/prisma.module';
@@ -84,6 +87,9 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     InventoryCoverageModule,
     ImportMappingsModule,
     SupplyRiskModule,
+    ApiKeysModule,
+    LeadsModule,
+    WebhooksModule.forRoot(),
     QueuesModule.forRoot(),
   ],
   providers: [

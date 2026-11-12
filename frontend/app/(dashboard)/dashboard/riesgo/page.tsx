@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatTile } from '@/components/ui/stat-tile';
 import { cn } from '@/lib/utils';
-import { extractApiError, formatDate, formatNumber } from '@/lib/format';
-import { AccionRiesgo, FilaRiesgo, RiesgoResponse, SemaforoRiesgo } from '@/types';
+import { extractApiError, formatDate, formatDateTime, formatNumber } from '@/lib/format';
+import { useToast } from '@/lib/toast-context';
+import { AccionRiesgo, CambioRiesgo, FilaRiesgo, RiesgoResponse, SemaforoRiesgo } from '@/types';
 
 type Filtro = 'atencion' | 'todos' | SemaforoRiesgo;
 
@@ -59,6 +60,9 @@ export default function RiesgoPage() {
   const [data, setData] = useState<RiesgoResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>('atencion');
+  const [cambios, setCambios] = useState<CambioRiesgo[]>([]);
+  const [evaluando, setEvaluando] = useState(false);
+  const toast = useToast();
 
   const cargar = useCallback(() => {
     setError(null);
@@ -66,7 +70,24 @@ export default function RiesgoPage() {
       .get<RiesgoResponse>('/supply-risk')
       .then((res) => setData(res.data))
       .catch((err) => setError(extractApiError(err, 'No se pudo evaluar el riesgo de abastecimiento.')));
+    api
+      .get<CambioRiesgo[]>('/supply-risk/cambios')
+      .then((res) => setCambios(res.data))
+      .catch(() => setCambios([]));
   }, []);
+
+  async function reevaluar() {
+    setEvaluando(true);
+    try {
+      const r = await api.post<{ cambios: CambioRiesgo[] }>('/supply-risk/evaluar');
+      toast.success(r.data.cambios.length === 0 ? 'Evaluado: ningún SKU cambió de semáforo.' : `Evaluado: ${r.data.cambios.length} SKU cambiaron de semáforo.`);
+      cargar();
+    } catch (err) {
+      toast.error(extractApiError(err, 'No se pudo evaluar el riesgo.'));
+    } finally {
+      setEvaluando(false);
+    }
+  }
 
   useEffect(() => {
     cargar();
@@ -109,10 +130,17 @@ export default function RiesgoPage() {
 
   return (
     <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
       <h1 className="text-2xl font-bold text-navy">Riesgo de abastecimiento</h1>
       <p className="mt-1 text-navy/60">
-        Para cada SKU se proyecta cuándo se acaba el stock según su consumo y se compara con lo que llega (embarques en camino con su fecha estimada). Si se acaba antes de que llegue la reposición, está en rojo.
+        Para cada SKU se proyecta cuándo se acaba el stock según su consumo y se compara con lo que llega (embarques en camino con su fecha estimada). Si se acaba antes de que llegue la reposición, está en rojo. SUTL lo evalúa cada hora y deja el historial de cambios abajo.
       </p>
+        </div>
+        <Button variant="secondary" className="shrink-0" disabled={evaluando} onClick={reevaluar}>
+          {evaluando ? 'Evaluando...' : 'Evaluar ahora'}
+        </Button>
+      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile label="En rojo" value={resumen.rojo} icon={AlertOctagon} accent={resumen.rojo ? 'critical' : 'good'} hint="Se quedan sin stock" />
@@ -190,7 +218,37 @@ export default function RiesgoPage() {
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-navy/50">
+      <section className="mt-8" aria-labelledby="historial-riesgo">
+        <h2 id="historial-riesgo" className="text-lg font-semibold text-navy">
+          Historial de cambios
+        </h2>
+        {cambios.length === 0 ? (
+          <p className="mt-2 text-sm text-navy/50">Todavía no hay cambios registrados. Pulsa «Evaluar ahora» para guardar el estado actual de cada SKU.</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-navy/5 rounded-lg border border-navy/10 bg-white">
+            {cambios.slice(0, 20).map((c) => (
+              <li key={c.id} className="flex flex-col gap-1 px-4 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-navy">
+                  <span className="font-medium">{c.sku}</span>{' '}
+                  {c.desde ? (
+                    <>
+                      pasó de <span className="font-medium">{SEMAFORO[c.desde].texto}</span> a <span className="font-medium">{SEMAFORO[c.hacia].texto}</span>
+                    </>
+                  ) : (
+                    <>
+                      se evaluó por primera vez: <span className="font-medium">{SEMAFORO[c.hacia].texto}</span>
+                    </>
+                  )}
+                  {c.hacia === 'rojo' && c.avisado && <span className="ml-2 text-xs text-navy/50">· se avisó por correo</span>}
+                </span>
+                <span className="text-xs text-navy/50">{formatDateTime(c.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <p className="mt-6 text-xs text-navy/50">
         Una OC que todavía no viaja no cuenta como llegada (no tiene fecha confiable) y una fecha estimada ya vencida tampoco. Los parámetros de cada SKU se editan en{' '}
         <Link href="/dashboard/cobertura" className="underline">
           Cobertura de inventario

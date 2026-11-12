@@ -111,6 +111,49 @@ test.describe('Backend real', () => {
     expect(msgs[0].To[0].Address).toBe('cliente-e2e@ejemplo.com');
   });
 
+  test('integraciones: una API key creada en la web funciona en la API pública v1 y deja de servir al revocarla', async ({ page }) => {
+    await ingresar(page, DEMO.email, DEMO.password);
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20000 });
+    await page.goto('/dashboard/integraciones');
+    await page.getByLabel('Nombre de la integración').fill(`E2E ${unico()}`);
+    await page.getByRole('button', { name: 'Generar' }).click();
+    const llave = (await page.getByText(/^sutl_[A-Za-z0-9_-]{32}$/).innerText()).trim();
+
+    const ok = await fetch(`${API}/v1/shipments?limite=1`, { headers: { 'X-API-Key': llave } });
+    expect(ok.status).toBe(200);
+    expect(((await ok.json()) as { datos: unknown[] }).datos.length).toBeGreaterThan(0);
+    const sinLlave = await fetch(`${API}/v1/shipments`);
+    expect(sinLlave.status).toBe(401);
+
+    await page.getByRole('button', { name: /^Revocar la API key E2E/ }).first().click();
+    await page.getByRole('button', { name: 'Sí, revocar' }).click();
+    await expect(page.getByText(/revocada/).first()).toBeVisible();
+    expect((await fetch(`${API}/v1/shipments`, { headers: { 'X-API-Key': llave } })).status).toBe(401);
+  });
+
+  test('riesgo: «Evaluar ahora» corre contra el servidor y muestra el historial', async ({ page }) => {
+    await ingresar(page, DEMO.email, DEMO.password);
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20000 });
+    await page.goto('/dashboard/riesgo');
+    await page.getByRole('button', { name: 'Evaluar ahora' }).click();
+    await expect(page.getByText(/^Evaluado:/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Historial de cambios' })).toBeVisible();
+  });
+
+  test('landing: el contacto del formulario llega al correo de ventas y queda guardado', async ({ page }) => {
+    const empresa = `Empresa E2E ${unico()}`;
+    await page.goto('/#contacto');
+    await page.getByLabel('Tu nombre').fill('Ana E2E');
+    await page.getByLabel('Empresa').fill(empresa);
+    await page.getByLabel('Correo').fill(`ana-${unico()}@ejemplo.com`);
+    await page.getByRole('button', { name: 'Agendar diagnóstico' }).click();
+    await expect(page.getByText('¡Gracias! Recibimos tu solicitud.')).toBeVisible({ timeout: 15000 });
+
+    const sa = await tokenApi('admin@sutl.dev', 'SutlAdmin2026!');
+    const leads = (await (await fetch(`${API}/leads`, { headers: { Authorization: `Bearer ${sa}` } })).json()) as { empresa: string }[];
+    expect(leads.some((l) => l.empresa === empresa)).toBe(true);
+  });
+
   test('aislamiento entre empresas: otra empresa no ve los envíos de la demo', async ({ page }) => {
     // Crea una empresa nueva (super_admin) con un usuario, vía la API real.
     const sa = await tokenApi('admin@sutl.dev', 'SutlAdmin2026!');

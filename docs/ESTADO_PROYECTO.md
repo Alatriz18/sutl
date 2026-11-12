@@ -85,6 +85,28 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-12 — Código para cerrar A10, B1b y A4 (escrito SIN ejecutar el stack: Docker apagado a pedido de Kevin)
+
+**Qué hay y qué falta verificar.** Por pedido de Kevin (la PC iba justa de recursos) esta tanda se escribió solo con código; se verificó con `tsc`, lint y pruebas **unitarias** (215+ en verde, sin base de datos). **Faltan por correr con Docker:** las pruebas e2e del backend y de navegador nuevas, y las dos migraciones escritas a mano (verificar con `prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url …` que no haya diferencias; la de API keys/webhooks sí se generó contra la base).
+
+**A10 — API pública v1 y webhooks por empresa**
+- `ApiKey`: formato `sutl_` + 32 caracteres aleatorios; en la base solo la huella SHA-256 y un prefijo; se muestra completa una sola vez; máximo 20 activas; revocable. `ApiKeyGuard` (cabecera `X-API-Key`): todo fallo responde «API key inválida» (no revela si existió, se revocó o la empresa está inactiva); marca el último uso como mucho una vez por minuto.
+- API pública solo lectura (`/api/v1/shipments`, `shipments/:codigoGuia` con eventos de tracking, `purchase-orders`, `supply-risk`), 300 peticiones/min, paginada (límite 200), con un contrato propio que no expone IDs internos ni `tenantId`; la llave no sirve en la API del panel y un JWT no sirve en la v1.
+- Webhooks: URL validada contra **SSRF** (https obligatorio; rechaza localhost, redes privadas, enlace local y metadatos de la nube, también al momento de cada entrega por si el DNS cambia; sin redirecciones; sin usuario/contraseña en la URL); firma `X-SUTL-Signature: t=…,v1=HMAC-SHA256(secreto, t.cuerpo)` con tolerancia anti-replay; secreto `whsec_…` mostrado una vez y **cifrado en reposo con AES-256-GCM** (`ENCRYPTION_KEY`, obligatoria en producción: sin ella la app no arranca); cola con 5 intentos (10 s, 20 s, 40 s…), historial de las últimas entregas, botón «Probar», activar/desactivar, máximo 10 por empresa.
+- Eventos (contrato estable): `envio.creado`, `envio.estado_cambiado`, `orden_compra.estado_cambiado`, `riesgo.semaforo_cambiado`. Se publican desde envíos, OCs (transición, recepción y despacho automático al vincular) y el monitor de riesgo; publicar nunca rompe la operación de negocio.
+- Pantalla de Integraciones: claves y webhooks reales (secretos de un solo uso con copiar, confirmación al revocar/eliminar, historial de entregas). El catálogo de conectores de terceros sigue siendo solo demo y en modo real se explica.
+- `WEBHOOKS_ALLOW_PRIVATE=true` (solo desarrollo/pruebas) permite http y direcciones locales; se ignora en producción.
+
+**B1b — Monitor de riesgo**
+- Cola `riesgo` con ronda cada `RISK_EVAL_CADA_MIN` minutos (60 por defecto) sobre las empresas activas con SKU; una que falla no frena a las demás.
+- `RiskState` (último semáforo por SKU) y `RiskChange` (historial). El cambio es **condicional en el semáforo anterior** (y la primera inserción usa unique): dos evaluaciones simultáneas no duplican historial ni avisos.
+- Un solo correo por ronda a los `admin_tenant` activos con todos los SKU que pasaron a rojo; configurable por empresa (`riesgo.avisarAlPasarARojo`, activo por defecto, en Configuración). `POST /supply-risk/evaluar` y `GET /supply-risk/cambios`; la pantalla de Riesgo muestra «Evaluar ahora» e historial.
+
+**A4 — Contacto de la landing**
+- Sección «Agenda tu diagnóstico» con formulario (nombre, empresa, correo, teléfono y mensaje opcionales), campo trampa para bots, una solicitud por correo al día, 5 por hora por IP (`LEADS_RATE_LIMIT`), respuesta idéntica en todos los casos. El contacto se guarda (`Lead`) y avisa a `CONTACT_INBOX_EMAIL`; si el correo falla no se pierde. `GET /api/leads` solo para super_admin. **Pendiente de Kevin:** definir `CONTACT_INBOX_EMAIL` real y si quiere además un botón de WhatsApp.
+
+**Unitarias nuevas (A9):** cifrado y SSRF (44), firma de webhooks, API keys y su guard, notificaciones, servicio de webhooks, monitor de riesgo y leads. Cobertura solo de pruebas unitarias: 27 %; la meta ≥ 70 % se medirá sumando las e2e cuando se pueda correr Docker (`jest --config test/jest-e2e.json --coverage`).
+
 ### 2026-11-10 (cont.) — Notificaciones reales: correo y WhatsApp (A11)
 
 - **El envío ya no es simulado.** Crear una notificación valida el destino, la guarda como pendiente y la encola (cola `notificaciones` de BullMQ, 3 intentos con espera creciente); la API no espera al proveedor. Sin Redis se envía en el momento. Un trabajo repetido no duplica el envío (si ya está enviada, no hace nada).

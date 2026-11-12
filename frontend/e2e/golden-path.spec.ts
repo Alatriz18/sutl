@@ -296,6 +296,80 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByRole('row').filter({ hasText: 'Aviso WA' })).toContainText('WhatsApp');
   });
 
+  test('integraciones: la API key y el secreto del webhook se muestran una sola vez', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Integraciones' }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Integraciones' })).toBeVisible();
+
+    await page.getByLabel('Nombre de la integración').fill('Mi ERP');
+    await page.getByRole('button', { name: 'Generar' }).click();
+    const llave = page.getByText(/^sutl_[A-Za-z0-9_-]{32}$/);
+    await expect(llave).toBeVisible();
+    await expect(page.getByText(/no se vuelve a mostrar/).first()).toBeVisible();
+    const valor = (await llave.innerText()).trim();
+    await page.getByRole('button', { name: 'Ya la guardé' }).click();
+    await expect(page.getByText(valor)).toHaveCount(0); // ya no aparece completa
+    await expect(page.getByText('Mi ERP')).toBeVisible();
+
+    await page.getByLabel('URL del webhook').fill('http://inseguro.com/hook');
+    await page.getByRole('button', { name: 'Agregar webhook' }).click();
+    await expect(page.getByText(/debe usar https/).first()).toBeVisible();
+
+    await page.getByLabel('URL del webhook').fill('https://mi-erp.com/sutl');
+    await page.getByRole('button', { name: 'Riesgo de un SKU cambió' }).click();
+    await page.getByRole('button', { name: 'Agregar webhook' }).click();
+    await expect(page.getByText(/^whsec_/)).toBeVisible();
+    await page.getByRole('button', { name: 'Ya la guardé' }).click();
+    await expect(page.getByText(/^whsec_/)).toHaveCount(0);
+    await expect(page.getByText('https://mi-erp.com/sutl')).toBeVisible();
+
+    // Revocar pide confirmación y la clave queda marcada como revocada.
+    await page.getByRole('button', { name: 'Revocar la API key Mi ERP' }).click();
+    await page.getByRole('button', { name: 'Sí, revocar' }).click();
+    await expect(page.getByText(/revocada/).first()).toBeVisible();
+  });
+
+  test('riesgo: «Evaluar ahora» registra el historial de cambios de semáforo', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Riesgo de abastecimiento' }).click();
+    await expect(page.getByText(/Todavía no hay cambios registrados/)).toBeVisible();
+    await page.getByRole('button', { name: 'Evaluar ahora' }).click();
+    await expect(page.getByText(/SKU cambiaron de semáforo/)).toBeVisible();
+    const historial = page.getByRole('region').or(page.locator('section[aria-labelledby="historial-riesgo"]'));
+    await expect(historial.getByText(/se evaluó por primera vez: Rojo/).first()).toBeVisible();
+    // Evaluar de nuevo sin cambios no agrega nada.
+    await page.getByRole('button', { name: 'Evaluar ahora' }).click();
+    await expect(page.getByText('Evaluado: ningún SKU cambió de semáforo.')).toBeVisible();
+  });
+
+  test('configuración: el aviso de riesgo por correo se puede apagar', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Configuración de la operación' }).click();
+    const aviso = page.getByLabel(/Avisar por correo a los administradores/);
+    await expect(aviso).toBeChecked();
+    await aviso.uncheck();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText(/guardad/i).first()).toBeVisible();
+    await expect(aviso).not.toBeChecked();
+  });
+
+  test('landing: el formulario de diagnóstico valida y confirma el envío', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Agendar diagnóstico' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Agenda tu diagnóstico' })).toBeVisible();
+
+    // El correo inválido se rechaza antes de enviar.
+    await page.getByLabel('Tu nombre').fill('Ana Pérez');
+    await page.getByLabel('Empresa').fill('Plásticos del Litoral');
+    await page.getByLabel('Correo').fill('no-es-correo');
+    await page.getByRole('button', { name: 'Agendar diagnóstico' }).click();
+    await expect(page.getByText(/¡Gracias!/)).toHaveCount(0);
+
+    await page.getByLabel('Correo').fill('ana@plasticos.ec');
+    await page.getByRole('button', { name: 'Agendar diagnóstico' }).click();
+    await expect(page.getByText('¡Gracias! Recibimos tu solicitud.')).toBeVisible();
+  });
+
   test('tracking público encuentra un envío existente por código de guía', async ({ page }) => {
     await page.goto('/tracking/SUTL-DEMO-0003');
     await expect(page.getByText('SUTL-DEMO-0003')).toBeVisible();

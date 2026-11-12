@@ -352,6 +352,33 @@ export default function ConfiguracionPage() {
           </div>
         </Card>
 
+        <Card className="mt-6">
+          <CardTitle>Riesgo de abastecimiento</CardTitle>
+          <div className="mt-3 max-w-2xl">
+            <Campo
+              label="Aviso por correo"
+              sugerido={sugerido.riesgo.avisarAlPasarARojo ? 'avisa a los administradores' : 'no avisa'}
+              ajustado={ajustado('riesgo', 'avisarAlPasarARojo')}
+            >
+              <label className="flex items-start gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky"
+                  disabled={!puedeEditar}
+                  checked={form.riesgo.avisarAlPasarARojo}
+                  onChange={(e) => set('riesgo', { avisarAlPasarARojo: e.target.checked })}
+                />
+                <span>
+                  Avisar por correo a los administradores cuando un SKU pase a rojo
+                  <span className="block text-xs text-navy/50">
+                    SUTL evalúa el riesgo cada hora y manda un solo correo con todos los SKU que se quedarían sin stock antes de que llegue la reposición. El historial de cambios queda siempre en la pantalla de Riesgo de abastecimiento.
+                  </span>
+                </span>
+              </label>
+            </Campo>
+          </div>
+        </Card>
+
         {puedeEditar && (
           <div className="sticky bottom-0 mt-6 flex flex-col gap-2 border-t border-navy/10 bg-slate-50/95 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-end">
             {sinGuardar && <span className="text-sm text-navy/60 sm:mr-auto">Tienes cambios sin guardar.</span>}

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ContactForm } from '@/components/landing/contact-form';
 import {
   ArrowRight,
   BarChart3,
@@ -294,6 +295,12 @@ export default function HomePage() {
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
               >
                 Conoce el piloto de 12 semanas
+              </a>
+              <a
+                href="#contacto"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Agendar diagnóstico
               </a>
             </div>
             <ul className="mt-10 grid grid-cols-1 gap-3 text-sm text-white/65 sm:grid-cols-3">
@@ -780,6 +787,21 @@ export default function HomePage() {
           />
           <Reveal className="mt-14">
             <IcpCheck />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* CONTACTO */}
+      <section id="contacto" className="scroll-mt-[72px] relative overflow-hidden bg-navy-radial py-24 text-white sm:py-28">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <Reveal>
+            <h2 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl">Agenda tu diagnóstico</h2>
+            <p className="mx-auto mt-4 max-w-xl text-center text-white/70">
+              Cuéntanos de tu operación y te escribimos para coordinar un diagnóstico de 2 semanas: dónde está el costo oculto y qué cambiaría el piloto.
+            </p>
+            <div className="mt-10">
+              <ContactForm />
+            </div>
           </Reveal>
         </div>
       </section>

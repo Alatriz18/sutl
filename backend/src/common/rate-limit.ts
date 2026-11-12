@@ -18,3 +18,6 @@ export const LIMITE_GLOBAL_POR_DEFECTO = 120;
 // que Nest lee los decoradores.
 export const limiteLogin = () => limiteDesdeEntorno('LOGIN_RATE_LIMIT', LIMITE_LOGIN_POR_DEFECTO);
 export const limiteGlobal = () => limiteDesdeEntorno('RATE_LIMIT', LIMITE_GLOBAL_POR_DEFECTO);
+export const LIMITE_LEADS_POR_DEFECTO = 5;
+// Formulario público de contacto: por hora y por IP.
+export const limiteLeads = () => limiteDesdeEntorno('LEADS_RATE_LIMIT', LIMITE_LEADS_POR_DEFECTO);

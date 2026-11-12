@@ -1,6 +1,7 @@
 import {
   Alert,
   ApiKey,
+  EntregaWebhook,
   AppNotification,
   Booking,
   Carrier,
@@ -627,28 +628,36 @@ function randomKeySuffix() {
 
 export const apiKeys: ApiKey[] = [
   {
-    id: 'key-1', tenantId: 't-demo', nombre: 'Integración ERP interno',
-    llavePublica: 'sutl_live_7f2a9c1e4b6d', ultimoUso: diasAtras(0), activo: true, createdAt: mesesAtras(2),
+    id: 'key-1', nombre: 'Integración ERP interno', prefijo: 'sutl_7f2a9c1',
+    ultimoUsoAt: diasAtras(0), revocadaAt: null, createdAt: mesesAtras(2),
   },
 ];
 
 export const webhooks: Webhook[] = [
   {
-    id: 'wh-1', tenantId: 't-demo', url: 'https://erp.transportesdemo.ec/webhooks/sutl',
-    eventos: ['envio.actualizado', 'envio.entregado'], activo: true,
-    ultimoEnvio: diasAtras(0), ultimoEnvioOk: true, createdAt: mesesAtras(1),
+    id: 'wh-1', url: 'https://erp.transportesdemo.ec/webhooks/sutl',
+    eventos: ['envio.estado_cambiado', 'orden_compra.estado_cambiado'], activo: true,
+    ultimaEntrega: { estado: 'entregado', createdAt: diasAtras(0), entregadoAt: diasAtras(0) }, createdAt: mesesAtras(1),
   },
 ];
 
+export const entregasWebhook: Record<string, EntregaWebhook[]> = {
+  'wh-1': [
+    { id: 'ent-1', evento: 'envio.estado_cambiado', estado: 'entregado', intentos: 1, ultimoStatus: 200, error: null, createdAt: diasAtras(0), entregadoAt: diasAtras(0) },
+    { id: 'ent-2', evento: 'orden_compra.estado_cambiado', estado: 'entregado', intentos: 2, ultimoStatus: 200, error: null, createdAt: diasAtras(2), entregadoAt: diasAtras(2) },
+  ],
+};
+
 export function newApiKey(nombre: string): ApiKey {
+  const llave = `sutl_${randomKeySuffix()}${randomKeySuffix()}${randomKeySuffix()}${randomKeySuffix()}`.slice(0, 37);
   return {
     id: nextId('key'),
-    tenantId: 't-demo',
     nombre,
-    llavePublica: `sutl_live_${randomKeySuffix()}`,
-    ultimoUso: null,
-    activo: true,
+    prefijo: llave.slice(0, 11),
+    ultimoUsoAt: null,
+    revocadaAt: null,
     createdAt: nowIso(),
+    llave,
   };
 }
 

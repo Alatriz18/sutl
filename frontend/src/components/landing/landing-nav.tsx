@@ -12,6 +12,7 @@ const LINKS = [
   { href: '#motor-de-riesgo', label: 'Motor de riesgo' },
   { href: '#industrias', label: 'Industrias' },
   { href: '#piloto', label: 'Piloto' },
+  { href: '#contacto', label: 'Contacto' },
 ];
 
 export function LandingNav() {

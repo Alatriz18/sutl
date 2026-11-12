@@ -45,6 +45,12 @@ export class InventarioConfigDto {
   diasCoberturaAlerta?: number;
 }
 
+export class RiesgoConfigDto {
+  @IsOptional()
+  @IsBoolean()
+  avisarAlPasarARojo?: boolean;
+}
+
 export class ConfiguracionDto {
   @IsOptional()
   @ValidateNested()
@@ -55,6 +61,11 @@ export class ConfiguracionDto {
   @ValidateNested()
   @Type(() => InventarioConfigDto)
   inventario?: InventarioConfigDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RiesgoConfigDto)
+  riesgo?: RiesgoConfigDto;
 }
 
 export class UpdateTenantConfigDto {

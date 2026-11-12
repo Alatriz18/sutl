@@ -377,13 +377,15 @@ export const mockAdapter: AxiosAdapter = async (config) => {
 
     // --- COBERTURA / POLÍTICAS / MAPEOS --- (mismas reglas que el backend real)
     if (
-      (path === '/inventory-coverage' || path === '/supply-risk' || path.startsWith('/inventory-policies') || path.startsWith('/import-mappings')) &&
+      (path === '/inventory-coverage' || path.startsWith('/supply-risk') || path.startsWith('/inventory-policies') || path.startsWith('/import-mappings')) &&
       currentUser()?.rol === 'cliente_final'
     ) {
       throw new MockApiError(403, 'Forbidden resource');
     }
     if (method === 'get' && path === '/inventory-coverage') return delay(ok(config, supply.cobertura()));
     if (method === 'get' && path === '/supply-risk') return delay(ok(config, supply.riesgo()));
+    if (method === 'get' && path === '/supply-risk/cambios') return delay(ok(config, supply.cambiosRiesgo()));
+    if (method === 'post' && path === '/supply-risk/evaluar') return delay(ok(config, supply.evaluarRiesgoAhora(), 201), 400);
     if (method === 'get' && path === '/inventory-policies') return delay(ok(config, supply.listarPoliticas()));
     if (method === 'put' && path === '/inventory-policies') return delay(ok(config, supply.guardarPolitica(body)), 240);
     if (method === 'post' && path === '/inventory-policies/importar') return delay(ok(config, supply.importarPoliticas(body), 201), 320);
@@ -990,6 +992,16 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       return delay(ok(config, alerta));
     }
 
+    // --- CONTACTO DE LA LANDING --- (público; la demo no guarda ni envía nada)
+    if (method === 'post' && path === '/leads') {
+      const nombre = String(body.nombre ?? '').trim();
+      const empresa = String(body.empresa ?? '').trim();
+      const email = String(body.email ?? '').trim();
+      if (nombre.length < 2 || empresa.length < 2) throw new MockApiError(400, 'Completa tu nombre y el de tu empresa.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new MockApiError(400, 'email must be an email');
+      return delay(ok(config, { ok: true }, 201), 500);
+    }
+
     // --- NOTIFICATIONS ---
     if (method === 'get' && path === '/notifications') {
       return delay(ok(config, db.notifications.map(db.notificationExpanded)));
@@ -1127,55 +1139,76 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       return delay(ok(config, db.integrationExpanded(integration)), 600);
     }
 
-    // --- API KEYS ---
+    // --- API KEYS --- (mismas reglas que backend/src/modules/api-keys)
     if (method === 'get' && path === '/api-keys') {
-      return delay(ok(config, db.apiKeys));
+      return delay(ok(config, db.apiKeys.map(({ llave: _llave, ...k }) => k)));
     }
     if (method === 'post' && path === '/api-keys') {
-      const key = db.newApiKey(String(body.nombre ?? 'Nueva llave'));
-      db.apiKeys.push(key);
-      return delay(ok(config, key), 260);
+      const nombre = String(body.nombre ?? '').trim();
+      if (!nombre || nombre.length > 80) throw new MockApiError(400, 'El nombre es obligatorio (máximo 80 caracteres).');
+      if (db.apiKeys.filter((k) => !k.revocadaAt).length >= 20) throw new MockApiError(400, 'Se alcanzó el máximo de 20 claves activas. Revoca alguna que ya no uses.');
+      const key = db.newApiKey(nombre);
+      const { llave: _llave, ...guardada } = key;
+      db.apiKeys.unshift(guardada);
+      return delay(ok(config, key, 201), 260);
     }
     m = match(path, /^\/api-keys\/([^/]+)$/);
     if (method === 'delete' && m) {
-      const key = db.apiKeys.find((k) => k.id === m![1]);
-      if (!key) throw new MockApiError(404, 'Llave no encontrada.');
-      key.activo = false;
-      return delay(ok(config, key), 200);
+      const key = db.apiKeys.find((k) => k.id === m![1] && !k.revocadaAt);
+      if (!key) throw new MockApiError(404, 'API key no encontrada');
+      key.revocadaAt = nowIso();
+      return delay(ok(config, { id: key.id }), 200);
     }
 
-    // --- WEBHOOKS ---
+    // --- WEBHOOKS --- (mismas reglas que backend/src/modules/webhooks)
     if (method === 'get' && path === '/webhooks') {
       return delay(ok(config, db.webhooks));
     }
     if (method === 'post' && path === '/webhooks') {
+      const eventos = Array.isArray(body.eventos) ? (body.eventos as Webhook['eventos']) : [];
+      const permitidos = ['envio.creado', 'envio.estado_cambiado', 'orden_compra.estado_cambiado', 'riesgo.semaforo_cambiado'];
+      if (eventos.length === 0 || eventos.some((e) => !permitidos.includes(e))) throw new MockApiError(400, 'Elige al menos un evento válido.');
+      const url = String(body.url ?? '');
+      if (!/^https:\/\/[^\s/@]+(\/\S*)?$/.test(url)) throw new MockApiError(400, 'La URL debe usar https.');
+      if (db.webhooks.length >= 10) throw new MockApiError(400, 'Se alcanzó el máximo de 10 webhooks por empresa.');
       const webhook: Webhook = {
         id: nextId('wh'),
-        tenantId: currentUser()?.tenantId ?? 't-demo',
-        url: String(body.url ?? ''),
-        eventos: (body.eventos as Webhook['eventos']) ?? [],
+        url,
+        eventos,
         activo: true,
-        ultimoEnvio: null,
-        ultimoEnvioOk: null,
+        ultimaEntrega: null,
         createdAt: nowIso(),
       };
-      db.webhooks.push(webhook);
-      return delay(ok(config, webhook), 260);
+      db.webhooks.unshift(webhook);
+      return delay(ok(config, { ...webhook, secreto: `whsec_demo${Math.random().toString(36).slice(2, 14)}` }, 201), 260);
     }
     m = match(path, /^\/webhooks\/([^/]+)\/probar$/);
     if (method === 'post' && m) {
       const webhook = db.webhooks.find((w) => w.id === m![1]);
-      if (!webhook) throw new MockApiError(404, 'Webhook no encontrado.');
-      webhook.ultimoEnvio = nowIso();
-      webhook.ultimoEnvioOk = true;
-      return delay(ok(config, webhook), 450);
+      if (!webhook) throw new MockApiError(404, 'Webhook no encontrado');
+      const entrega = { id: nextId('ent'), evento: 'webhook.prueba', estado: 'entregado' as const, intentos: 1, ultimoStatus: 200, error: null, createdAt: nowIso(), entregadoAt: nowIso() };
+      (db.entregasWebhook[webhook.id] ??= []).unshift(entrega);
+      webhook.ultimaEntrega = { estado: 'entregado', createdAt: entrega.createdAt, entregadoAt: entrega.entregadoAt };
+      return delay(ok(config, entrega, 201), 450);
+    }
+    m = match(path, /^\/webhooks\/([^/]+)\/entregas$/);
+    if (method === 'get' && m) {
+      const webhook = db.webhooks.find((w) => w.id === m![1]);
+      if (!webhook) throw new MockApiError(404, 'Webhook no encontrado');
+      return delay(ok(config, db.entregasWebhook[webhook.id] ?? []));
     }
     m = match(path, /^\/webhooks\/([^/]+)$/);
+    if (method === 'patch' && m) {
+      const webhook = db.webhooks.find((w) => w.id === m![1]);
+      if (!webhook) throw new MockApiError(404, 'Webhook no encontrado');
+      if (typeof body.activo === 'boolean') webhook.activo = body.activo;
+      return delay(ok(config, webhook), 200);
+    }
     if (method === 'delete' && m) {
       const idx = db.webhooks.findIndex((w) => w.id === m![1]);
-      if (idx === -1) throw new MockApiError(404, 'Webhook no encontrado.');
+      if (idx === -1) throw new MockApiError(404, 'Webhook no encontrado');
       const [removed] = db.webhooks.splice(idx, 1);
-      return delay(ok(config, removed), 200);
+      return delay(ok(config, { id: removed.id }), 200);
     }
 
     throw new MockApiError(404, `(demo) Endpoint no implementado en el modo demo: ${method.toUpperCase()} ${path}`);

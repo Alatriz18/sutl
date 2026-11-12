@@ -1,9 +1,9 @@
+import { WebhooksService } from '../webhooks/webhooks.service';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  NotFoundException, Optional } from '@nestjs/common';
 import { EstadoOrdenCompra, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantConfigService } from '../tenant-config/tenant-config.service';
@@ -70,7 +70,18 @@ export class PurchaseOrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantConfig: TenantConfigService,
+    @Optional() private readonly webhooks?: WebhooksService,
   ) {}
+
+  // Avisa a los webhooks de la empresa que la OC cambió de estado.
+  publicarCambioDeEstado(tenantId: string, orden: { numero: string; estado: string }, estadoAnterior: string) {
+    if (orden.estado === estadoAnterior) return;
+    void this.webhooks?.emitir(tenantId, 'orden_compra.estado_cambiado', {
+      numero: orden.numero,
+      estadoAnterior,
+      estadoNuevo: orden.estado,
+    });
+  }
 
   findAll(tenantId: string, query: QueryPurchaseOrdersDto = {}) {
     const where: Prisma.PurchaseOrderWhereInput = { tenantId };
@@ -212,7 +223,9 @@ export class PurchaseOrdersService {
     if (count === 0) {
       throw new ConflictException('La OC cambió de estado mientras tanto; vuelve a cargarla');
     }
-    return this.findOne(tenantId, id);
+    const actualizada = await this.findOne(tenantId, id);
+    this.publicarCambioDeEstado(tenantId, actualizada, orden.estado);
+    return actualizada;
   }
 
   async registrarRecepcion(
@@ -294,7 +307,9 @@ export class PurchaseOrdersService {
       }
     });
 
-    return this.findOne(tenantId, id);
+    const actualizada = await this.findOne(tenantId, id);
+    this.publicarCambioDeEstado(tenantId, actualizada, orden.estado);
+    return actualizada;
   }
 
   // Decide, según la configuración del tenant, si la recepción suma al

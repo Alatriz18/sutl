@@ -420,27 +420,43 @@ export interface Integration {
   updatedAt: string;
 }
 
+// API pública v1 (ver backend/src/modules/api-keys). La llave completa solo
+// llega en la respuesta de creación (campo `llave`); después solo el prefijo.
 export interface ApiKey {
   id: string;
-  tenantId: string;
   nombre: string;
-  llavePublica: string;
-  ultimoUso: string | null;
-  activo: boolean;
+  prefijo: string;
+  ultimoUsoAt: string | null;
+  revocadaAt: string | null;
   createdAt: string;
+  llave?: string;
 }
 
-export type EventoWebhook = 'envio.creado' | 'envio.actualizado' | 'envio.entregado' | 'factura.pagada';
+export type EventoWebhook = 'envio.creado' | 'envio.estado_cambiado' | 'orden_compra.estado_cambiado' | 'riesgo.semaforo_cambiado';
+export type EstadoEntregaWebhook = 'pendiente' | 'entregado' | 'fallido';
 
+// Webhooks salientes firmados (ver backend/src/modules/webhooks). El secreto
+// solo llega en la respuesta de creación (campo `secreto`).
 export interface Webhook {
   id: string;
-  tenantId: string;
   url: string;
   eventos: EventoWebhook[];
   activo: boolean;
-  ultimoEnvio: string | null;
-  ultimoEnvioOk: boolean | null;
   createdAt: string;
+  updatedAt?: string;
+  ultimaEntrega?: { estado: EstadoEntregaWebhook; createdAt: string; entregadoAt: string | null } | null;
+  secreto?: string;
+}
+
+export interface EntregaWebhook {
+  id: string;
+  evento: string;
+  estado: EstadoEntregaWebhook;
+  intentos: number;
+  ultimoStatus: number | null;
+  error: string | null;
+  createdAt: string;
+  entregadoAt: string | null;
 }
 
 // --- Control de Órdenes de Compra (Supply Control) ---
@@ -553,6 +569,9 @@ export interface ConfigOperacion {
     recepcionActualizaInventario: ModoRecepcionInventario;
     diasCoberturaAlerta: number;
   };
+  riesgo: {
+    avisarAlPasarARojo: boolean;
+  };
 }
 
 export type AjustesOperacion = {
@@ -631,6 +650,18 @@ export interface FilaRiesgo {
   reposicionesSinFecha: number;
   reposicionesVencidas: number;
   reposiciones: { origen: 'embarque' | 'oc'; referencia: string; cantidad: number; fecha: string | null }[];
+}
+
+export interface CambioRiesgo {
+  id: string;
+  sku: string;
+  desde: SemaforoRiesgo | null;
+  hacia: SemaforoRiesgo;
+  accion: AccionRiesgo;
+  motivo: string;
+  fechaQuiebre: string | null;
+  avisado: boolean;
+  createdAt: string;
 }
 
 export interface RiesgoResponse {

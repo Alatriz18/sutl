@@ -1,6 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { DynamicModule, Logger, Module } from '@nestjs/common';
-import { COLA_MANTENIMIENTO, COLA_NOTIFICACIONES } from './queues.constants';
+import { COLA_MANTENIMIENTO, COLA_NOTIFICACIONES, COLA_RIESGO, COLA_WEBHOOKS } from './queues.constants';
 import { QueuesController } from './queues.controller';
 import { QueuesService } from './queues.service';
 import { MantenimientoProcessor } from './mantenimiento.processor';
@@ -54,6 +54,21 @@ export class QueuesModule {
             attempts: 3,
             backoff: { type: 'exponential', delay: Number(process.env.NOTIFICACIONES_BACKOFF_MS) > 0 ? Number(process.env.NOTIFICACIONES_BACKOFF_MS) : 5000 },
           },
+        }),
+        BullModule.registerQueue({
+          name: COLA_WEBHOOKS,
+          defaultJobOptions: {
+            removeOnComplete: 100,
+            removeOnFail: 200,
+            // 5 intentos con espera creciente (10 s, 20 s, 40 s…): el receptor puede estar caído un rato.
+            attempts: 5,
+            backoff: { type: 'exponential', delay: Number(process.env.WEBHOOKS_BACKOFF_MS) > 0 ? Number(process.env.WEBHOOKS_BACKOFF_MS) : 10000 },
+          },
+        }),
+        BullModule.registerQueue({
+          name: COLA_RIESGO,
+          // Una evaluación que falla se vuelve a intentar en la siguiente ronda programada.
+          defaultJobOptions: { removeOnComplete: 20, removeOnFail: 50, attempts: 1 },
         }),
       ],
       controllers: [QueuesController],

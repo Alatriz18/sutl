@@ -10,6 +10,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
   {
@@ -19,6 +20,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
   {
@@ -28,6 +30,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
   {
@@ -37,6 +40,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
 ];
@@ -48,6 +52,7 @@ function efectiva(): ConfigOperacion {
   return {
     compras: { ...base.compras, ...estado.ajustes.compras },
     inventario: { ...base.inventario, ...estado.ajustes.inventario },
+    riesgo: { ...base.riesgo, ...estado.ajustes.riesgo },
   };
 }
 
@@ -87,6 +92,8 @@ export function actualizarConfigDemo(body: {
   const inventario = { ...base.inventario, ...body.configuracion?.inventario };
   if (Object.keys(compras).length) ajustes.compras = compras;
   if (Object.keys(inventario).length) ajustes.inventario = inventario;
+  const riesgo = { ...base.riesgo, ...body.configuracion?.riesgo };
+  if (Object.keys(riesgo).length) ajustes.riesgo = riesgo;
   estado.ajustes = ajustes;
   return null;
 }

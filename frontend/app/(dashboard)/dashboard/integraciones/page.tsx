@@ -1,37 +1,18 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import {
-  CheckCircle2,
-  Globe2,
-  Key,
-  Link2,
-  Package2,
-  Plug,
-  RefreshCw,
-  ShoppingBag,
-  Ship,
-  Trash2,
-  Webhook as WebhookIcon,
-  XCircle,
-} from 'lucide-react';
-import { api } from '@/lib/api';
-import { Card, CardTitle } from '@/components/ui/card';
+import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Globe2, Link2, Package2, Plug, RefreshCw, ShoppingBag, Ship, XCircle } from 'lucide-react';
+import { api, DEMO_MODE } from '@/lib/api';
+import { ApiKeysCard } from '@/components/integraciones/api-keys-card';
+import { WebhooksCard } from '@/components/integraciones/webhooks-card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { DemoBanner } from '@/components/ui/demo-banner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
 import { extractApiError, formatDateTime } from '@/lib/format';
-import {
-  ApiKey,
-  CategoriaIntegracion,
-  EventoWebhook,
-  Integration,
-  IntegrationProvider,
-  Webhook,
-} from '@/types';
+import { CategoriaIntegracion, Integration, IntegrationProvider } from '@/types';
 
 const CATEGORIA_LABEL: Record<CategoriaIntegracion, string> = {
   courier: 'Couriers',
@@ -49,37 +30,24 @@ const CATEGORIA_ICON: Record<CategoriaIntegracion, typeof Package2> = {
 
 const CATEGORIA_ORDEN: CategoriaIntegracion[] = ['courier', 'ecommerce', 'naviera_aerolinea', 'erp_externo'];
 
-const EVENTOS: EventoWebhook[] = ['envio.creado', 'envio.actualizado', 'envio.entregado', 'factura.pagada'];
-
 export default function IntegracionesPage() {
   const toast = useToast();
   const [providers, setProviders] = useState<IntegrationProvider[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyProviderId, setBusyProviderId] = useState<string | null>(null);
-  const [savingKey, setSavingKey] = useState(false);
-  const [keyName, setKeyName] = useState('');
-  const [savingHook, setSavingHook] = useState(false);
-  const [busyHookId, setBusyHookId] = useState<string | null>(null);
-  const [hookForm, setHookForm] = useState<{ url: string; eventos: EventoWebhook[] }>({
-    url: '',
-    eventos: ['envio.actualizado'],
-  });
 
   async function cargar() {
+    // El catálogo de conectores de terceros (couriers, tiendas…) aún no existe en
+    // el backend real: solo se muestra en el modo demo.
+    if (!DEMO_MODE) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const [provRes, intRes, keyRes, hookRes] = await Promise.all([
-      api.get<IntegrationProvider[]>('/integrations/providers'),
-      api.get<Integration[]>('/integrations'),
-      api.get<ApiKey[]>('/api-keys'),
-      api.get<Webhook[]>('/webhooks'),
-    ]);
+    const [provRes, intRes] = await Promise.all([api.get<IntegrationProvider[]>('/integrations/providers'), api.get<Integration[]>('/integrations')]);
     setProviders(provRes.data);
     setIntegrations(intRes.data);
-    setApiKeys(keyRes.data);
-    setWebhooks(hookRes.data);
     setLoading(false);
   }
 
@@ -142,95 +110,25 @@ export default function IntegracionesPage() {
     }
   }
 
-  async function crearApiKey(e: FormEvent) {
-    e.preventDefault();
-    setSavingKey(true);
-    try {
-      await api.post('/api-keys', { nombre: keyName });
-      setKeyName('');
-      toast.success('API key creada.');
-      await cargar();
-    } catch (err) {
-      toast.error(extractApiError(err, 'No se pudo crear la API key.'));
-    } finally {
-      setSavingKey(false);
-    }
-  }
-
-  async function revocarApiKey(id: string) {
-    try {
-      await api.delete(`/api-keys/${id}`);
-      toast.success('API key revocada.');
-      await cargar();
-    } catch (err) {
-      toast.error(extractApiError(err, 'No se pudo revocar la API key.'));
-    }
-  }
-
-  function toggleEvento(ev: EventoWebhook) {
-    setHookForm((f) => ({
-      ...f,
-      eventos: f.eventos.includes(ev) ? f.eventos.filter((e) => e !== ev) : [...f.eventos, ev],
-    }));
-  }
-
-  async function crearWebhook(e: FormEvent) {
-    e.preventDefault();
-    setSavingHook(true);
-    try {
-      await api.post('/webhooks', hookForm);
-      setHookForm({ url: '', eventos: ['envio.actualizado'] });
-      toast.success('Webhook registrado.');
-      await cargar();
-    } catch (err) {
-      toast.error(extractApiError(err, 'No se pudo crear el webhook.'));
-    } finally {
-      setSavingHook(false);
-    }
-  }
-
-  async function probarWebhook(id: string) {
-    setBusyHookId(id);
-    try {
-      await api.post(`/webhooks/${id}/probar`);
-      toast.success('Entrega de prueba enviada.');
-      await cargar();
-    } catch (err) {
-      toast.error(extractApiError(err, 'No se pudo enviar la prueba.'));
-    } finally {
-      setBusyHookId(null);
-    }
-  }
-
-  async function eliminarWebhook(id: string) {
-    setBusyHookId(id);
-    try {
-      await api.delete(`/webhooks/${id}`);
-      toast.success('Webhook eliminado.');
-      await cargar();
-    } catch (err) {
-      toast.error(extractApiError(err, 'No se pudo eliminar el webhook.'));
-    } finally {
-      setBusyHookId(null);
-    }
-  }
-
   return (
     <div>
       <h1 className="text-2xl font-bold text-navy">Integraciones</h1>
       <p className="mt-1 text-navy/60">
-        Conecta couriers, tiendas online, navieras/aerolíneas y tus propios sistemas — la base del
-        tracking universal de SUTL.
+        Conecta tus sistemas con SUTL: consulta tus datos por API y recibe avisos automáticos (webhooks) cuando algo cambia.
       </p>
 
-      <DemoBanner>
-        Las conexiones aquí son simuladas (modo demo): &quot;Conectar&quot; y &quot;Sincronizar&quot;
-        no llaman a un proveedor real todavía, pero el flujo — catálogo de proveedores, estado de
-        conexión, API keys y webhooks salientes — es el mismo que tendrá la integración real.
-      </DemoBanner>
+      {DEMO_MODE ? (
+        <DemoBanner>
+          El catálogo de conectores (couriers, tiendas online, navieras) es una vista previa simulada: &quot;Conectar&quot; y &quot;Sincronizar&quot; no llaman a un proveedor real todavía. Las API keys y los webhooks de abajo sí usan el contrato real.
+        </DemoBanner>
+      ) : (
+        <p className="mt-4 rounded-lg border border-sky/20 bg-sky/5 px-4 py-3 text-sm text-navy/70">
+          Los conectores de couriers, tiendas online y navieras llegan en una próxima fase. Mientras tanto, la API pública y los webhooks ya permiten integrar tu ERP.
+        </p>
+      )}
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
@@ -335,134 +233,8 @@ export default function IntegracionesPage() {
       )}
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <div className="flex items-center gap-2">
-            <Key size={16} className="text-navy/50" />
-            <CardTitle className="!mb-0">API keys</CardTitle>
-          </div>
-          <p className="mt-1 text-sm text-navy/60">
-            Para que un sistema externo (tu ERP, un marketplace propio) consulte o cree envíos en SUTL.
-          </p>
-
-          <div className="mt-4 flex flex-col gap-2">
-            {apiKeys.length === 0 && <p className="text-sm text-navy/40">Aún no hay API keys.</p>}
-            {apiKeys.map((k) => (
-              <div
-                key={k.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-navy/10 px-3 py-2.5"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-navy">{k.nombre}</p>
-                  <code className="text-xs text-navy/50">{k.llavePublica}</code>
-                </div>
-                <button
-                  onClick={() => revocarApiKey(k.id)}
-                  className="shrink-0 text-navy/40 hover:text-[#B3362B]"
-                  title="Revocar"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <form onSubmit={crearApiKey} className="mt-4 flex gap-2">
-            <Input
-              placeholder="Nombre de la integración (ej. ERP interno)"
-              required
-              value={keyName}
-              onChange={(e) => setKeyName(e.target.value)}
-            />
-            <Button type="submit" disabled={savingKey} className="shrink-0">
-              {savingKey ? '...' : 'Generar'}
-            </Button>
-          </form>
-        </Card>
-
-        <Card>
-          <div className="flex items-center gap-2">
-            <WebhookIcon size={16} className="text-navy/50" />
-            <CardTitle className="!mb-0">Webhooks salientes</CardTitle>
-          </div>
-          <p className="mt-1 text-sm text-navy/60">
-            SUTL avisa a tu sistema cuando pasa algo — sin que tengas que estar consultando la API.
-          </p>
-
-          <div className="mt-4 flex flex-col gap-2">
-            {webhooks.length === 0 && <p className="text-sm text-navy/40">Aún no hay webhooks.</p>}
-            {webhooks.map((w) => (
-              <div key={w.id} className="rounded-md border border-navy/10 px-3 py-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <code className="min-w-0 truncate text-xs text-navy">{w.url}</code>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      disabled={busyHookId === w.id}
-                      onClick={() => probarWebhook(w.id)}
-                      className="text-xs font-medium text-sky hover:underline disabled:opacity-40"
-                    >
-                      Probar
-                    </button>
-                    <button
-                      disabled={busyHookId === w.id}
-                      onClick={() => eliminarWebhook(w.id)}
-                      className="text-navy/40 hover:text-[#B3362B]"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  {w.eventos.map((ev) => (
-                    <span key={ev} className="rounded-full bg-navy/5 px-1.5 py-0.5 text-[10px] text-navy/60">
-                      {ev}
-                    </span>
-                  ))}
-                </div>
-                {w.ultimoEnvio && (
-                  <p className="mt-1.5 text-[11px] text-navy/40">
-                    Última entrega {formatDateTime(w.ultimoEnvio)} —{' '}
-                    {w.ultimoEnvioOk ? (
-                      <span className="text-[#1A7A4C]">OK</span>
-                    ) : (
-                      <span className="text-[#B3362B]">falló</span>
-                    )}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <form onSubmit={crearWebhook} className="mt-4 flex flex-col gap-2">
-            <Input
-              placeholder="https://tu-erp.com/webhooks/sutl"
-              required
-              type="url"
-              value={hookForm.url}
-              onChange={(e) => setHookForm((f) => ({ ...f, url: e.target.value }))}
-            />
-            <div className="flex flex-wrap gap-1.5">
-              {EVENTOS.map((ev) => (
-                <button
-                  type="button"
-                  key={ev}
-                  onClick={() => toggleEvento(ev)}
-                  className={cn(
-                    'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                    hookForm.eventos.includes(ev)
-                      ? 'border-sky bg-sky/10 text-sky'
-                      : 'border-navy/15 text-navy/50 hover:border-navy/30',
-                  )}
-                >
-                  {ev}
-                </button>
-              ))}
-            </div>
-            <Button type="submit" disabled={savingHook || hookForm.eventos.length === 0}>
-              {savingHook ? 'Creando...' : 'Agregar webhook'}
-            </Button>
-          </form>
-        </Card>
+        <ApiKeysCard />
+        <WebhooksCard />
       </div>
     </div>
   );

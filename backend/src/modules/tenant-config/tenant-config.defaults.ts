@@ -30,6 +30,10 @@ export interface ConfigOperacion {
     // Días de cobertura por debajo de los cuales un SKU se marca en riesgo.
     diasCoberturaAlerta: number;
   };
+  riesgo: {
+    // Si el motor de riesgo avisa por correo a los administradores cuando un SKU pasa a rojo.
+    avisarAlPasarARojo: boolean;
+  };
 }
 
 export interface PerfilOperacion {
@@ -45,6 +49,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
   manufactura: {
@@ -53,6 +58,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
   comercio: {
@@ -61,6 +67,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
   erp_externo: {
@@ -69,6 +76,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
+      riesgo: { avisarAlPasarARojo: true },
     },
   },
 } satisfies Record<string, PerfilOperacion>;
@@ -123,6 +131,7 @@ export function resolverConfig(perfil: string, ajustes: unknown): ConfigOperacio
   return {
     compras: { ...base.compras, ...limpio.compras },
     inventario: { ...base.inventario, ...limpio.inventario },
+    riesgo: { ...base.riesgo, ...limpio.riesgo },
   };
 }
 
@@ -131,5 +140,6 @@ export function combinarAjustes(actuales: AjustesOperacion, nuevos: AjustesOpera
   return sanitizarAjustes({
     compras: { ...actuales.compras, ...nuevos.compras },
     inventario: { ...actuales.inventario, ...nuevos.inventario },
+    riesgo: { ...actuales.riesgo, ...nuevos.riesgo },
   });
 }

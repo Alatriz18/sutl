@@ -1,9 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Booking, Partner } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { assertTenantRefs } from '../../common/tenant-refs';
 import { TrackingEventsService } from '../tracking-events/tracking-events.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 
@@ -12,7 +13,19 @@ export class ShipmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly trackingEventsService: TrackingEventsService,
+    @Optional() private readonly webhooks?: WebhooksService,
   ) {}
+
+  private publicarCreado(envio: { codigoGuia: string; estado: string; tipo: string; modo: string; origen: string; destino: string; tenantId: string }) {
+    void this.webhooks?.emitir(envio.tenantId, 'envio.creado', {
+      codigoGuia: envio.codigoGuia,
+      estado: envio.estado,
+      tipo: envio.tipo,
+      modo: envio.modo,
+      origen: envio.origen,
+      destino: envio.destino,
+    });
+  }
 
   findAll(tenantId: string) {
     return this.prisma.shipment.findMany({
@@ -61,15 +74,25 @@ export class ShipmentsService {
   async create(tenantId: string, dto: CreateShipmentDto) {
     await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     const codigoGuia = await this.generarCodigoGuia();
-    return this.prisma.shipment.create({
+    const creado = await this.prisma.shipment.create({
       data: { ...dto, tenantId, codigoGuia },
     });
+    this.publicarCreado(creado);
+    return creado;
   }
 
   async update(tenantId: string, id: string, dto: UpdateShipmentDto) {
-    await this.findOne(tenantId, id);
+    const anterior = await this.findOne(tenantId, id);
     await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
-    return this.prisma.shipment.update({ where: { id, tenantId }, data: dto });
+    const actualizado = await this.prisma.shipment.update({ where: { id, tenantId }, data: dto });
+    if (actualizado.estado !== anterior.estado) {
+      void this.webhooks?.emitir(tenantId, 'envio.estado_cambiado', {
+        codigoGuia: actualizado.codigoGuia,
+        estadoAnterior: anterior.estado,
+        estadoNuevo: actualizado.estado,
+      });
+    }
+    return actualizado;
   }
 
   // Endpoint público (sin auth): un cliente final consulta su envío por
@@ -104,7 +127,7 @@ export class ShipmentsService {
     }
 
     const codigoGuia = await this.generarCodigoGuia();
-    return this.prisma.shipment.create({
+    const creado = await this.prisma.shipment.create({
       data: {
         tenantId,
         codigoGuia,
@@ -119,6 +142,8 @@ export class ShipmentsService {
         destino: booking.destino,
       },
     });
+    this.publicarCreado(creado);
+    return creado;
   }
 
   private async generarCodigoGuia(): Promise<string> {

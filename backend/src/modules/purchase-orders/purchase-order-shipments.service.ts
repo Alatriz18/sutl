@@ -118,7 +118,10 @@ export class PurchaseOrderShipmentsService {
       }
     });
 
-    return this.orders.findOne(tenantId, ocId);
+    const actualizada = await this.orders.findOne(tenantId, ocId);
+    // Si la regla de la empresa despachó la OC al vincular, los webhooks se enteran.
+    this.orders.publicarCambioDeEstado(tenantId, actualizada, orden.estado);
+    return actualizada;
   }
 
   async desvincular(tenantId: string, ocId: string, shipmentId: string) {

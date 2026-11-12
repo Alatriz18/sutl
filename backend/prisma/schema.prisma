@@ -204,6 +204,10 @@ model Tenant {
   shipmentPurchaseOrderLines ShipmentPurchaseOrderLine[]
   inventoryPolicies          InventoryPolicy[]
   importMappings             ImportMapping[]
+  apiKeys                    ApiKey[]
+  riskStates                 RiskState[]
+  riskChanges                RiskChange[]
+  webhookEndpoints           WebhookEndpoint[]
 
   @@map("tenants")
 }
@@ -978,4 +982,127 @@ model ImportMapping {
 
   @@unique([tenantId, tipo])
   @@map("import_mappings")
+}
+
+// ---------- API pública v1: claves y webhooks por empresa ----------
+
+// Clave de acceso a la API pública (solo lectura). Se muestra completa UNA vez
+// al crearla; en la base solo queda su huella SHA-256 y un prefijo para que la
+// empresa reconozca cuál es cuál.
+model ApiKey {
+  id          String    @id @default(uuid())
+  tenantId    String
+  nombre      String
+  prefijo     String
+  hash        String    @unique
+  ultimoUsoAt DateTime?
+  revocadaAt  DateTime?
+  creadaPorId String?
+  createdAt   DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("api_keys")
+}
+
+enum EstadoEntregaWebhook {
+  pendiente
+  entregado
+  fallido
+}
+
+// Destino al que SUTL avisa de los cambios (envíos, órdenes de compra). El
+// secreto con el que se firma cada entrega se guarda cifrado (AES-256-GCM).
+model WebhookEndpoint {
+  id            String   @id @default(uuid())
+  tenantId      String
+  url           String
+  secretCifrado String
+  eventos       String[]
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  entregas   WebhookDelivery[]
+
+  @@index([tenantId])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id           String               @id @default(uuid())
+  tenantId     String
+  endpointId   String
+  evento       String
+  payload      Json
+  estado       EstadoEntregaWebhook @default(pendiente)
+  intentos     Int                  @default(0)
+  ultimoStatus Int?
+  error        String?
+  createdAt    DateTime             @default(now())
+  entregadoAt  DateTime?
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, createdAt])
+  @@index([tenantId])
+  @@map("webhook_deliveries")
+}
+
+// ---------- Riesgo de abastecimiento: estado por SKU e historial de cambios ----------
+
+// Último semáforo conocido de cada SKU: sirve para detectar cuándo cambia.
+model RiskState {
+  id         String   @id @default(uuid())
+  tenantId   String
+  sku        String
+  semaforo   String
+  accion     String
+  evaluadoAt DateTime
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, sku])
+  @@map("risk_states")
+}
+
+// Cada vez que el semáforo de un SKU cambia queda un registro (y, si pasó a
+// rojo y la empresa lo pidió, un aviso).
+model RiskChange {
+  id           String    @id @default(uuid())
+  tenantId     String
+  sku          String
+  desde        String?
+  hacia        String
+  accion       String
+  motivo       String
+  fechaQuiebre DateTime?
+  avisado      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("risk_changes")
+}
+
+// ---------- Contactos que llegan desde la landing ----------
+
+// Persona que pidió un diagnóstico desde la landing pública. No pertenece a
+// ninguna empresa-cliente (todavía no es cliente): es un registro de SVK Solutions.
+model Lead {
+  id         String   @id @default(uuid())
+  nombre     String
+  empresa    String
+  email      String
+  telefono   String?
+  mensaje    String?
+  notificado Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@map("leads")
 }
