@@ -38,9 +38,10 @@ export class UsersController {
   create(
     @CurrentUser('tenantId') tenantId: string,
     @CurrentUser('rol') actorRol: RolUsuario,
+    @CurrentUser('userId') actorId: string,
     @Body() dto: CreateUserDto,
   ) {
-    return this.usersService.create(tenantId, dto, actorRol);
+    return this.usersService.create(tenantId, dto, actorRol, actorId);
   }
 
   @Roles(RolUsuario.admin_tenant, RolUsuario.super_admin)
@@ -48,10 +49,11 @@ export class UsersController {
   update(
     @CurrentUser('tenantId') tenantId: string,
     @CurrentUser('rol') actorRol: RolUsuario,
+    @CurrentUser('userId') actorId: string,
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.usersService.update(tenantId, id, dto, actorRol);
+    return this.usersService.update(tenantId, id, dto, actorRol, actorId);
   }
 
   @Roles(RolUsuario.admin_tenant, RolUsuario.super_admin)
@@ -59,8 +61,9 @@ export class UsersController {
   remove(
     @CurrentUser('tenantId') tenantId: string,
     @CurrentUser('rol') actorRol: RolUsuario,
+    @CurrentUser('userId') actorId: string,
     @Param('id') id: string,
   ) {
-    return this.usersService.remove(tenantId, id, actorRol);
+    return this.usersService.remove(tenantId, id, actorRol, actorId);
   }
 }

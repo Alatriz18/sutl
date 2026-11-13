@@ -8,7 +8,9 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import { AuditService } from '../audit/audit.service';
 import { LoginDto } from './dto/login.dto';
+import { MfaService } from './mfa.service';
 import { RegisterDto } from './dto/register.dto';
 
 interface AuthTokens {
@@ -22,6 +24,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly mfa: MfaService,
+    private readonly audit: AuditService,
   ) {}
 
   // Invocado solo por super_admin (ver AuthController) para aprovisionar el
@@ -64,7 +68,9 @@ export class AuthService {
     return user;
   }
 
-  async login(dto: LoginDto) {
+  // Devuelve los tokens, o { mfaRequerido: true } si la contraseña es correcta
+  // pero la cuenta tiene segundo factor y todavía no llegó el código.
+  async login(dto: LoginDto): Promise<AuthTokens | { mfaRequerido: true }> {
     const user = await this.prisma.user.findFirst({ where: { email: dto.email } });
     if (!user || !user.activo) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -72,9 +78,21 @@ export class AuthService {
 
     const passwordValida = await bcrypt.compare(dto.password, user.password);
     if (!passwordValida) {
+      await this.audit.registrar({ tenantId: user.tenantId, userId: user.id, accion: 'auth.login_fallido', entidad: 'usuario', entidadId: user.id });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    if (user.mfaEnabledAt) {
+      if (!dto.codigo) return { mfaRequerido: true };
+      try {
+        await this.mfa.verificarSegundoFactor(user, dto.codigo);
+      } catch (e) {
+        await this.audit.registrar({ tenantId: user.tenantId, userId: user.id, accion: 'auth.login_fallido', entidad: 'usuario', entidadId: user.id, metadata: { motivo: 'segundo_factor' } });
+        throw e;
+      }
+    }
+
+    await this.audit.registrar({ tenantId: user.tenantId, userId: user.id, accion: 'auth.login', entidad: 'usuario', entidadId: user.id, metadata: { mfa: !!user.mfaEnabledAt } });
     return this.issueTokens(user.id, user.tenantId, user.rol, user.email);
   }
 

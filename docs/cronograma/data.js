@@ -98,7 +98,7 @@ const PHASES = [
       { id: 'C1', name: 'Checklist de documentos por operación y vencimientos', owner: 'Dev', s: 15, e: 16, st: 'pendiente',
         what: 'Documentos exigidos por tipo de operación (factura, packing list, BL, certificados), estado, vencimientos y alertas.', dep: 'B4' },
       { id: 'C2', name: 'MFA (TOTP) y bitácora de auditoría completa', owner: 'Kevin', s: 14, e: 15, st: 'pendiente',
-        what: 'Segundo factor para administradores y analistas; registro de cambios sensibles por usuario.', dep: '—' },
+        what: 'Código escrito el 13 nov (sin ejecutar el stack): segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Falta correr sus pruebas e2e. Pendiente: exigirlo a administradores por política, código QR en pantalla y visor de bitácora.', dep: '—' },
       { id: 'C3', name: 'Portal colaborativo para proveedor y cliente', owner: 'Ambos', s: 17, e: 19, st: 'pendiente',
         what: 'El proveedor confirma fechas y sube documentos desde su acceso; el cliente final ve el estado; todo queda en la bitácora.', dep: 'B3, B5' },
       { id: 'C4', name: 'Analítica: OTIF, lead time, aging y cumplimiento', owner: 'Ambos', s: 18, e: 20, st: 'pendiente',

@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, DEMO_MODE } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -56,6 +56,20 @@ export default function UsersPage() {
       await cargar();
     } catch (err) {
       toast.error(extractApiError(err, 'No se pudo actualizar el rol.'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Para quien perdió su teléfono y sus códigos: borra su segundo factor y cierra su sesión.
+  async function restablecerMfa(u: User) {
+    if (!window.confirm(`¿Restablecer el segundo factor de ${u.nombre}? Podrá entrar solo con su contraseña hasta que lo configure de nuevo.`)) return;
+    setBusyId(u.id);
+    try {
+      await api.post(`/auth/mfa/restablecer/${u.id}`);
+      toast.success(`Segundo factor de ${u.nombre} restablecido.`);
+    } catch (err) {
+      toast.error(extractApiError(err, 'No se pudo restablecer el segundo factor.'));
     } finally {
       setBusyId(null);
     }
@@ -139,6 +153,15 @@ export default function UsersPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
+                        {u.rol !== 'super_admin' && !DEMO_MODE && (
+                          <button
+                            disabled={busyId === u.id}
+                            onClick={() => restablecerMfa(u)}
+                            className="mr-3 text-xs font-medium text-navy/60 hover:text-navy disabled:opacity-40"
+                          >
+                            Restablecer 2FA
+                          </button>
+                        )}
                         {u.rol !== 'super_admin' && (
                           <button
                             disabled={busyId === u.id}

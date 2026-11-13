@@ -224,6 +224,12 @@ model User {
   rol              RolUsuario @default(operador)
   activo           Boolean    @default(true)
   refreshTokenHash String?
+  // Segundo factor (TOTP). El secreto va cifrado con ENCRYPTION_KEY.
+  mfaSecret        String?
+  mfaEnabledAt     DateTime?
+  mfaLastStep      Int?
+  mfaFailures      Int        @default(0)
+  mfaLockedUntil   DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
@@ -240,6 +246,7 @@ model User {
   tareasAsignadas      Task[]                 @relation("TareaAsignada")
   tareasCreadas        Task[]                 @relation("TareaCreadaPor")
   comentariosTarea     TaskComment[]          @relation("ComentarioAutor")
+  mfaRecoveryCodes     MfaRecoveryCode[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1211,4 +1218,20 @@ model ExceptionCase {
   @@unique([tenantId, tipo, clave])
   @@index([tenantId, estado])
   @@map("exception_cases")
+}
+
+// ---------- Segundo factor de autenticación (C2) ----------
+
+// Código de recuperación de un solo uso. Solo se guarda su huella SHA-256.
+model MfaRecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@map("mfa_recovery_codes")
 }

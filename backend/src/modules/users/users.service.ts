@@ -2,6 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -9,7 +10,10 @@ import { UpdateUserDto } from './dto/update-user.dto';
 // de este servicio puede cruzar datos entre tenants (ver CLAUDE.md).
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   findAll(tenantId: string) {
     return this.prisma.user.findMany({
@@ -30,7 +34,7 @@ export class UsersService {
     return user;
   }
 
-  async create(tenantId: string, dto: CreateUserDto, actorRol: RolUsuario) {
+  async create(tenantId: string, dto: CreateUserDto, actorRol: RolUsuario, actorId?: string) {
     this.assertPuedeAsignarRol(dto.rol, actorRol);
     const existente = await this.prisma.user.findUnique({
       where: { tenantId_email: { tenantId, email: dto.email } },
@@ -44,30 +48,43 @@ export class UsersService {
       data: { ...dto, password, tenantId },
       select: this.publicSelect,
     });
+    await this.audit.registrar({ tenantId, userId: actorId, accion: 'usuario.creado', entidad: 'usuario', entidadId: user.id, metadata: { email: user.email, rol: user.rol } });
     return user;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateUserDto, actorRol: RolUsuario) {
+  async update(tenantId: string, id: string, dto: UpdateUserDto, actorRol: RolUsuario, actorId?: string) {
     const objetivo = await this.findOne(tenantId, id);
     this.assertPuedeGestionar(objetivo.rol, actorRol);
     this.assertPuedeAsignarRol(dto.rol, actorRol);
     // tenantId repetido en el where (no solo en el findOne previo): defensa
     // en profundidad ante un futuro refactor que se salte el chequeo.
-    return this.prisma.user.update({
+    const actualizado = await this.prisma.user.update({
       where: { id, tenantId },
       data: dto,
       select: this.publicSelect,
     });
+    // Se anota qué campos cambiaron: sobre todo roles y activación.
+    await this.audit.registrar({
+      tenantId,
+      userId: actorId,
+      accion: dto.rol && dto.rol !== objetivo.rol ? 'usuario.rol_cambiado' : 'usuario.modificado',
+      entidad: 'usuario',
+      entidadId: id,
+      metadata: { campos: Object.keys(dto), ...(dto.rol ? { rolAnterior: objetivo.rol, rolNuevo: dto.rol } : {}) },
+    });
+    return actualizado;
   }
 
-  async remove(tenantId: string, id: string, actorRol: RolUsuario) {
+  async remove(tenantId: string, id: string, actorRol: RolUsuario, actorId?: string) {
     const objetivo = await this.findOne(tenantId, id);
     this.assertPuedeGestionar(objetivo.rol, actorRol);
-    return this.prisma.user.update({
+    const desactivado = await this.prisma.user.update({
       where: { id, tenantId },
       data: { activo: false },
       select: this.publicSelect,
     });
+    await this.audit.registrar({ tenantId, userId: actorId, accion: 'usuario.desactivado', entidad: 'usuario', entidadId: id });
+    return desactivado;
   }
 
   // Solo un super_admin puede crear o ascender a otro super_admin. Sin esto,

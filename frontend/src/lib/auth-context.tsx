@@ -18,7 +18,8 @@ interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  // Devuelve 'mfa' si la cuenta tiene segundo factor y falta el código.
+  login: (email: string, password: string, codigo?: string) => Promise<'ok' | 'mfa'>;
   logout: () => Promise<void>;
 }
 
@@ -52,11 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [applyToken]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const res = await api.post('/auth/login', { email, password });
+    async (email: string, password: string, codigo?: string): Promise<'ok' | 'mfa'> => {
+      const res = await api.post('/auth/login', { email, password, ...(codigo ? { codigo } : {}) });
+      if (res.data.mfaRequerido) return 'mfa';
       limpiarTenantConfig();
       applyToken(res.data.accessToken);
       router.push('/dashboard');
+      return 'ok';
     },
     [applyToken, router],
   );

@@ -2,8 +2,11 @@ import { limiteLogin } from '../../common/rate-limit';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Post,
   Req,
   Res,
@@ -19,6 +22,8 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { AuthService } from './auth.service';
+import { MfaService } from './mfa.service';
+import { CodigoMfaDto, DesactivarMfaDto } from './dto/mfa.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
@@ -31,6 +36,7 @@ const REFRESH_COOKIE = 'refreshToken';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly mfa: MfaService,
     private readonly config: ConfigService,
   ) {}
 
@@ -55,9 +61,46 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const tokens = await this.authService.login(dto);
-    this.setRefreshCookie(res, tokens.refreshToken);
-    return { accessToken: tokens.accessToken };
+    const r = await this.authService.login(dto);
+    if ('mfaRequerido' in r) return { mfaRequerido: true };
+    this.setRefreshCookie(res, r.refreshToken);
+    return { accessToken: r.accessToken };
+  }
+
+  // ---- Segundo factor (TOTP) de la propia cuenta ----
+
+  @Get('mfa')
+  mfaEstado(@CurrentUser('userId') userId: string) {
+    return this.mfa.estado(userId);
+  }
+
+  @Throttle({ default: { limit: limiteLogin, ttl: 60000 } })
+  @Post('mfa/iniciar')
+  mfaIniciar(@CurrentUser() user: RequestUser) {
+    return this.mfa.iniciar(user);
+  }
+
+  @Throttle({ default: { limit: limiteLogin, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('mfa/activar')
+  mfaActivar(@CurrentUser() user: RequestUser, @Body() dto: CodigoMfaDto) {
+    return this.mfa.activar(user, dto.codigo);
+  }
+
+  @Throttle({ default: { limit: limiteLogin, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('mfa/desactivar')
+  mfaDesactivar(@CurrentUser() user: RequestUser, @Body() dto: DesactivarMfaDto) {
+    return this.mfa.desactivar(user, dto.password, dto.codigo);
+  }
+
+  // Para quien perdió su teléfono y sus códigos de recuperación.
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.admin_tenant, RolUsuario.super_admin)
+  @HttpCode(HttpStatus.OK)
+  @Post('mfa/restablecer/:userId')
+  mfaRestablecer(@CurrentUser() actor: RequestUser, @Param('userId', ParseUUIDPipe) userId: string) {
+    return this.mfa.restablecer(actor, userId);
   }
 
   @Public()

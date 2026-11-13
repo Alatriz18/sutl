@@ -13,6 +13,9 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Si la cuenta tiene segundo factor, el servidor pide el código tras validar la contraseña.
+  const [pideCodigo, setPideCodigo] = useState(false);
+  const [codigo, setCodigo] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,9 +24,13 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
-    } catch {
-      setError('Credenciales inválidas. Verifica tu email y contraseña.');
+      const r = await login(email, password, pideCodigo ? codigo.trim() : undefined);
+      if (r === 'mfa') setPideCodigo(true);
+    } catch (err) {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      const mensaje = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      if (pideCodigo && status === 401) setError(mensaje ?? 'Código de verificación inválido.');
+      else setError('Credenciales inválidas. Verifica tu email y contraseña.');
     } finally {
       setLoading(false);
     }
@@ -93,7 +100,24 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {pideCodigo && (
+              <div>
+                <label htmlFor="codigo-3" className="mb-1 block text-sm font-medium text-navy">Código de verificación</label>
+                <Input id="codigo-3"
+                  required
+                  autoFocus
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={20}
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  placeholder="123456"
+                />
+                <p className="mt-1 text-xs text-navy/60">Abre tu app de autenticación e ingresa el código de 6 dígitos, o uno de tus códigos de recuperación.</p>
+              </div>
+            )}
+
+            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
             <Button type="submit" disabled={loading} className="mt-2 w-full">
               {loading ? 'Ingresando...' : 'Ingresar'}

@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   ListChecks,
   Siren,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { RolUsuario } from '@/types';
@@ -122,6 +123,7 @@ export const navGroups: NavGroup[] = [
         icon: Users,
         roles: ['admin_tenant', 'super_admin'],
       },
+      { href: '/dashboard/seguridad', label: 'Seguridad de la cuenta', icon: ShieldCheck },
       {
         href: '/dashboard/configuracion',
         label: 'Configuración de la operación',

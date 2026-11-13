@@ -85,6 +85,19 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-13 (cont.) — C2: segundo factor (TOTP) y bitácora de seguridad (escrito SIN ejecutar el stack)
+
+Verificado: `tsc`, lint y **290 pruebas unitarias** del backend (33 nuevas; el TOTP coincide con los vectores oficiales de la RFC 6238). **Sin correr:** `backend/test/mfa.e2e-spec.ts` y la migración `20261113140000_mfa_totp` (a mano).
+
+- **TOTP propio, sin dependencias nuevas** (`common/totp.ts`): HMAC-SHA1, 6 dígitos, paso de 30 s, tolera ±1 paso de desfase. Compatible con Google Authenticator, Microsoft Authenticator, Authy y 1Password.
+- **Activar** (`POST /auth/mfa/iniciar` → `/activar`): el secreto se guarda **cifrado con AES-256-GCM** (`ENCRYPTION_KEY`; sin ella el servidor responde 503 y no guarda nada) y solo queda activo cuando la persona confirma con un código. Entrega **10 códigos de recuperación** una única vez; en la base solo se guarda su huella SHA-256.
+- **Ingresar:** con segundo factor, `POST /auth/login` con la contraseña correcta responde `{ mfaRequerido: true }` **sin tokens ni cookie**; con `codigo` entra. Una contraseña incorrecta sigue dando el mismo error genérico (no revela qué cuentas tienen segundo factor).
+- **Anti-reutilización:** un código de la app no sirve dos veces (se guarda el último paso aceptado, con actualización atómica) y cada código de recuperación vale una vez. **Bloqueo:** 5 fallos seguidos → 15 minutos sin poder usar el segundo factor, además del límite por IP del login.
+- **Desactivar** exige contraseña y código. **Restablecer** (`POST /auth/mfa/restablecer/:userId`, solo `admin_tenant`/`super_admin`, solo dentro de su empresa; un admin de empresa no toca a un super_admin): borra el segundo factor y cierra la sesión de esa persona.
+- **Bitácora de seguridad** (`audit_logs`): `auth.login`, `auth.login_fallido`, `mfa.activado/desactivado/restablecido/bloqueado/codigo_recuperacion_usado`, `usuario.creado/modificado/rol_cambiado/desactivado` (con el actor). El administrador la consulta en `GET /api/audit`.
+- Frontend: el ingreso pide el código cuando hace falta; pantalla **Seguridad de la cuenta** (activar con clave manual, códigos de recuperación, desactivar) y «Restablecer 2FA» en Usuarios. En la demo la pantalla lo explica y no ofrece nada.
+- **Pendiente de C2:** exigirlo por política a administradores/analistas, dibujar el **QR** (hoy se escribe la clave a mano), y un visor de la bitácora en el panel.
+
 ### 2026-11-13 (cont.) — B4: centro de excepciones con plazo y escalamiento (escrito SIN ejecutar el stack)
 
 Verificado: `tsc`, lint y **257 pruebas unitarias** del backend (18 nuevas). **Sin correr:** `backend/test/exceptions.e2e-spec.ts`, el caso de Playwright y la migración `20261113130000_centro_excepciones` (a mano).
