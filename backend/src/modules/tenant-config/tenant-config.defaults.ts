@@ -34,6 +34,14 @@ export interface ConfigOperacion {
     // Si el motor de riesgo avisa por correo a los administradores cuando un SKU pasa a rojo.
     avisarAlPasarARojo: boolean;
   };
+  excepciones: {
+    // Horas para atender una excepción grave (SKU en rojo, OC muy atrasada) antes de escalarla.
+    slaAltaHoras: number;
+    // Horas para atender una excepción moderada (OC atrasada) antes de escalarla.
+    slaMediaHoras: number;
+    // Si cada excepción nueva abre una tarea automáticamente.
+    crearTareas: boolean;
+  };
 }
 
 export interface PerfilOperacion {
@@ -50,6 +58,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
   manufactura: {
@@ -59,6 +68,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
   comercio: {
@@ -68,6 +78,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
   erp_externo: {
@@ -77,6 +88,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
 } satisfies Record<string, PerfilOperacion>;
@@ -132,6 +144,7 @@ export function resolverConfig(perfil: string, ajustes: unknown): ConfigOperacio
     compras: { ...base.compras, ...limpio.compras },
     inventario: { ...base.inventario, ...limpio.inventario },
     riesgo: { ...base.riesgo, ...limpio.riesgo },
+    excepciones: { ...base.excepciones, ...limpio.excepciones },
   };
 }
 
@@ -141,5 +154,6 @@ export function combinarAjustes(actuales: AjustesOperacion, nuevos: AjustesOpera
     compras: { ...actuales.compras, ...nuevos.compras },
     inventario: { ...actuales.inventario, ...nuevos.inventario },
     riesgo: { ...actuales.riesgo, ...nuevos.riesgo },
+    excepciones: { ...actuales.excepciones, ...nuevos.excepciones },
   });
 }

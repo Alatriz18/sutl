@@ -11,6 +11,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
   {
@@ -21,6 +22,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
   {
@@ -31,6 +33,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
   {
@@ -41,6 +44,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
     },
   },
 ];
@@ -53,6 +57,7 @@ function efectiva(): ConfigOperacion {
     compras: { ...base.compras, ...estado.ajustes.compras },
     inventario: { ...base.inventario, ...estado.ajustes.inventario },
     riesgo: { ...base.riesgo, ...estado.ajustes.riesgo },
+    excepciones: { ...base.excepciones, ...estado.ajustes.excepciones },
   };
 }
 
@@ -94,6 +99,8 @@ export function actualizarConfigDemo(body: {
   if (Object.keys(inventario).length) ajustes.inventario = inventario;
   const riesgo = { ...base.riesgo, ...body.configuracion?.riesgo };
   if (Object.keys(riesgo).length) ajustes.riesgo = riesgo;
+  const excepciones = { ...base.excepciones, ...body.configuracion?.excepciones };
+  if (Object.keys(excepciones).length) ajustes.excepciones = excepciones;
   estado.ajustes = ajustes;
   return null;
 }

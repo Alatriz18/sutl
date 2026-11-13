@@ -1,6 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { DynamicModule, Logger, Module } from '@nestjs/common';
-import { COLA_MANTENIMIENTO, COLA_NOTIFICACIONES, COLA_RIESGO, COLA_WEBHOOKS } from './queues.constants';
+import { COLA_EXCEPCIONES, COLA_MANTENIMIENTO, COLA_NOTIFICACIONES, COLA_RIESGO, COLA_WEBHOOKS } from './queues.constants';
 import { QueuesController } from './queues.controller';
 import { QueuesService } from './queues.service';
 import { MantenimientoProcessor } from './mantenimiento.processor';
@@ -68,6 +68,11 @@ export class QueuesModule {
         BullModule.registerQueue({
           name: COLA_RIESGO,
           // Una evaluación que falla se vuelve a intentar en la siguiente ronda programada.
+          defaultJobOptions: { removeOnComplete: 20, removeOnFail: 50, attempts: 1 },
+        }),
+        BullModule.registerQueue({
+          name: COLA_EXCEPCIONES,
+          // Una ronda que falla se repite en la siguiente.
           defaultJobOptions: { removeOnComplete: 20, removeOnFail: 50, attempts: 1 },
         }),
       ],

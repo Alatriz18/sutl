@@ -572,6 +572,11 @@ export interface ConfigOperacion {
   riesgo: {
     avisarAlPasarARojo: boolean;
   };
+  excepciones: {
+    slaAltaHoras: number;
+    slaMediaHoras: number;
+    crearTareas: boolean;
+  };
 }
 
 export type AjustesOperacion = {
@@ -737,4 +742,29 @@ export interface EventoBitacora {
 export interface TareaDetalle extends Tarea {
   comentarios: ComentarioTarea[];
   bitacora: EventoBitacora[];
+}
+
+// ---------- Centro de excepciones ----------
+
+export type SeveridadExcepcion = 'media' | 'alta' | 'critica';
+
+export interface Excepcion {
+  id: string;
+  tipo: 'sku_en_rojo' | 'oc_atrasada';
+  clave: string;
+  severidad: SeveridadExcepcion;
+  titulo: string;
+  detalle: string;
+  estado: 'abierta' | 'resuelta';
+  taskId: string | null;
+  venceSlaAt: string;
+  escaladaAt: string | null;
+  resueltaAt: string | null;
+  createdAt: string;
+}
+
+export interface ResultadoExcepciones {
+  abiertas: number;
+  resueltas: number;
+  escaladas: number;
 }

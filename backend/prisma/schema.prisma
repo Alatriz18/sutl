@@ -209,6 +209,7 @@ model Tenant {
   riskChanges                RiskChange[]
   webhookEndpoints           WebhookEndpoint[]
   tasks                      Task[]
+  exceptionCases             ExceptionCase[]
   taskComments               TaskComment[]
 
   @@map("tenants")
@@ -1171,4 +1172,43 @@ model TaskComment {
 
   @@index([taskId, createdAt])
   @@map("task_comments")
+}
+
+// ---------- Centro de excepciones (B4) ----------
+
+enum SeveridadExcepcion {
+  media
+  alta
+  critica
+}
+
+enum EstadoExcepcion {
+  abierta
+  resuelta
+}
+
+// Algo que sale de lo planeado y alguien debe atender antes de que venza su
+// plazo (SLA): un SKU en rojo, una OC atrasada. Una por (tipo, clave): si el
+// problema desaparece se resuelve sola y si vuelve se reabre la misma.
+model ExceptionCase {
+  id          String             @id @default(uuid())
+  tenantId    String
+  tipo        String // 'sku_en_rojo' | 'oc_atrasada'
+  clave       String // el SKU o el ID de la OC
+  severidad   SeveridadExcepcion
+  titulo      String
+  detalle     String
+  estado      EstadoExcepcion    @default(abierta)
+  taskId      String?
+  venceSlaAt  DateTime
+  escaladaAt  DateTime?
+  resueltaAt  DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, tipo, clave])
+  @@index([tenantId, estado])
+  @@map("exception_cases")
 }

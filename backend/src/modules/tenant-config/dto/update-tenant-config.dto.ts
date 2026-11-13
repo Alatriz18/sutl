@@ -51,6 +51,24 @@ export class RiesgoConfigDto {
   avisarAlPasarARojo?: boolean;
 }
 
+export class ExcepcionesConfigDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(720)
+  slaAltaHoras?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(720)
+  slaMediaHoras?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  crearTareas?: boolean;
+}
+
 export class ConfiguracionDto {
   @IsOptional()
   @ValidateNested()
@@ -66,6 +84,11 @@ export class ConfiguracionDto {
   @ValidateNested()
   @Type(() => RiesgoConfigDto)
   riesgo?: RiesgoConfigDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ExcepcionesConfigDto)
+  excepciones?: ExcepcionesConfigDto;
 }
 
 export class UpdateTenantConfigDto {

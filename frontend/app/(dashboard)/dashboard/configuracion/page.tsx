@@ -379,6 +379,82 @@ export default function ConfiguracionPage() {
           </div>
         </Card>
 
+        <Card className="mt-6">
+          <CardTitle>Excepciones y plazos</CardTitle>
+          <p className="mt-1 text-sm text-navy/60">
+            Un SKU en rojo o una OC atrasada abre una excepción con un plazo para atenderla. Si el plazo vence y el problema sigue, se escala y se avisa a los administradores.
+          </p>
+          <div className="mt-4 grid max-w-2xl grid-cols-1 gap-5 sm:grid-cols-2">
+            <Campo
+              htmlFor={`${id}-sla-alta`}
+              label="Plazo de una excepción grave"
+              ayuda="SKU en rojo u OC con más de 7 días de atraso."
+              sugerido={`${sugerido.excepciones.slaAltaHoras} horas`}
+              ajustado={ajustado('excepciones', 'slaAltaHoras')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-sla-alta`}
+                  type="number"
+                  min={1}
+                  max={720}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.excepciones.slaAltaHoras) ? '' : form.excepciones.slaAltaHoras}
+                  onChange={(e) => set('excepciones', { slaAltaHoras: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">horas</span>
+              </div>
+            </Campo>
+            <Campo
+              htmlFor={`${id}-sla-media`}
+              label="Plazo de una excepción moderada"
+              ayuda="OC con hasta 7 días de atraso."
+              sugerido={`${sugerido.excepciones.slaMediaHoras} horas`}
+              ajustado={ajustado('excepciones', 'slaMediaHoras')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-sla-media`}
+                  type="number"
+                  min={1}
+                  max={720}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.excepciones.slaMediaHoras) ? '' : form.excepciones.slaMediaHoras}
+                  onChange={(e) => set('excepciones', { slaMediaHoras: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">horas</span>
+              </div>
+            </Campo>
+          </div>
+          <div className="mt-5 max-w-2xl">
+            <Campo
+              label="Tareas automáticas"
+              sugerido={sugerido.excepciones.crearTareas ? 'crea tareas' : 'no crea tareas'}
+              ajustado={ajustado('excepciones', 'crearTareas')}
+            >
+              <label className="flex items-start gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky"
+                  disabled={!puedeEditar}
+                  checked={form.excepciones.crearTareas}
+                  onChange={(e) => set('excepciones', { crearTareas: e.target.checked })}
+                />
+                <span>
+                  Abrir una tarea por cada excepción nueva
+                  <span className="block text-xs text-navy/50">La tarea queda sin responsable para que un administrador la asigne, con la fecha límite del plazo.</span>
+                </span>
+              </label>
+            </Campo>
+          </div>
+        </Card>
+
         {puedeEditar && (
           <div className="sticky bottom-0 mt-6 flex flex-col gap-2 border-t border-navy/10 bg-slate-50/95 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-end">
             {sinGuardar && <span className="text-sm text-navy/60 sm:mr-auto">Tienes cambios sin guardar.</span>}

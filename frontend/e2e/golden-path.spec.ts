@@ -398,6 +398,17 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText(/comentó/)).toBeVisible();
   });
 
+  test('excepciones: una OC atrasada o un SKU en rojo aparece con su plazo y se puede reevaluar', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Excepciones' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Excepciones', level: 1 })).toBeVisible();
+    // La demo trae SKU en rojo: cada excepción muestra su plazo y su severidad en texto.
+    await expect(page.getByText(/Vence en|Vencido hace/).first()).toBeVisible();
+    await expect(page.getByText(/Grave|Moderada|Crítica/).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Evaluar ahora' }).click();
+    await expect(page.getByText(/Evaluado:/)).toBeVisible();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

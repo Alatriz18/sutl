@@ -85,6 +85,17 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-13 (cont.) — B4: centro de excepciones con plazo y escalamiento (escrito SIN ejecutar el stack)
+
+Verificado: `tsc`, lint y **257 pruebas unitarias** del backend (18 nuevas). **Sin correr:** `backend/test/exceptions.e2e-spec.ts`, el caso de Playwright y la migración `20261113130000_centro_excepciones` (a mano).
+
+- **Qué detecta (v1):** SKU en rojo (grave) y OC vigente con fecha requerida vencida (moderada; grave si pasa de 7 días). Una excepción por (tipo, clave): si el problema desaparece se **resuelve sola** y si vuelve se **reabre la misma**, sin duplicar.
+- **SLA configurable por empresa** (`excepciones` en la configuración de la operación, con perfil + ajustes, validado en el backend): `slaAltaHoras` (24), `slaMediaHoras` (72) y `crearTareas` (sí). Con el plazo vencido y el problema vigente, escala **una sola vez** a «crítica» y manda **un correo por administrador** con todas las vencidas de la ronda. Todo cambio condicional al estado leído: dos evaluaciones simultáneas no duplican casos ni avisos.
+- Cada excepción nueva abre una **tarea** (B3) con la fecha límite del plazo, sin responsable (la crea el primer administrador activo; el sistema no es un usuario) y todo queda en la **bitácora** (`excepcion.abierta/resuelta/escalada`).
+- Ronda programada en su propia cola `excepciones` cada `EXCEPCIONES_EVAL_CADA_MIN` (30) minutos; `POST /exceptions/evaluar` para evaluar al momento y `GET /exceptions?estado=`.
+- Frontend: pantalla **Excepciones** (severidad con texto, plazo restante/vencido, «Evaluar ahora», mostrar resueltas), tarjeta «Excepciones y plazos» en Configuración y demo equivalente.
+- **Pendiente:** reglas de documento faltante (cuando exista C1), responsable por regla, y que el aviso de escalada también salga por WhatsApp si la empresa lo elige.
+
 ### 2026-11-13 — B3: tareas, comentarios y bitácora (escrito SIN ejecutar el stack)
 
 **Qué hay.** Mismo acuerdo que el 12 nov (Docker apagado): código verificado con `tsc`, lint y **244 pruebas unitarias** del backend en verde; las e2e y de navegador nuevas están escritas pero **sin correr**, y la migración `20261113120000_tareas_comentarios` está escrita a mano (verificar con `prisma migrate diff --from-migrations … --shadow-database-url …`).

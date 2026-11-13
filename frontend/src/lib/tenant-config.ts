@@ -25,6 +25,7 @@ export const CONFIG_POR_DEFECTO: ConfigOperacion = {
   compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
   inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
   riesgo: { avisarAlPasarARojo: true },
+  excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
 };
 
 // Caché compartida entre pantallas: la configuración cambia poco y varias

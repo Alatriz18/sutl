@@ -25,6 +25,7 @@ import * as db from './data';
 import { MockApiError } from './errors';
 import * as supply from './supply';
 import { manejarTareas } from './tasks';
+import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
 
@@ -992,6 +993,13 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       Object.assign(alerta, body, { updatedAt: nowIso() });
       return delay(ok(config, alerta));
     }
+
+    // --- EXCEPCIONES ---
+    if (method === 'get' && path === '/exceptions') {
+      if (listarExcepciones().length === 0) evaluarExcepciones();
+      return delay(ok(config, listarExcepciones(qs.get('estado') ?? undefined)));
+    }
+    if (method === 'post' && path === '/exceptions/evaluar') return delay(ok(config, evaluarExcepciones(), 201), 400);
 
     // --- TAREAS y BITÁCORA ---
     {
