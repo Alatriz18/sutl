@@ -28,6 +28,7 @@ import {
   ScrollText,
   UserCog,
   PackageSearch,
+  TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
 import { RolUsuario } from '@/types';
@@ -125,6 +126,7 @@ export const navGroups: NavGroup[] = [
       { href: '/dashboard/documentos', label: 'Documentos', icon: FileText },
       { href: '/dashboard/alertas', label: 'Alertas', icon: AlertTriangle },
       { href: '/dashboard/notificaciones', label: 'Notificaciones', icon: Bell },
+      { href: '/dashboard/analitica', label: 'Analítica de abastecimiento', icon: TrendingUp, roles: ['admin_tenant', 'operador', 'super_admin'] },
       { href: '/dashboard/reportes', label: 'Reportes', icon: BarChart3 },
       { href: '/dashboard/integraciones', label: 'Integraciones', icon: Plug },
     ],

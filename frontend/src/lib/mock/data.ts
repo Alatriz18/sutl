@@ -729,6 +729,16 @@ export const purchaseOrders: PurchaseOrder[] = [
     fechaEmision: diasAtras(1), fechaRequerida: diasAdelante(45),
     lineas: [lineaOc('oc6', 1, 'RES-PET-01', 'Resina PET grado botella', 25000, 'kg', 1.3)],
   }),
+  ordenCompra({
+    id: 'oc7', numero: 'OC-2026-0361', proveedorId: 'p-proveedor-resinas', estado: 'recibida', incoterm: 'FOB',
+    fechaEmision: diasAtras(100), fechaRequerida: diasAtras(60), fechaConfirmadaProveedor: diasAtras(80), fechaDespacho: diasAtras(75),
+    lineas: [lineaOc('oc7', 1, 'RES-PET-01', 'Resina PET grado botella', 30000, 'kg', 1.28, 30000)],
+  }),
+  ordenCompra({
+    id: 'oc8', numero: 'OC-2026-0344', proveedorId: 'p-proveedor-empaques', estado: 'recibida', incoterm: 'DAP',
+    fechaEmision: diasAtras(120), fechaRequerida: diasAtras(80), fechaConfirmadaProveedor: diasAtras(95), fechaDespacho: diasAtras(90),
+    lineas: [lineaOc('oc8', 1, 'ETQ-500', 'Etiqueta autoadhesiva 500 ml', 40000, 'unidad', 0.03, 40000)],
+  }),
 ];
 
 // Vínculo OC ↔ embarque: qué cantidad de cada línea de OC viaja en cada embarque.

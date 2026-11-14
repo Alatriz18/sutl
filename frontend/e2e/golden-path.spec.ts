@@ -442,6 +442,19 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('Equipo', { exact: true })).toBeVisible();
   });
 
+  test('analítica: OTIF, lead time y detalle por proveedor, y el periodo se puede cambiar', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Analítica de abastecimiento' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Analítica de abastecimiento', level: 1 })).toBeVisible();
+    await expect(page.getByText('OTIF', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Lead time', { exact: true }).first()).toBeVisible();
+    // La demo trae órdenes recibidas con proveedores distintos: el detalle los muestra con su porcentaje en texto.
+    const tabla = page.getByRole('table');
+    await expect(tabla.getByText('Empaques del Litoral S.A.')).toBeVisible();
+    await page.getByLabel('Periodo').selectOption('30');
+    await expect(page.getByText(/evaluadas/)).toBeVisible();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

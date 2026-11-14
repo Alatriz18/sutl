@@ -85,6 +85,15 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — C4: analítica de abastecimiento (OTIF, lead time, aging y cumplimiento), probada
+
+Probado con Docker: **409 unitarias y 314 e2e del backend (9 nuevas en analítica), 62 de navegador en demo, todas en verde.**
+
+- **Motor puro** (`modules/analytics/analytics-engine.ts`, 17 pruebas con fechas fijas; copia en `frontend/src/lib/mock/` para la demo). Definiciones, mostradas también en la pantalla: **completa** = todas las líneas recibidas al 100 %; **a tiempo** = quedó completa a más tardar el día de su fecha requerida (una OC incompleta con la fecha vencida **no** está a tiempo); **OTIF** = a tiempo y completa; **lead time** = días de la emisión a completarse; **atraso** = días después de la fecha requerida (hasta hoy si sigue abierta); **cumplimiento de la promesa** = despachó a más tardar en la fecha que el proveedor confirmó. Recibir de más no sube el llenado por encima de 100 %.
+- **API** `GET /api/analytics/resumen?desde&hasta` (admin, operador, super_admin; el proveedor y el cliente final reciben 403): OTIF, lead time (promedio, mediana, P90), detalle por proveedor del **peor al mejor**, aging de las OC abiertas en 5 tramos, tendencia de 6 meses, confirmación y promesa, y puntualidad de envíos (la entrega real sale del primer evento «entregado» en Mongo). El periodo se valida (fechas válidas, orden, máximo 366 días) y cada consulta tiene tope de filas. Todo filtra por empresa.
+- **Pantalla «Analítica de abastecimiento»:** indicadores, OTIF por proveedor (con su texto equivalente para lectores de pantalla; el color nunca va solo), tendencia, aging, compromiso del proveedor, tabla de detalle y selector de periodo. La demo calcula lo mismo con dos OC históricas nuevas de ejemplo.
+- **Pendiente:** exportar a Excel y metas de OTIF por empresa (en la configuración por empresa).
+
 ### 2026-11-14 — C3: portal colaborativo (proveedor y cliente final), construido y probado con el stack completo
 
 Probado con Docker: **392 unitarias y 305 e2e del backend, 60 de navegador en demo y 17 contra el backend real, todas en verde.**

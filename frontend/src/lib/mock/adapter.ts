@@ -28,6 +28,7 @@ import { manejarTareas } from './tasks';
 import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { resumenTorre } from './control-tower';
 import { listarMensajes, publicarMensaje } from './portal';
+import { analiticaDemo } from './analytics';
 import { checklistEnvio, revisarDocumento } from './documents';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
@@ -1020,6 +1021,13 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       if (!usuario || usuario.rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
       if (method === 'get') return delay(ok(config, listarMensajes(usuario, qs.get('entidadTipo'), qs.get('entidadId'))));
       if (method === 'post') return delay(ok(config, publicarMensaje(usuario, body), 201), 240);
+    }
+
+    // --- ANALÍTICA ---
+    if (method === 'get' && path === '/analytics/resumen') {
+      const usuario = currentUser();
+      if (!usuario || usuario.rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
+      return delay(ok(config, analiticaDemo(usuario.tenantId, qs.get('desde'), qs.get('hasta'))));
     }
 
     // --- TORRE DE CONTROL ---

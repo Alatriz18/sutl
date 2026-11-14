@@ -36,6 +36,7 @@ import { ExceptionsModule } from './modules/exceptions/exceptions.module';
 import { ControlTowerModule } from './modules/control-tower/control-tower.module';
 import { AnalystAccessModule } from './modules/analyst-access/analyst-access.module';
 import { PortalModule } from './modules/portal/portal.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AnalystAccessGuard } from './modules/analyst-access/analyst-access.guard';
 import { QueuesModule } from './modules/queues/queues.module';
 import { limiteGlobal } from './common/rate-limit';
@@ -102,6 +103,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ControlTowerModule,
     AnalystAccessModule,
     PortalModule,
+    AnalyticsModule,
     WebhooksModule.forRoot(),
     QueuesModule.forRoot(),
   ],

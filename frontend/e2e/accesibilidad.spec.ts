@@ -42,6 +42,7 @@ const RUTAS = [
   '/dashboard/seguridad',
   '/dashboard/bitacora',
   '/dashboard/accesos-analistas',
+  '/dashboard/analitica',
 ];
 
 async function entrar(page: Page) {
