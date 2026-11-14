@@ -85,6 +85,10 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-13 (cont.) — Visor de bitácora de seguridad (escrito SIN ejecutar el stack)
+
+Pantalla **Bitácora de seguridad** (`/dashboard/bitacora`, solo `admin_tenant`/`super_admin`): lista de `GET /api/audit` (últimos 200), filtro por tipo y búsqueda por persona, acción o detalle. Solo lectura. En la demo explica que requiere cuenta real. Verificado: `tsc` y lint del frontend. Sin prueba Playwright (no corre en demo). Cierra el pendiente «visor de bitácora» de C2.
+
 ### 2026-11-13 (cont.) — C2: segundo factor (TOTP) y bitácora de seguridad (escrito SIN ejecutar el stack)
 
 Verificado: `tsc`, lint y **290 pruebas unitarias** del backend (33 nuevas; el TOTP coincide con los vectores oficiales de la RFC 6238). **Sin correr:** `backend/test/mfa.e2e-spec.ts` y la migración `20261113140000_mfa_totp` (a mano).
