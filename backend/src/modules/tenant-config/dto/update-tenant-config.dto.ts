@@ -5,6 +5,9 @@ import {
   IsInt,
   IsNumber,
   IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
   Max,
   Min,
   ValidateNested,
@@ -99,6 +102,32 @@ export class DocumentosConfigDto {
   diasAntesEtaFaltante?: number;
 }
 
+export class MarcaConfigDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  nombreComercial?: string;
+
+  // #RRGGBB, o vacío para volver al color de SUTL.
+  @IsOptional()
+  @Matches(/^(#[0-9a-fA-F]{6})?$/, { message: 'colorPrimario debe tener el formato #RRGGBB' })
+  colorPrimario?: string;
+
+  // Dirección https de la imagen, o vacío para quitar el logo.
+  @IsOptional()
+  @Matches(/^(https:\/\/[^\s"'<>]{1,280})?$/, { message: 'logoUrl debe ser una dirección https válida' })
+  logoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(280)
+  mensaje?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  mostrarSutl?: boolean;
+}
+
 export class ConfiguracionDto {
   @IsOptional()
   @ValidateNested()
@@ -124,6 +153,11 @@ export class ConfiguracionDto {
   @ValidateNested()
   @Type(() => DocumentosConfigDto)
   documentos?: DocumentosConfigDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => MarcaConfigDto)
+  marca?: MarcaConfigDto;
 }
 
 export class UpdateTenantConfigDto {

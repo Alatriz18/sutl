@@ -29,6 +29,7 @@ import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { resumenTorre } from './control-tower';
 import { listarMensajes, publicarMensaje } from './portal';
 import { analiticaDemo } from './analytics';
+import { configEfectivaDemo as configDeLaDemo } from './tenant-config';
 import { checklistEnvio, revisarDocumento } from './documents';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
@@ -154,6 +155,19 @@ function evaluarAlertas(): AlertaEvaluada[] {
     });
 }
 
+// La marca de la página pública: en la demo solo la empresa de muestra tiene configuración propia.
+function marcaPublicaDemo(tenantId: string) {
+  const m = tenantId === 't-demo' ? configDeLaDemo().marca : null;
+  const nombre = db.tenants.find((t) => t.id === tenantId)?.nombre ?? null;
+  return {
+    nombre: m?.nombreComercial || nombre,
+    colorPrimario: m?.colorPrimario || null,
+    logoUrl: m?.logoUrl || null,
+    mensaje: m?.mensaje || null,
+    mostrarSutl: m?.mostrarSutl ?? true,
+  };
+}
+
 export const mockAdapter: AxiosAdapter = async (config) => {
   const method = (config.method ?? 'get').toLowerCase();
   const url = new URL(config.url ?? '', 'http://demo.local');
@@ -200,6 +214,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
         destino: shipment.destino,
         destinatarioNombre: shipment.destinatarioNombre,
         createdAt: shipment.createdAt,
+        marca: marcaPublicaDemo(shipment.tenantId),
         eventos: [...eventos].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
       };
       return delay(ok(config, res));

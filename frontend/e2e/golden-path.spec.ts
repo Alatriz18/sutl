@@ -455,6 +455,27 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText(/evaluadas/)).toBeVisible();
   });
 
+  test('marca del seguimiento: la vista previa refleja nombre, color y pie de página', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/configuracion');
+    await page.getByLabel('Nombre comercial').fill('Transportes Andes');
+    await page.getByLabel('Color de acento', { exact: true }).fill('#1A7A4C');
+    await page.getByLabel('Mensaje al cliente').fill('Gracias por confiar en nosotros');
+    const vista = page.getByLabel('Vista previa de la página de seguimiento');
+    await expect(vista.getByText('Transportes Andes')).toBeVisible();
+    await expect(vista.getByText('Gracias por confiar en nosotros')).toBeVisible();
+    await expect(vista.getByText('Con tecnología de SUTL')).toBeVisible();
+    await page.getByLabel('Mostrar «Con tecnología de SUTL»').uncheck();
+    await expect(vista.getByText('Con tecnología de SUTL')).toHaveCount(0);
+  });
+
+  test('tracking público: muestra el nombre de la empresa y el pie de SUTL por defecto, sin datos internos', async ({ page }) => {
+    await page.goto('/tracking/SUTL-DEMO-0001');
+    await expect(page.getByTestId('marca-encabezado')).toBeVisible();
+    await expect(page.getByText('Con tecnología de SUTL')).toBeVisible();
+    await expect(page.getByText('@demo-transportes.com')).toHaveCount(0);
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

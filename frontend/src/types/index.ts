@@ -87,7 +87,17 @@ export interface TrackingPublicoResponse {
   destino: string;
   destinatarioNombre: string;
   createdAt: string;
+  // Cómo se ve la página para el destinatario (cada empresa configura la suya).
+  marca: MarcaPublica;
   eventos: TrackingEvent[];
+}
+
+export interface MarcaPublica {
+  nombre: string | null;
+  colorPrimario: string | null;
+  logoUrl: string | null;
+  mensaje: string | null;
+  mostrarSutl: boolean;
 }
 
 // --- ERP logístico: CRM, cotizaciones, reservas ---
@@ -609,6 +619,13 @@ export interface ConfigOperacion {
     exigirPedimento: boolean;
     diasAvisoVencimiento: number;
     diasAntesEtaFaltante: number;
+  };
+  marca: {
+    nombreComercial: string;
+    colorPrimario: string;
+    logoUrl: string;
+    mensaje: string;
+    mostrarSutl: boolean;
   };
 }
 

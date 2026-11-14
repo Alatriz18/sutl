@@ -49,6 +49,24 @@ test.describe('Portal (backend real)', () => {
     guia = envio.body.codigoGuia;
   });
 
+  test('el seguimiento público muestra la marca que configuró la empresa, y vuelve al valor por defecto al quitarla', async ({ page }) => {
+    const login = await fetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(DEMO) });
+    const token = (await login.json()).accessToken as string;
+    const nombre = `Marca ${id}`;
+    expect((await api(token, 'PATCH', '/tenant-config', { configuracion: { marca: { nombreComercial: nombre, colorPrimario: '#1A7A4C', mensaje: 'Gracias por elegirnos', mostrarSutl: false } } })).status).toBe(200);
+    try {
+      await page.goto(`/tracking/${guia}`);
+      await expect(page.getByTestId('marca-encabezado')).toContainText(nombre);
+      await expect(page.getByText('Gracias por elegirnos')).toBeVisible();
+      await expect(page.getByText('Con tecnología de SUTL')).toHaveCount(0);
+      await expect(page.getByTestId('marca-encabezado')).toHaveCSS('background-color', 'rgb(26, 122, 76)');
+    } finally {
+      await api(token, 'PATCH', '/tenant-config', { configuracion: { marca: { nombreComercial: '', colorPrimario: '', mensaje: '', mostrarSutl: true } } });
+    }
+    await page.goto(`/tracking/${guia}`);
+    await expect(page.getByText('Con tecnología de SUTL')).toBeVisible();
+  });
+
   test('el proveedor solo ve sus órdenes, confirma una con su fecha y escribe a la empresa', async ({ page }) => {
     await ingresar(page, emailProveedor, CLAVE);
     await expect(page).toHaveURL(/\/dashboard\/mis-ordenes/, { timeout: 20000 });

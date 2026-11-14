@@ -4,6 +4,7 @@ import { Booking, Partner } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { assertTenantRefs } from '../../common/tenant-refs';
 import { TrackingEventsService } from '../tracking-events/tracking-events.service';
+import { resolverConfig } from '../tenant-config/tenant-config.defaults';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
@@ -144,16 +145,36 @@ export class ShipmentsService {
       throw new NotFoundException('No existe un envío con ese código de guía');
     }
 
-    const eventos = await this.trackingEventsService.findByCodigoGuia(codigoGuia);
+    const [eventos, tenant] = await Promise.all([
+      this.trackingEventsService.findByCodigoGuia(codigoGuia),
+      this.prisma.tenant.findUnique({ where: { id: shipment.tenantId }, select: { nombre: true, perfilOperacion: true, configuracion: true } }),
+    ]);
+    const cfg = resolverConfig(tenant?.perfilOperacion ?? 'general', tenant?.configuracion).marca;
 
     return {
+      // Cómo se ve la página para el destinatario; los campos vacíos usan los valores de SUTL.
+      marca: {
+        nombre: cfg.nombreComercial || tenant?.nombre || null,
+        colorPrimario: cfg.colorPrimario || null,
+        logoUrl: cfg.logoUrl || null,
+        mensaje: cfg.mensaje || null,
+        mostrarSutl: cfg.mostrarSutl,
+      },
       codigoGuia: shipment.codigoGuia,
       estado: shipment.estado,
       origen: shipment.origen,
       destino: shipment.destino,
       destinatarioNombre: shipment.destinatarioNombre,
       createdAt: shipment.createdAt,
-      eventos,
+      // Esta ruta es pública: solo lo que el destinatario necesita, sin el correo del responsable
+      // interno ni los identificadores internos del evento.
+      eventos: eventos.map((e) => ({
+        _id: String(e._id),
+        estado: e.estado,
+        ubicacion: e.ubicacion,
+        descripcion: e.descripcion,
+        timestamp: e.timestamp,
+      })),
     };
   }
 

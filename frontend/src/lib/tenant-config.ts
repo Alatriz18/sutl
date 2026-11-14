@@ -26,7 +26,8 @@ export const CONFIG_POR_DEFECTO: ConfigOperacion = {
   inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
   riesgo: { avisarAlPasarARojo: true },
   excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
-      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+  documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+  marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
 };
 
 // Caché compartida entre pantallas: la configuración cambia poco y varias

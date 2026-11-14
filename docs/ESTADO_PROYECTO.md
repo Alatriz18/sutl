@@ -85,6 +85,15 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — C8: seguimiento público con la marca de cada empresa, probado
+
+Probado con Docker: **414 unitarias y 321 e2e del backend, 64 de navegador en demo y 18 contra el backend real, todas en verde.**
+
+- **Marca por empresa** (sección `marca` de la configuración, sin migración): nombre comercial (hasta 60), color de acento `#RRGGBB`, logo (solo `https`, sin espacios ni comillas, hasta 280), mensaje al cliente (hasta 280) y si se muestra «Con tecnología de SUTL». Solo un administrador la cambia; vaciar un campo vuelve al valor por defecto (nombre de la empresa y azul de SUTL). Se valida al guardar **y se vuelve a validar al leer**: un color o logo mal formado se descarta, porque se muestra a terceros.
+- **Página pública** (`/tracking/:código`): encabezado con logo y nombre, color de acento con texto blanco u oscuro según su luminancia (legible siempre), mensaje sobre el historial y pie de SUTL opcional. El frontend tampoco confía en la marca para estilos ni imágenes. Vista previa en vivo en Configuración.
+- **Fuga cerrada (existía antes):** la ruta pública devolvía, por cada evento, el **correo del responsable interno**, el `tenantId` y el identificador del envío. Ahora solo entrega `_id`, estado, ubicación, descripción y fecha.
+- **Pendiente:** dominio propio de la empresa para la página (hoy es la de SUTL).
+
 ### 2026-11-14 — C4: analítica de abastecimiento (OTIF, lead time, aging y cumplimiento), probada
 
 Probado con Docker: **409 unitarias y 314 e2e del backend (9 nuevas en analítica), 62 de navegador en demo, todas en verde.**

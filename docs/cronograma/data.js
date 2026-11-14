@@ -115,8 +115,8 @@ const PHASES = [
         what: 'Prueba de entrega con firma o foto; la recepción en destino queda ligada a la OC y al inventario.', dep: 'A1' },
       { id: 'C7', name: 'Tiempo real (WebSockets) y mapas en el seguimiento', owner: 'Ambos', s: 16, e: 17, st: 'pendiente',
         what: 'Actualización en vivo de estados y mapa de ruta con Google Maps.', dep: 'A7' },
-      { id: 'C8', name: 'Tracking público con la marca de cada empresa', owner: 'Dev', s: 20, e: 21, st: 'pendiente',
-        what: 'Portal white-label: logo, colores y dominio por empresa.', dep: '—' },
+      { id: 'C8', name: 'Tracking público con la marca de cada empresa', owner: 'Dev', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado el 14 nov: cada empresa configura nombre comercial, color de acento, logo (https), mensaje al cliente y si se muestra «Con tecnología de SUTL», con vista previa en Configuración; la página pública de seguimiento la aplica (con texto legible sobre el color elegido) y el servidor descarta colores o logos mal formados. De paso se cerró una fuga: la ruta pública devolvía el correo del responsable interno de cada evento. Pendiente: dominio propio de la empresa.', dep: '—' },
       { id: 'C9', name: 'Facturación electrónica SRI', owner: 'Ambos', s: 19, e: 22, st: 'pendiente',
         what: 'XML firmado, autorización del SRI y RIDE para cobrar el servicio de SUTL. Los tiempos del SRI son externos.', dep: 'Firma electrónica (trámite)' },
     ],
@@ -190,7 +190,7 @@ const YA_FUNCIONA = [
     'Envíos con tracking por hitos (Mongo) y tracking público por código de guía.',
     'Cotizaciones, reservas, tarifas, facturación, contenedores, navieras, almacén, flota, alertas y reportes.',
     'Notificaciones reales por correo y WhatsApp; API pública v1 con webhooks; formulario de contacto de la landing.',
-    'Portal (proveedor y cliente final, con conversación) y analítica: OTIF, lead time y atrasos por proveedor.',
+    'Portal (proveedor y cliente final, con conversación), analítica por proveedor y seguimiento público con la marca de cada empresa.',
   ]],
   ['Seguridad y roles', [
     'Multi-tenant por fila, probado de punta a punta; login JWT con refresh y límite de peticiones.',
@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '409 unitarias y 314 de punta a punta del backend, 62 de navegador en demo y 17 contra el backend real, todas en verde.',
+    '414 unitarias y 321 de punta a punta del backend, 64 de navegador en demo y 18 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -206,7 +206,7 @@ const YA_FUNCIONA = [
 const CODIGO_LISTO = [
   ['En construcción', [
     'Nada pendiente de probar: todo lo escrito hasta el 14 nov pasó sus pruebas.',
-    'Siguiente módulo grande: planes y suscripción con pasarela de pago (C5).',
+    'Siguiente módulo grande: POD y recepción nacional (C6); planes y pasarela (C5) esperan la cuenta de la pasarela.',
   ]],
 ];
 
@@ -282,13 +282,14 @@ const LOGROS_SEMANA = [
   ['Checklist de documentos y vencimientos; roles de analista y proveedor', 'C1, B5'],
   ['Portal colaborativo: proveedor y cliente final con su portal, conversación y confirmación; cierra el hueco de que un cliente final veía todos los envíos', 'C3'],
   ['Analítica de abastecimiento: OTIF, lead time, atrasos y cumplimiento por proveedor', 'C4'],
-  ['Todo lo anterior probado con el stack completo: 9 migraciones, 314 e2e, 62 + 17 de navegador y 409 unitarias en verde', 'A13'],
+  ['Seguimiento público con la marca de cada empresa; se cerró una fuga de correos internos en esa ruta', 'C8'],
+  ['Todo lo anterior probado con el stack completo: 9 migraciones, 321 e2e, 64 + 18 de navegador y 414 unitarias en verde', 'A13'],
   ['Corregido: una base vacía no podía migrar (faltaban las tablas base); ahora sí, con una migración puente', 'defecto'],
 ];
 
 // Qué cambió respecto de la versión anterior del cronograma.
 const CAMBIOS = [
-  'A4, A10, B1b, B2, B3, B4, B5, C1 y C2 pasan de «Código listo» a «Hecho»: se probaron con el stack completo (A13). C3 (portal colaborativo) y C4 (analítica) se construyeron y probaron el mismo día.',
+  'A4, A10, B1b, B2, B3, B4, B5, C1 y C2 pasan de «Código listo» a «Hecho»: se probaron con el stack completo (A13). C3 (portal), C4 (analítica) y C8 (seguimiento con marca) se construyeron y probaron el mismo día.',
   'La Fase B termina en la semana 6, con unas 6 semanas de adelanto sobre lo planeado; el hito H3 queda con mucho colchón.',
   'Esa holgura se usa para adelantar la Fase C (portal, analítica, planes). El orden sigue lo que más pesa para el piloto: C3, C4 y luego C5–C7.',
   'Los hitos del Plan Maestro no se mueven. Lo que no se adelanta por falta de decisión de Kevin: nube (D1) y trámites externos (SRI, pasarela).',
@@ -297,7 +298,7 @@ const CAMBIOS = [
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'C5', titulo: 'Planes, suscripción y pasarela de pago', resp: 'Kevin', hecho: 'Planes con límites aplicados por el servidor y flujo de suscripción con pasarela (modo de pruebas).', nota: 'Necesita cuenta de la pasarela para pasar a producción.' },
+  { id: 'C6', titulo: 'POD y recepción nacional conectada a la OC', resp: 'Dev', hecho: 'Prueba de entrega (firma, foto, receptor) registrada y ligada al envío y a la OC.', nota: 'Siguiente módulo grande tras C8.' },
   { id: 'A9', titulo: 'Deuda técnica: cobertura y subida de versiones', resp: 'Dev', hecho: 'Cobertura medida (meta ≥ 70%) y plan de la subida de NestJS y Next listo para tu aprobación.', nota: 'La subida en sí necesita tu aprobación.' },
   { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
@@ -307,7 +308,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '802', t: 'pruebas en verde: 409 unitarias y 314 de punta a punta del backend, 62 de navegador en demo y 17 contra el backend real' },
+  { n: '817', t: 'pruebas en verde: 414 unitarias y 321 de punta a punta del backend, 64 de navegador en demo y 18 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

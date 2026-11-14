@@ -33,6 +33,12 @@ function diferencias(form: ConfigOperacion, perfil: ConfigOperacion): AjustesOpe
   return ajustes;
 }
 
+// Texto legible sobre el color elegido: blanco u oscuro según su luminancia (WCAG).
+function textoSobre(hex: string) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#0D2040' : '#FFFFFF';
+}
+
 export default function ConfiguracionPage() {
   const { user } = useAuth();
   const toast = useToast();
@@ -528,6 +534,62 @@ export default function ConfiguracionPage() {
                 <span className="text-sm text-navy/60">días antes</span>
               </div>
             </Campo>
+          </div>
+        </Card>
+
+        <Card className="mt-6">
+          <CardTitle>Marca del seguimiento público</CardTitle>
+          <p className="mt-1 text-sm text-navy/60">
+            Así ve tu cliente la página de seguimiento de su envío. Lo que dejes vacío usa el nombre de tu empresa y los colores de SUTL.
+          </p>
+          <div className="mt-4 grid max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2">
+            <Campo htmlFor={`${id}-mn`} label="Nombre comercial" sugerido="el nombre de la empresa" ajustado={ajustado('marca', 'nombreComercial')}>
+              <Input id={`${id}-mn`} maxLength={60} disabled={!puedeEditar} value={form.marca.nombreComercial} onChange={(e) => set('marca', { nombreComercial: e.target.value })} />
+            </Campo>
+            <Campo htmlFor={`${id}-mc`} label="Color de acento" ayuda="Formato #RRGGBB." sugerido="el azul de SUTL" ajustado={ajustado('marca', 'colorPrimario')}>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label="Elegir el color de acento"
+                  disabled={!puedeEditar}
+                  className="h-10 w-12 cursor-pointer rounded border border-navy/20 bg-white p-1"
+                  value={/^#[0-9a-fA-F]{6}$/.test(form.marca.colorPrimario) ? form.marca.colorPrimario : '#2E86AB'}
+                  onChange={(e) => set('marca', { colorPrimario: e.target.value })}
+                />
+                <Input id={`${id}-mc`} placeholder="#1A7A4C" maxLength={7} pattern="(#[0-9a-fA-F]{6})?" disabled={!puedeEditar} className="w-32" value={form.marca.colorPrimario} onChange={(e) => set('marca', { colorPrimario: e.target.value })} />
+              </div>
+            </Campo>
+            <Campo htmlFor={`${id}-ml`} label="Logo" ayuda="Dirección https de la imagen (PNG, JPG o SVG)." sugerido="sin logo" ajustado={ajustado('marca', 'logoUrl')}>
+              <Input id={`${id}-ml`} type="url" placeholder="https://…/logo.png" maxLength={300} pattern="(https://[^\s]*)?" disabled={!puedeEditar} value={form.marca.logoUrl} onChange={(e) => set('marca', { logoUrl: e.target.value })} />
+            </Campo>
+            <Campo htmlFor={`${id}-mm`} label="Mensaje al cliente" ayuda="Aparece sobre el historial (hasta 280 caracteres)." sugerido="sin mensaje" ajustado={ajustado('marca', 'mensaje')}>
+              <Input id={`${id}-mm`} maxLength={280} disabled={!puedeEditar} value={form.marca.mensaje} onChange={(e) => set('marca', { mensaje: e.target.value })} />
+            </Campo>
+          </div>
+          <div className="mt-5 max-w-3xl">
+            <Campo label="Pie de página" sugerido={sugerido.marca.mostrarSutl ? 'se muestra' : 'se oculta'} ajustado={ajustado('marca', 'mostrarSutl')}>
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input type="checkbox" className="h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky" disabled={!puedeEditar} checked={form.marca.mostrarSutl} onChange={(e) => set('marca', { mostrarSutl: e.target.checked })} />
+                Mostrar «Con tecnología de SUTL»
+              </label>
+            </Campo>
+          </div>
+          <div className="mt-5 max-w-3xl" aria-label="Vista previa de la página de seguimiento">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-navy/50">Vista previa</p>
+            <div className="rounded-lg border border-navy/10 bg-slate-50 p-4">
+              <div
+                className="flex items-center gap-3 rounded-lg px-4 py-3"
+                style={/^#[0-9a-fA-F]{6}$/.test(form.marca.colorPrimario) ? { background: form.marca.colorPrimario, color: textoSobre(form.marca.colorPrimario) } : undefined}
+              >
+                {/^https:\/\//.test(form.marca.logoUrl) && (
+                  // eslint-disable-next-line @next/next/no-img-element -- vista previa de una dirección externa
+                  <img src={form.marca.logoUrl} alt="" className="h-10 w-auto max-w-[8rem] rounded bg-white/90 object-contain p-1" referrerPolicy="no-referrer" />
+                )}
+                <span className={`text-lg font-semibold ${/^#[0-9a-fA-F]{6}$/.test(form.marca.colorPrimario) ? '' : 'text-navy'}`}>{form.marca.nombreComercial || 'Tu empresa'}</span>
+              </div>
+              {form.marca.mensaje && <p className="mt-3 rounded-lg border border-navy/10 bg-white p-3 text-sm text-navy/80">{form.marca.mensaje}</p>}
+              {form.marca.mostrarSutl && <p className="mt-3 text-center text-xs text-navy/40">Con tecnología de SUTL</p>}
+            </div>
           </div>
         </Card>
 

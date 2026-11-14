@@ -39,4 +39,32 @@ describe('tenant-config.defaults', () => {
       inventario: { recepcionActualizaInventario: 'nunca' },
     });
   });
+
+  describe('marca de la página pública', () => {
+    it('por defecto no cambia nada y muestra «Con tecnología de SUTL»', () => {
+      expect(resolverConfig('general', {}).marca).toEqual({ nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true });
+    });
+
+    it('acepta una marca bien formada', () => {
+      const marca = { nombreComercial: 'Transportes Andes', colorPrimario: '#1A7A4C', logoUrl: 'https://cdn.andes.com/logo.png', mensaje: 'Gracias por confiar en nosotros', mostrarSutl: false };
+      expect(resolverConfig('general', { marca }).marca).toEqual(marca);
+    });
+
+    it('descarta al leer un color, un logo o textos mal formados (se muestran a terceros)', () => {
+      const r = resolverConfig('general', {
+        marca: { colorPrimario: 'rojo', logoUrl: 'javascript:alert(1)', nombreComercial: 'x'.repeat(61), mensaje: 'y'.repeat(281), mostrarSutl: false },
+      }).marca;
+      expect(r).toEqual({ nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: false });
+    });
+
+    it('no acepta logos que no sean https ni con comillas o espacios', () => {
+      for (const logoUrl of ['http://x.com/a.png', 'data:image/png;base64,AAA', 'https://x.com/a b.png', 'https://x.com/a".png', '//x.com/a.png']) {
+        expect(resolverConfig('general', { marca: { logoUrl } }).marca.logoUrl).toBe('');
+      }
+    });
+
+    it('un valor vacío vuelve al comportamiento por defecto', () => {
+      expect(combinarAjustes({ marca: { colorPrimario: '#112233' } }, { marca: { colorPrimario: '' } }).marca?.colorPrimario).toBe('');
+    });
+  });
 });

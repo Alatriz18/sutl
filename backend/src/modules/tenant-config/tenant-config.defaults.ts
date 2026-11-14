@@ -55,7 +55,21 @@ export interface ConfigOperacion {
     // Cuántos días antes de la llegada estimada un documento faltante abre una excepción.
     diasAntesEtaFaltante: number;
   };
+  // Cómo se ve la página pública de seguimiento que recibe el destinatario (cada campo vacío = por defecto).
+  marca: {
+    nombreComercial: string;
+    // Color de acento en formato #RRGGBB.
+    colorPrimario: string;
+    // Dirección https de la imagen del logo.
+    logoUrl: string;
+    mensaje: string;
+    // Si se muestra «Con tecnología de SUTL» al pie.
+    mostrarSutl: boolean;
+  };
 }
+
+export const COLOR_MARCA = /^#[0-9a-fA-F]{6}$/;
+export const LOGO_MARCA = /^https:\/\/[^\s"'<>]{1,280}$/;
 
 export interface PerfilOperacion {
   nombre: string;
@@ -73,6 +87,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
   manufactura: {
@@ -84,6 +99,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
   comercio: {
@@ -95,6 +111,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
   erp_externo: {
@@ -106,6 +123,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
 } satisfies Record<string, PerfilOperacion>;
@@ -140,6 +158,12 @@ export function sanitizarAjustes(raw: unknown): AjustesOperacion {
       if (clave === 'recepcionActualizaInventario' && !MODOS_RECEPCION_INVENTARIO.includes(valor as ModoRecepcionInventario)) {
         continue;
       }
+      // La marca se muestra a terceros: un color o logo mal formado se descarta al leer.
+      if (seccion === 'marca') {
+        if (clave === 'colorPrimario' && valor !== '' && !COLOR_MARCA.test(valor as string)) continue;
+        if (clave === 'logoUrl' && valor !== '' && !LOGO_MARCA.test(valor as string)) continue;
+        if ((clave === 'nombreComercial' || clave === 'mensaje') && (valor as string).length > (clave === 'mensaje' ? 280 : 60)) continue;
+      }
       limpio[clave] = valor;
     }
     if (Object.keys(limpio).length > 0) {
@@ -163,6 +187,7 @@ export function resolverConfig(perfil: string, ajustes: unknown): ConfigOperacio
     riesgo: { ...base.riesgo, ...limpio.riesgo },
     excepciones: { ...base.excepciones, ...limpio.excepciones },
     documentos: { ...base.documentos, ...limpio.documentos },
+    marca: { ...base.marca, ...limpio.marca },
   };
 }
 
@@ -174,5 +199,6 @@ export function combinarAjustes(actuales: AjustesOperacion, nuevos: AjustesOpera
     riesgo: { ...actuales.riesgo, ...nuevos.riesgo },
     excepciones: { ...actuales.excepciones, ...nuevos.excepciones },
     documentos: { ...actuales.documentos, ...nuevos.documentos },
+    marca: { ...actuales.marca, ...nuevos.marca },
   });
 }
