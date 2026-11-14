@@ -223,6 +223,7 @@ model Tenant {
   exceptionCases             ExceptionCase[]
   analystGrants              AnalystGrant[]
   portalMessages             PortalMessage[]
+  proofsOfDelivery           ProofOfDelivery[]
   taskComments               TaskComment[]
 
   @@map("tenants")
@@ -267,6 +268,7 @@ model User {
   comentariosTarea     TaskComment[]          @relation("ComentarioAutor")
   mfaRecoveryCodes     MfaRecoveryCode[]
   mensajesPortal       PortalMessage[]       @relation("MensajeAutor")
+  entregasRegistradas  ProofOfDelivery[]     @relation("PodRegistradoPor")
   accesosAnalista      AnalystGrant[]        @relation("GrantAnalista")
   accesosOtorgados     AnalystGrant[]        @relation("GrantOtorgadoPor")
 
@@ -352,6 +354,7 @@ model Shipment {
   inventoryItems      InventoryItem[]
   vehicleAssignments  VehicleAssignment[]
   ordenesCompraLineas ShipmentPurchaseOrderLine[]
+  pruebaEntrega       ProofOfDelivery?
 
   @@index([tenantId])
   @@index([carrierId])
@@ -1272,6 +1275,31 @@ model AnalystGrant {
   @@unique([analystId, tenantId])
   @@index([tenantId])
   @@map("analyst_grants")
+}
+
+// ---------- Prueba de entrega (C6) ----------
+
+// Constancia de que la carga llegó a su destino: quién la recibió, cuándo y con qué evidencia.
+// Un envío tiene como máximo una.
+model ProofOfDelivery {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  shipmentId         String   @unique
+  receptorNombre     String
+  receptorDocumento  String?
+  entregadoAt        DateTime
+  observaciones      String?
+  archivoUrl         String? // evidencia (foto o PDF), en el disco del servidor
+  archivoNombre      String?
+  registradoPorId    String
+  createdAt          DateTime @default(now())
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  registradoPor User    @relation("PodRegistradoPor", fields: [registradoPorId], references: [id])
+
+  @@index([tenantId])
+  @@map("proofs_of_delivery")
 }
 
 // ---------- Portal colaborativo (C3) ----------

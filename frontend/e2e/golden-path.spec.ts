@@ -476,6 +476,20 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('@demo-transportes.com')).toHaveCount(0);
   });
 
+  test('prueba de entrega: el equipo la registra y el envío queda entregado', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/shipments/s1');
+    await expect(page.getByRole('heading', { name: 'Prueba de entrega' })).toBeVisible();
+    await page.getByLabel('Quién recibió').fill('Ana Pérez');
+    await page.getByLabel('Observaciones (opcional)').fill('Recibido conforme');
+    await page.getByRole('button', { name: 'Registrar entrega' }).click();
+    await expect(page.getByText('Recibió', { exact: true })).toBeVisible();
+    await expect(page.getByText('Ana Pérez').first()).toBeVisible();
+    await expect(page.getByText('Recibido conforme')).toBeVisible();
+    // La entrega deja el evento en el seguimiento.
+    await expect(page.getByText('Entregado a Ana Pérez')).toBeVisible();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

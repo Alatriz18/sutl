@@ -29,6 +29,7 @@ import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { resumenTorre } from './control-tower';
 import { listarMensajes, publicarMensaje } from './portal';
 import { analiticaDemo } from './analytics';
+import { obtenerPod, registrarPod } from './delivery';
 import { configEfectivaDemo as configDeLaDemo } from './tenant-config';
 import { checklistEnvio, revisarDocumento } from './documents';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
@@ -1036,6 +1037,15 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       if (!usuario || usuario.rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
       if (method === 'get') return delay(ok(config, listarMensajes(usuario, qs.get('entidadTipo'), qs.get('entidadId'))));
       if (method === 'post') return delay(ok(config, publicarMensaje(usuario, body), 201), 240);
+    }
+
+    // --- PRUEBA DE ENTREGA ---
+    m = match(path, /^\/shipments\/([^/]+)\/pod$/);
+    if (m) {
+      const usuario = currentUser();
+      if (!usuario) throw new MockApiError(401, 'No autorizado');
+      if (method === 'get') return delay(ok(config, obtenerPod(m[1])));
+      if (method === 'post') return delay(ok(config, registrarPod(usuario, m[1], config.data as FormData), 201), 300);
     }
 
     // --- ANALÍTICA ---

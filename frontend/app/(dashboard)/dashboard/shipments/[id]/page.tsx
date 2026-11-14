@@ -14,6 +14,7 @@ import { extractApiError, formatDateTime, formatKg, formatNumber } from '@/lib/f
 import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
 import { DocumentsChecklist } from '@/components/documents-checklist';
 import { Conversacion } from '@/components/portal/conversacion';
+import { PruebaEntregaCard } from '@/components/delivery/prueba-entrega';
 import { EstadoEnvio, Shipment, TrackingEvent } from '@/types';
 
 const ESTADOS: EstadoEnvio[] = ['creado', 'en_transito', 'en_aduana', 'entregado', 'incidencia'];
@@ -177,6 +178,8 @@ export default function ShipmentDetailPage() {
       </div>
 
       <DocumentsChecklist shipmentId={shipment.id} />
+
+      <PruebaEntregaCard shipmentId={shipment.id} modo="equipo" onRegistrada={cargar} />
 
       <Conversacion tipo="envio" id={shipment.id} titulo="Conversación con el cliente" ayuda="El destinatario la ve desde su portal si tiene usuario con el mismo correo que figura en el envío." />
 

@@ -85,6 +85,17 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — C6: prueba de entrega (POD) y recepción conectada a la OC, probada
+
+Probado con Docker: **426 unitarias y 331 e2e del backend, 65 de navegador en demo y 19 contra el backend real, todas en verde.** Migración nueva `20261114140000_prueba_entrega` (tabla `proofs_of_delivery`).
+
+- **Registrar** (`POST /api/shipments/:id/pod`, multipart; admin, operador, super_admin): quién recibió, documento, fecha (por defecto ahora; no puede estar en el futuro), observaciones y **evidencia** opcional (JPG, PNG o PDF, hasta 10 MB; nada ejecutable). Una sola prueba por envío (`unique`; la segunda da 409). Registrar deja el envío en **«Entregado»** con su evento en el seguimiento; si ese evento falla, la prueba se deshace (no queda a medias). Bitácora `pod.registrado`.
+- **Recepción de la OC desde la entrega** (opcional): recibe en cada orden la carga que viajaba en el envío, **sin pasar de lo que falta**, con las mismas reglas de inventario de la empresa (bodega, «sumar al inventario» según su perfil). Cada OC es independiente: si una no se puede recibir (p. ej. aún no confirmada) las demás siguen, la prueba queda registrada y la respuesta dice qué pasó con cada una.
+- **Consulta** (`GET .../pod` y `.../pod/evidencia`): el equipo ve la de su empresa; el **cliente final solo la de SUS envíos** (404 para los ajenos) y descarga su evidencia; el servidor valida el envío antes de servir el archivo (el disco no se expone).
+- **Frontend:** tarjeta «Prueba de entrega» en el detalle del envío (formulario con las opciones de inventario) y de solo lectura en el portal del cliente.
+- **Defecto encontrado y corregido solo al probar contra el servidor:** sin prueba, el servidor responde sin cuerpo y la tarjeta fallaba al leerlo (la demo devolvía `{}` y lo ocultaba).
+- **Pendiente:** firma en pantalla y fotos desde el celular.
+
 ### 2026-11-14 — C8: seguimiento público con la marca de cada empresa, probado
 
 Probado con Docker: **414 unitarias y 321 e2e del backend, 64 de navegador en demo y 18 contra el backend real, todas en verde.**

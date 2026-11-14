@@ -9,6 +9,7 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EstadoBadge } from '@/components/ui/badge';
 import { Conversacion } from '@/components/portal/conversacion';
+import { PruebaEntregaCard } from '@/components/delivery/prueba-entrega';
 import { extractApiError, formatDate, formatDateTime, formatKg } from '@/lib/format';
 import type { EnvioDeCliente, EventoDeCliente } from '@/types/portal';
 
@@ -96,6 +97,8 @@ export default function MiEnvioPage() {
           </ol>
         )}
       </Card>
+
+      <PruebaEntregaCard shipmentId={envio.id} modo="cliente" />
 
       <Conversacion tipo="envio" id={envio.id} titulo="Mensajes con la empresa" ayuda="Escribe aquí cualquier duda sobre este envío; el equipo te responde y te avisa por correo." />
     </div>

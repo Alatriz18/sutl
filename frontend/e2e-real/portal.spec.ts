@@ -115,4 +115,24 @@ test.describe('Portal (backend real)', () => {
     await page.getByRole('button', { name: 'Enviar' }).click();
     await expect(page.getByText('Zarpó ayer, llega la próxima semana.')).toBeVisible();
   });
+
+  test('la empresa registra la prueba de entrega con evidencia y el cliente final la ve en su portal', async ({ page }) => {
+    await ingresar(page, DEMO.email, DEMO.password);
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20000 });
+    await page.goto('/dashboard/shipments');
+    await page.getByRole('link', { name: guia }).click();
+    await expect(page.getByRole('heading', { name: 'Prueba de entrega' })).toBeVisible();
+    await page.getByLabel('Quién recibió').fill('Recepción Bodega Norte');
+    await page.getByLabel('Evidencia (foto o PDF, opcional)').setInputFiles({ name: 'firma.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 firma') });
+    await page.getByRole('button', { name: 'Registrar entrega' }).click();
+    await expect(page.getByText('Recibió', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Descargar evidencia' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await ingresar(page, emailCliente, CLAVE);
+    await expect(page).toHaveURL(/\/dashboard\/mis-envios/, { timeout: 20000 });
+    await page.getByRole('link', { name: guia }).click();
+    await expect(page.getByText('Recepción Bodega Norte', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Descargar evidencia' })).toBeVisible();
+  });
 });
