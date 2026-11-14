@@ -8,15 +8,22 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/lib/toast-context';
 import { extractApiError } from '@/lib/format';
-import { RolUsuario, User } from '@/types';
+import { useAuth } from '@/lib/auth-context';
+import { ROL_LABELS } from '@/lib/nav';
+import { Partner, RolUsuario, User } from '@/types';
 
+// Los roles que se pueden elegir al editar un usuario ya existente.
 const ROLES: RolUsuario[] = ['admin_tenant', 'operador', 'cliente_final'];
+// Roles con ficha propia: no se cambian desde el selector de la tabla.
+const ROLES_FIJOS: RolUsuario[] = ['super_admin', 'analista_sutl', 'proveedor'];
 
 export default function UsersPage() {
   const toast = useToast();
+  const { user: actor } = useAuth();
+  const [proveedores, setProveedores] = useState<Partner[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ email: '', password: '', nombre: '', rol: 'operador' as RolUsuario });
+  const [form, setForm] = useState({ email: '', password: '', nombre: '', rol: 'operador' as RolUsuario, partnerId: '' });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -32,13 +39,23 @@ export default function UsersPage() {
     cargar();
   }, []);
 
+  // Para crear un usuario proveedor hay que elegir a cuál representa.
+  useEffect(() => {
+    if (form.rol !== 'proveedor' || proveedores.length > 0) return;
+    api
+      .get<Partner[]>('/partners')
+      .then((r) => setProveedores(r.data.filter((p) => p.tipo === 'proveedor' && p.activo)))
+      .catch(() => setProveedores([]));
+  }, [form.rol, proveedores.length]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSaving(true);
     try {
-      await api.post('/users', form);
-      setForm({ email: '', password: '', nombre: '', rol: 'operador' });
+      const { partnerId, ...resto } = form;
+      await api.post('/users', { ...resto, ...(form.rol === 'proveedor' ? { partnerId } : {}) });
+      setForm({ email: '', password: '', nombre: '', rol: 'operador', partnerId: '' });
       toast.success('Usuario creado correctamente.');
       await cargar();
     } catch (err) {
@@ -127,8 +144,8 @@ export default function UsersPage() {
                       <td className="px-4 py-3">{u.nombre}</td>
                       <td className="px-4 py-3 text-navy/70">{u.email}</td>
                       <td className="px-4 py-3">
-                        {u.rol === 'super_admin' ? (
-                          <span className="capitalize text-navy/60">super admin</span>
+                        {ROLES_FIJOS.includes(u.rol) ? (
+                          <span className="text-navy/60">{ROL_LABELS[u.rol]}</span>
                         ) : (
                           <select
                             aria-label={`Rol de ${u.nombre}`}
@@ -210,12 +227,29 @@ export default function UsersPage() {
               value={form.rol}
               onChange={(e) => setForm((f) => ({ ...f, rol: e.target.value as RolUsuario }))}
             >
-              {ROLES.map((r) => (
+              {[...ROLES, 'proveedor' as RolUsuario, ...(actor?.rol === 'super_admin' ? ['analista_sutl' as RolUsuario] : [])].map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {ROL_LABELS[r]}
                 </option>
               ))}
             </select>
+            {form.rol === 'proveedor' && (
+              <select
+                aria-label="Proveedor al que representa"
+                required
+                className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
+                value={form.partnerId}
+                onChange={(e) => setForm((f) => ({ ...f, partnerId: e.target.value }))}
+              >
+                <option value="">Proveedor al que representa…</option>
+                {proveedores.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+            )}
+            {form.rol === 'proveedor' && (
+              <p className="text-xs text-navy/50">Solo verá sus propias órdenes de compra, sin datos internos.</p>
+            )}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" disabled={saving}>
               {saving ? 'Creando...' : 'Crear usuario'}

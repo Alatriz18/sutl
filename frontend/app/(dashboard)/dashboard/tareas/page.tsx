@@ -304,7 +304,7 @@ export default function TareasPage() {
     // Para asignar responsables: solo personal de la empresa. Si no hay permiso, queda vacío.
     api
       .get<User[]>('/users')
-      .then((r) => setUsuarios(r.data.filter((u) => u.activo && u.rol !== 'cliente_final')))
+      .then((r) => setUsuarios(r.data.filter((u) => u.activo && u.rol !== 'cliente_final' && u.rol !== 'proveedor')))
       .catch(() => setUsuarios([]));
   }, []);
 

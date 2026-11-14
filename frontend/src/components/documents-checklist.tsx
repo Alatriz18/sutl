@@ -36,7 +36,7 @@ export const ESTADO_DOC: Record<EstadoItemChecklist, { texto: string; clase: str
 export function DocumentsChecklist({ shipmentId }: { shipmentId: string }) {
   const toast = useToast();
   const { user } = useAuth();
-  const puedeRevisar = user?.rol === 'admin_tenant' || user?.rol === 'operador' || user?.rol === 'super_admin';
+  const puedeRevisar = user?.rol === 'admin_tenant' || user?.rol === 'operador' || user?.rol === 'super_admin' || user?.rol === 'analista_sutl';
   const [datos, setDatos] = useState<ChecklistEnvio | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rechazando, setRechazando] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export function DocumentsChecklist({ shipmentId }: { shipmentId: string }) {
   }
 
   // El cliente final no gestiona documentos internos.
-  if (user?.rol === 'cliente_final') return null;
+  if (user?.rol === 'cliente_final' || user?.rol === 'proveedor') return null;
 
   function Fila({ i }: { i: ItemChecklist }) {
     const e = ESTADO_DOC[i.estado];

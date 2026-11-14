@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query
 import { ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { PurchaseOrderShipmentsService } from './purchase-order-shipments.service';
@@ -26,14 +27,26 @@ export class PurchaseOrdersController {
     private readonly importService: PurchaseOrdersImportService,
   ) {}
 
+  // El proveedor externo también entra, pero solo ve SUS órdenes (ya emitidas) y con
+  // lo mínimo: el filtro lo impone el servidor según su usuario, nunca el parámetro.
   @Get()
-  findAll(@CurrentUser('tenantId') tenantId: string, @Query() query: QueryPurchaseOrdersDto) {
-    return this.purchaseOrdersService.findAll(tenantId, query);
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin, RolUsuario.proveedor)
+  async findAll(@CurrentUser() user: RequestUser, @Query() query: QueryPurchaseOrdersDto) {
+    if (user.rol === RolUsuario.proveedor) {
+      const partnerId = await this.purchaseOrdersService.proveedorDe(user.tenantId, user.userId);
+      return this.purchaseOrdersService.findAllDeProveedor(user.tenantId, partnerId, query);
+    }
+    return this.purchaseOrdersService.findAll(user.tenantId, query);
   }
 
   @Get(':id')
-  findOne(@CurrentUser('tenantId') tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
-    return this.purchaseOrdersService.findOne(tenantId, id);
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin, RolUsuario.proveedor)
+  async findOne(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    if (user.rol === RolUsuario.proveedor) {
+      const partnerId = await this.purchaseOrdersService.proveedorDe(user.tenantId, user.userId);
+      return this.purchaseOrdersService.findOneDeProveedor(user.tenantId, partnerId, id);
+    }
+    return this.purchaseOrdersService.findOne(user.tenantId, id);
   }
 
   // Importación masiva desde Excel/CSV. Antes de las rutas con ':id'.

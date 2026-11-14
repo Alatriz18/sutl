@@ -26,6 +26,8 @@ import {
   Siren,
   ShieldCheck,
   ScrollText,
+  UserCog,
+  PackageSearch,
   type LucideIcon,
 } from 'lucide-react';
 import { RolUsuario } from '@/types';
@@ -36,6 +38,17 @@ export interface NavItem {
   icon: LucideIcon;
   roles?: RolUsuario[];
   badge?: string;
+  // Visible también para el proveedor externo (que por defecto no ve nada).
+  externo?: boolean;
+}
+
+// Qué opciones del menú ve cada rol. El analista de SUTL ve lo mismo que un operador;
+// el proveedor externo solo ve lo que se le marca expresamente (el servidor lo impone igual).
+export function itemVisible(item: NavItem, rol: RolUsuario | undefined): boolean {
+  if (!rol) return false;
+  if (rol === 'proveedor') return item.externo === true || item.roles?.includes('proveedor') === true;
+  const efectivo: RolUsuario = rol === 'analista_sutl' ? 'operador' : rol;
+  return !item.roles || item.roles.includes(rol) || item.roles.includes(efectivo);
 }
 
 export interface NavGroup {
@@ -49,6 +62,12 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
       { href: '/dashboard/shipments', label: 'Envíos', icon: Package },
+    ],
+  },
+  {
+    label: 'Mis órdenes',
+    items: [
+      { href: '/dashboard/mis-ordenes', label: 'Mis órdenes de compra', icon: PackageSearch, roles: ['proveedor'] },
     ],
   },
   {
@@ -124,7 +143,13 @@ export const navGroups: NavGroup[] = [
         icon: Users,
         roles: ['admin_tenant', 'super_admin'],
       },
-      { href: '/dashboard/seguridad', label: 'Seguridad de la cuenta', icon: ShieldCheck },
+      { href: '/dashboard/seguridad', label: 'Seguridad de la cuenta', icon: ShieldCheck, externo: true },
+      {
+        href: '/dashboard/accesos-analistas',
+        label: 'Accesos de analistas',
+        icon: UserCog,
+        roles: ['super_admin'],
+      },
       {
         href: '/dashboard/bitacora',
         label: 'Bitácora de seguridad',
@@ -170,6 +195,8 @@ export const ROL_LABELS: Record<RolUsuario, string> = {
   admin_tenant: 'Administrador',
   operador: 'Operador',
   cliente_final: 'Cliente',
+  analista_sutl: 'Analista SUTL',
+  proveedor: 'Proveedor',
 };
 
 export function initialsFromEmail(email?: string | null): string {

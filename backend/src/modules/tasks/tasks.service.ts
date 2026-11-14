@@ -148,11 +148,12 @@ export class TasksService {
     return comentario;
   }
 
-  // El responsable debe ser personal activo de la misma empresa (no un cliente final).
+  // El responsable debe ser personal activo de la misma empresa (no un cliente final ni un proveedor externo).
   private async validarResponsable(tenantId: string, userId: string) {
     const u = await this.prisma.user.findFirst({ where: { id: userId, tenantId, activo: true }, select: { rol: true } });
     if (!u) throw new NotFoundException('Usuario no encontrado');
     if (u.rol === RolUsuario.cliente_final) throw new BadRequestException('Una tarea no se puede asignar a un cliente final');
+    if (u.rol === RolUsuario.proveedor) throw new BadRequestException('Una tarea no se puede asignar a un proveedor externo');
   }
 
   private async validarEntidad(tenantId: string, tipo: string, id?: string) {

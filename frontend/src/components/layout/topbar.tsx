@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Bell, Menu } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { navLabelFor, initialsFromEmail } from '@/lib/nav';
+import { EmpresaSelector } from './empresa-selector';
 
 export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
@@ -22,6 +23,7 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
       </button>
       <h2 className="text-sm font-semibold text-navy/80 sm:text-base">{title}</h2>
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <EmpresaSelector />
         <Link
           href="/dashboard/notificaciones"
           aria-label="Notificaciones"

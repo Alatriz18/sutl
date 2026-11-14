@@ -18,6 +18,7 @@ import { RolUsuario } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Externo } from '../../common/decorators/externo.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
@@ -26,12 +27,15 @@ import { MfaService } from './mfa.service';
 import { CodigoMfaDto, DesactivarMfaDto } from './dto/mfa.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { CambiarEmpresaDto } from './dto/cambiar-empresa.dto';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { ApiTags } from '@nestjs/swagger';
 
 const REFRESH_COOKIE = 'refreshToken';
 
+// @Externo: la cuenta propia (sesión, segundo factor) la usan también los proveedores.
 @ApiTags('auth')
+@Externo()
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -114,6 +118,27 @@ export class AuthController {
   ) {
     const refreshToken = req.cookies?.[REFRESH_COOKIE] ?? req.body?.refreshToken;
     const tokens = await this.authService.refresh(user.userId, refreshToken);
+    this.setRefreshCookie(res, tokens.refreshToken);
+    return { accessToken: tokens.accessToken };
+  }
+
+  // ---- Analista de SUTL: elegir en qué empresa cliente trabaja ----
+
+  @Get('empresas')
+  @Roles(RolUsuario.analista_sutl)
+  empresas(@CurrentUser('userId') userId: string) {
+    return this.authService.empresasAccesibles(userId);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('empresa-activa')
+  @Roles(RolUsuario.analista_sutl)
+  async cambiarEmpresa(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: CambiarEmpresaDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const tokens = await this.authService.cambiarEmpresa(userId, dto.tenantId);
     this.setRefreshCookie(res, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
   }

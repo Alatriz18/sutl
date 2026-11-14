@@ -37,6 +37,11 @@ const RUTAS = [
   '/dashboard/reservas/nueva',
   '/dashboard/cobertura/importar',
   '/dashboard/compras/oc1',
+  '/dashboard/tareas',
+  '/dashboard/excepciones',
+  '/dashboard/seguridad',
+  '/dashboard/bitacora',
+  '/dashboard/accesos-analistas',
 ];
 
 async function entrar(page: Page) {

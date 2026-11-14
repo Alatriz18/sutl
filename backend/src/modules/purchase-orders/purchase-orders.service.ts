@@ -2,6 +2,7 @@ import { WebhooksService } from '../webhooks/webhooks.service';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException, Optional } from '@nestjs/common';
 import { EstadoOrdenCompra, Prisma } from '@prisma/client';
@@ -115,6 +116,62 @@ export class PurchaseOrdersService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // Proveedor externo (B5): a qué proveedor representa. Sin proveedor asociado no ve nada.
+  async proveedorDe(tenantId: string, userId: string): Promise<string> {
+    const u = await this.prisma.user.findFirst({ where: { id: userId, tenantId, rol: 'proveedor', activo: true }, select: { partnerId: true } });
+    if (!u?.partnerId) throw new ForbiddenException('Tu usuario no está asociado a un proveedor');
+    return u.partnerId;
+  }
+
+  // Lo que un proveedor puede ver de SUS órdenes: sin notas internas, quién las creó,
+  // recepciones en bodega ni datos de otros proveedores.
+  private static readonly SELECT_PROVEEDOR = {
+    id: true,
+    numero: true,
+    estado: true,
+    incoterm: true,
+    moneda: true,
+    fechaEmision: true,
+    fechaRequerida: true,
+    fechaConfirmadaProveedor: true,
+    fechaDespacho: true,
+    proveedor: { select: { id: true, nombre: true } },
+    lineas: {
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        sku: true,
+        descripcion: true,
+        unidad: true,
+        cantidad: true,
+        cantidadRecibida: true,
+        precioUnitario: true,
+        embarques: {
+          select: { cantidad: true, shipment: { select: { codigoGuia: true, estado: true, fechaEstimadaLlegada: true } } },
+        },
+      },
+    },
+  } as const;
+
+  findAllDeProveedor(tenantId: string, partnerId: string, query: QueryPurchaseOrdersDto = {}) {
+    return this.prisma.purchaseOrder.findMany({
+      // Los borradores son internos: el proveedor solo ve lo que la empresa ya le emitió.
+      where: { tenantId, proveedorId: partnerId, estado: query.estado && query.estado !== 'borrador' ? query.estado : { not: 'borrador' } },
+      select: PurchaseOrdersService.SELECT_PROVEEDOR,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOneDeProveedor(tenantId: string, partnerId: string, id: string) {
+    const orden = await this.prisma.purchaseOrder.findFirst({
+      where: { id, tenantId, proveedorId: partnerId, estado: { not: 'borrador' } },
+      select: PurchaseOrdersService.SELECT_PROVEEDOR,
+    });
+    // Una OC de otro proveedor responde igual que una inexistente.
+    if (!orden) throw new NotFoundException('Orden de compra no encontrada');
+    return orden;
   }
 
   async findOne(tenantId: string, id: string) {

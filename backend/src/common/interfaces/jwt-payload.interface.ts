@@ -5,6 +5,9 @@ export interface JwtPayload {
   tenantId: string;
   rol: RolUsuario;
   email: string;
+  // Solo analista_sutl: su empresa de origen (la de SUTL). Si tenantId es otro,
+  // está trabajando en una empresa cliente y cada request exige un permiso vigente.
+  origen?: string;
 }
 
 export interface RequestUser {
@@ -12,4 +15,5 @@ export interface RequestUser {
   tenantId: string;
   rol: RolUsuario;
   email: string;
+  origen?: string;
 }

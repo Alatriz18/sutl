@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Bar,
   BarChart,
@@ -47,17 +48,25 @@ const MODO_LABELS = { maritimo: 'Marítimo', aereo: 'Aéreo', terrestre: 'Terres
 
 export default function DashboardOverviewPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // El proveedor externo no tiene panel de envíos: su inicio son sus órdenes.
   useEffect(() => {
+    if (user?.rol === 'proveedor') router.replace('/dashboard/mis-ordenes');
+  }, [user?.rol, router]);
+
+  useEffect(() => {
+    if (user?.rol === 'proveedor') return;
     Promise.all([api.get<Shipment[]>('/shipments'), api.get<Carrier[]>('/carriers')])
       .then(([shipRes, carRes]) => {
         setShipments(shipRes.data);
         setCarriers(carRes.data);
       })
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; el rol no cambia en la sesión
   }, []);
 
   const stats = useMemo(

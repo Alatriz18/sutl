@@ -5,6 +5,8 @@ export interface DecodedToken {
   tenantId: string;
   rol: RolUsuario;
   email: string;
+  // Solo analista_sutl: su empresa de origen.
+  origen?: string;
   exp: number;
 }
 

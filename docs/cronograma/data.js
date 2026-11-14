@@ -89,7 +89,7 @@ const PHASES = [
       { id: 'B4', name: 'Centro de excepciones: reglas, severidad, SLA y escalamiento', owner: 'Ambos', s: 12, e: 14, st: 'pendiente',
         what: 'Código escrito el 13 nov (sin ejecutar el stack): SKU en rojo y OC atrasada abren una excepción con plazo (SLA) configurable por empresa y una tarea; se resuelve sola cuando el problema desaparece y, si el plazo vence, escala a crítica y avisa por correo a los administradores. Pantalla Excepciones. Falta correr sus pruebas e2e. Regla de documento faltante hecha con C1 (14 nov). Pendiente: responsable por regla y aviso por WhatsApp.', dep: 'B1, B3' },
       { id: 'B5', name: 'Roles analista_sutl y proveedor', owner: 'Kevin', s: 12, e: 13, st: 'pendiente',
-        what: 'El analista de SUTL ve varias empresas clientes con permisos explícitos, sin romper el aislamiento; el proveedor ve solo sus OCs.', dep: 'B3' },
+        what: 'Código escrito el 14 nov (sin ejecutar el stack): el analista de SUTL trabaja en empresas cliente solo con un permiso explícito que otorga el super_admin (solo lectura por defecto, revocable al instante, con el ingreso anotado en la bitácora de la empresa) y elige la empresa en la barra superior; el proveedor externo queda ligado a un proveedor, solo ve sus OC ya emitidas sin datos internos y todo lo demás le está vedado por defecto. Falta correr su prueba e2e. Pendiente: exigir segundo factor a analistas y avisos a proveedores.', dep: 'B3' },
     ],
   },
   {

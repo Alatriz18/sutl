@@ -57,6 +57,11 @@ describe('TasksService', () => {
       expect(prisma.task.create).not.toHaveBeenCalled();
     });
 
+    it('no se asigna a un proveedor externo', async () => {
+      prisma.user.findFirst.mockResolvedValue({ rol: RolUsuario.proveedor });
+      await expect(service.create(admin, { titulo: 'x', asignadoAId: 'u2' } as never)).rejects.toBeInstanceOf(BadRequestException);
+    });
+
     it('no se asigna a un cliente final', async () => {
       prisma.user.findFirst.mockResolvedValue({ rol: RolUsuario.cliente_final });
       await expect(service.create(admin, { titulo: 'x', asignadoAId: 'u-cf' })).rejects.toBeInstanceOf(BadRequestException);

@@ -85,6 +85,26 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — B5: roles analista_sutl y proveedor (escrito SIN ejecutar el stack)
+
+Verificado: `tsc`, lint y **374 pruebas unitarias** del backend (55 nuevas), `tsc`/lint del frontend. **Sin correr:** `backend/test/roles-analista-proveedor.e2e-spec.ts` y la migración `20261114120000_roles_analista_proveedor` (a mano; agrega dos valores al enum `RolUsuario`, `users.partnerId`, `users.empresaActivaId` y la tabla `analyst_grants`).
+
+**Analista de SUTL** (personal de SUTL que atiende varias empresas):
+- Solo un `super_admin` crea analistas (queda en la empresa de SUTL) y les da acceso a cada empresa cliente en `POST /api/analyst-grants` (pantalla «Accesos de analistas»). El permiso es **solo lectura por defecto**; el de gestión se concede a propósito. Se revoca con `DELETE`, sin borrar la fila (queda el rastro).
+- El analista elige la empresa con `POST /api/auth/empresa-activa`: el servidor guarda su empresa activa (sobrevive a renovar la sesión) y emite un token con `tenantId` = esa empresa y `origen` = la de SUTL. **Cada request** fuera de su empresa vuelve a comprobar en la base que el permiso siga vigente (y que él y la empresa sigan activos), así que **revocar surte efecto al instante**, aunque tenga un token de 15 minutos. Con permiso de solo lectura, todo método que no sea GET/HEAD/OPTIONS da 403. Las rutas de la cuenta (`/auth/*`) siguen funcionando para poder volver a su empresa.
+- Para los permisos de rol cuenta como `operador`, **nunca como administrador**: no gestiona usuarios, configuración ni bitácora de la empresa. Perder el permiso al renovar la sesión lo devuelve a su empresa.
+- **Transparencia:** cada permiso otorgado o revocado y cada ingreso a una empresa queda en la bitácora de esa empresa (`analista.acceso_otorgado/revocado/ingreso_empresa`), que su administrador ve en «Bitácora de seguridad».
+- Un administrador de empresa **no** puede crear, ascender ni gestionar analistas (ni verlos: viven en la empresa de SUTL).
+
+**Proveedor externo:**
+- Es un usuario de la empresa ligado a un proveedor (`users.partnerId`, de la misma empresa, tipo proveedor y activo; se valida al crear y al editar). Al dejar de ser proveedor se limpia el vínculo.
+- **Acceso denegado por defecto** (único rol así): solo entra a rutas que lo nombran en `@Roles` o están marcadas `@Externo()` (su cuenta: sesión y segundo factor). Hoy solo `GET /purchase-orders` y `GET /purchase-orders/:id`.
+- El servidor impone el filtro por su proveedor (el parámetro `proveedorId` se ignora): ve solo sus OC **ya emitidas** (sin borradores) y sin notas internas, quién las creó ni recepciones en bodega. La OC de otro proveedor responde 404, igual que una inexistente.
+- No se le pueden asignar tareas. Pantallas: «Mis órdenes de compra» (lista y detalle de solo lectura); al entrar se le redirige ahí.
+
+**Cambios de base:** `jwt-payload` lleva `origen` (solo analistas); `RolesGuard` reescrito (proveedor deny-by-default, analista como operador); `AnalystAccessGuard` global entre autenticación y roles.
+- **Conocido / pendiente de B5:** exigir segundo factor a analistas (C2 por política); avisos al proveedor por cambios de la OC; que el proveedor confirme fecha de despacho (hoy solo lee); el listado antiguo de documentos, envíos y otros módulos sin `@Roles` siguen abiertos a cualquier rol interno (el proveedor ya queda fuera por la regla de denegar por defecto).
+
 ### 2026-11-14 — C1: checklist de documentos y vencimientos (escrito SIN ejecutar el stack)
 
 Verificado: `tsc`, lint y **319 pruebas unitarias** del backend (23 nuevas), `tsc`/lint del frontend. **Sin correr:** `backend/test/documents-checklist.e2e-spec.ts`, el caso nuevo de Playwright y la migración `20261113150000_documentos_revision` (a mano).

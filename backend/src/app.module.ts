@@ -34,6 +34,8 @@ import { AuditModule } from './modules/audit/audit.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ExceptionsModule } from './modules/exceptions/exceptions.module';
 import { ControlTowerModule } from './modules/control-tower/control-tower.module';
+import { AnalystAccessModule } from './modules/analyst-access/analyst-access.module';
+import { AnalystAccessGuard } from './modules/analyst-access/analyst-access.guard';
 import { QueuesModule } from './modules/queues/queues.module';
 import { limiteGlobal } from './common/rate-limit';
 import { PrismaModule } from './prisma/prisma.module';
@@ -97,6 +99,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     TasksModule,
     ExceptionsModule,
     ControlTowerModule,
+    AnalystAccessModule,
     WebhooksModule.forRoot(),
     QueuesModule.forRoot(),
   ],
@@ -106,6 +109,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     // restringe si el handler tiene @Roles(...)).
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Después de autenticar y antes de los roles: valida el permiso vigente del analista de SUTL.
+    { provide: APP_GUARD, useClass: AnalystAccessGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],

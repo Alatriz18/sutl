@@ -6,7 +6,7 @@ import { LogOut, Ship, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { DEMO_MODE } from '@/lib/api';
-import { navGroups, initialsFromEmail, ROL_LABELS } from '@/lib/nav';
+import { navGroups, initialsFromEmail, itemVisible, ROL_LABELS } from '@/lib/nav';
 
 interface SidebarProps {
   open: boolean;
@@ -59,9 +59,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
           <nav className="mt-3 flex flex-col gap-5 px-3 pb-4">
             {navGroups.map((group) => {
-              const visibleItems = group.items.filter(
-                (item) => !item.roles || (user && item.roles.includes(user.rol)),
-              );
+              const visibleItems = group.items.filter((item) => itemVisible(item, user?.rol));
               if (visibleItems.length === 0) return null;
 
               return (

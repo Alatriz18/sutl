@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 import { RolUsuario } from '@prisma/client';
 
 export class CreateUserDto {
@@ -16,4 +16,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(RolUsuario)
   rol?: RolUsuario;
+
+  // Solo para el rol proveedor: el proveedor (de la lista de la empresa) al que representa.
+  @IsOptional()
+  @IsUUID()
+  partnerId?: string;
 }

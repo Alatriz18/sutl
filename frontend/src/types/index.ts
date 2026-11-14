@@ -1,4 +1,4 @@
-export type RolUsuario = 'super_admin' | 'admin_tenant' | 'operador' | 'cliente_final';
+export type RolUsuario = 'super_admin' | 'admin_tenant' | 'operador' | 'cliente_final' | 'analista_sutl' | 'proveedor';
 
 export type EstadoEnvio = 'creado' | 'en_transito' | 'en_aduana' | 'entregado' | 'incidencia';
 
@@ -34,6 +34,8 @@ export interface User {
   email: string;
   nombre: string;
   rol: RolUsuario;
+  // Solo rol proveedor: el proveedor de la empresa al que representa.
+  partnerId?: string | null;
   activo: boolean;
   createdAt: string;
   updatedAt: string;
