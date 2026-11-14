@@ -26,6 +26,7 @@ import { MockApiError } from './errors';
 import * as supply from './supply';
 import { manejarTareas } from './tasks';
 import { evaluarExcepciones, listarExcepciones } from './exceptions';
+import { resumenTorre } from './control-tower';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
 
@@ -992,6 +993,13 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       if (!alerta) throw new MockApiError(404, 'Alerta no encontrada.');
       Object.assign(alerta, body, { updatedAt: nowIso() });
       return delay(ok(config, alerta));
+    }
+
+    // --- TORRE DE CONTROL ---
+    if (method === 'get' && path === '/control-tower') {
+      const usuario = currentUser();
+      if (!usuario || usuario.rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
+      return delay(ok(config, resumenTorre(usuario)));
     }
 
     // --- EXCEPCIONES ---

@@ -409,6 +409,18 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText(/Evaluado:/)).toBeVisible();
   });
 
+  test('torre de control: el resumen muestra SKU en riesgo, OC atrasadas y tareas del día', async ({ page }) => {
+    await entrar(page);
+    const torre = page.getByRole('region', { name: 'Torre de control' });
+    await expect(torre.getByRole('heading', { name: 'Torre de control' })).toBeVisible();
+    await expect(torre.getByText('SKU en rojo', { exact: true })).toBeVisible();
+    await expect(torre.getByText('OC atrasadas', { exact: true }).first()).toBeVisible();
+    await expect(torre.getByRole('heading', { name: 'Mis tareas de hoy' })).toBeVisible();
+    // La demo trae SKU en rojo: la lista de riesgo ofrece la acción recomendada y el enlace al detalle.
+    await torre.getByRole('link', { name: 'Ver el riesgo completo' }).click();
+    await expect(page).toHaveURL(/\/dashboard\/riesgo/);
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

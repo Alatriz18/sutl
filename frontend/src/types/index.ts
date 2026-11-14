@@ -676,6 +676,27 @@ export interface RiesgoResponse {
   filas: FilaRiesgo[];
 }
 
+// Tablero de la torre de control (ver backend/src/modules/control-tower).
+export interface ControlTowerResumen {
+  generadoAt: string;
+  ventanaDias: number;
+  riesgo: {
+    evaluadoAt: string;
+    resumen: RiesgoResponse['resumen'];
+    criticos: { sku: string; descripcion: string | null; semaforo: SemaforoRiesgo; accion: AccionRiesgo; motivo: string; fechaQuiebre: string | null; diasSinStock: number }[];
+  };
+  ocsAtrasadas: { total: number; items: { id: string; numero: string; proveedor: string; fechaRequerida: string; diasAtraso: number }[] };
+  vencimientos: {
+    ocs: { total: number; items: { id: string; numero: string; proveedor: string; fechaRequerida: string }[] };
+    embarques: { total: number; items: { id: string; codigoGuia: string; destino: string; estado: EstadoEnvio; fechaEstimadaLlegada: string }[] };
+  };
+  excepciones: { abiertas: number; criticas: number; altas: number; medias: number };
+  tareas: {
+    vencidasEmpresa: number;
+    misTareasHoy: { id: string; titulo: string; prioridad: PrioridadTarea; fechaLimite: string | null; entidadTipo: EntidadTarea | null; entidadId: string | null }[];
+  };
+}
+
 export interface InventoryPolicy {
   id: string;
   sku: string;

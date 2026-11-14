@@ -85,6 +85,14 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-13 (cont.) — B2: torre de control en el Resumen (escrito SIN ejecutar el stack)
+
+Verificado: `tsc`, lint y **296 pruebas unitarias** del backend (6 nuevas) y `tsc`/lint del frontend. **Sin correr:** `backend/test/control-tower.e2e-spec.ts` y el caso nuevo de Playwright «torre de control».
+
+- **Backend** (`modules/control-tower`): `GET /api/control-tower` (admin_tenant, operador, super_admin; el cliente final no entra). Solo lee y todo filtra por `tenantId`. Reúne en una llamada: semáforo de riesgo (conteos + los 5 SKU más urgentes con su acción), OC atrasadas (total + 5 con días de atraso), vencimientos de los próximos 7 días (OC con fecha requerida y embarques por llegar), excepciones abiertas por severidad, tareas vencidas de la empresa y **mis** tareas que vencen hoy.
+- **Frontend:** el Resumen empieza con «Torre de control» (4 indicadores + listas con enlaces a Riesgo, Tareas y Órdenes de compra) y debajo sigue «Envíos» con los gráficos de antes. El cliente final ve solo los envíos. Las etiquetas de acción de riesgo se movieron a `lib/riesgo-labels.ts` para compartirlas con la pantalla de Riesgo. La demo calcula lo mismo en `lib/mock/control-tower.ts`.
+- **Decisión:** «vencimientos próximos» = OC con fecha requerida y embarques con ETA en 7 días; los documentos no tienen fecha de vencimiento todavía (llegará con C1).
+
 ### 2026-11-13 (cont.) — Visor de bitácora de seguridad (escrito SIN ejecutar el stack)
 
 Pantalla **Bitácora de seguridad** (`/dashboard/bitacora`, solo `admin_tenant`/`super_admin`): lista de `GET /api/audit` (últimos 200), filtro por tipo y búsqueda por persona, acción o detalle. Solo lectura. En la demo explica que requiere cuenta real. Verificado: `tsc` y lint del frontend. Sin prueba Playwright (no corre en demo). Cierra el pendiente «visor de bitácora» de C2.

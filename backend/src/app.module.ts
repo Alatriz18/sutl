@@ -33,6 +33,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ExceptionsModule } from './modules/exceptions/exceptions.module';
+import { ControlTowerModule } from './modules/control-tower/control-tower.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { limiteGlobal } from './common/rate-limit';
 import { PrismaModule } from './prisma/prisma.module';
@@ -95,6 +96,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     AuditModule,
     TasksModule,
     ExceptionsModule,
+    ControlTowerModule,
     WebhooksModule.forRoot(),
     QueuesModule.forRoot(),
   ],

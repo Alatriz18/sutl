@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Card, CardTitle } from '@/components/ui/card';
 import { StatTile } from '@/components/ui/stat-tile';
 import { EstadoBadge } from '@/components/ui/badge';
+import { ControlTower } from '@/components/control-tower';
 import { CATEGORICAL, CHART_INK, STATUS } from '@/lib/chart-colors';
 import { Carrier, EstadoEnvio, Shipment } from '@/types';
 
@@ -129,6 +130,14 @@ export default function DashboardOverviewPage() {
     <div>
       <h1 className="text-2xl font-bold text-navy">Resumen</h1>
       <p className="mt-1 text-navy/60">Bienvenido, {user?.email}</p>
+
+      {user?.rol !== 'cliente_final' && (
+        <div className="mt-6">
+          <ControlTower />
+        </div>
+      )}
+
+      <h2 className="mt-10 text-lg font-semibold text-navy">Envíos</h2>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Envíos totales" value={loading ? '—' : stats.total} icon={Package} accent="navy" />

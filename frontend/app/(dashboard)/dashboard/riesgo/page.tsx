@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatTile } from '@/components/ui/stat-tile';
 import { cn } from '@/lib/utils';
+import { ACCION_RIESGO } from '@/lib/riesgo-labels';
 import { extractApiError, formatDate, formatDateTime, formatNumber } from '@/lib/format';
 import { useToast } from '@/lib/toast-context';
 import { AccionRiesgo, CambioRiesgo, FilaRiesgo, RiesgoResponse, SemaforoRiesgo } from '@/types';
@@ -31,14 +32,7 @@ const SEMAFORO: Record<SemaforoRiesgo, { texto: string; clase: string }> = {
   sin_datos: { texto: 'Sin datos', clase: 'bg-navy/10 text-navy/70' },
 };
 
-const ACCION: Record<AccionRiesgo, string> = {
-  adelantar_proveedor: 'Urgir al proveedor que despache ya',
-  partir_envio: 'Partir el embarque y adelantar una parte',
-  compra_urgente: 'Comprar ya (compra urgente)',
-  confirmar_fecha: 'Confirmar la fecha real de llegada',
-  planificar_compra: 'Planificar la compra',
-  ninguna: '—',
-};
+const ACCION = ACCION_RIESGO;
 
 function Reposiciones({ f }: { f: FilaRiesgo }) {
   if (f.reposiciones.length === 0) return <span className="text-navy/40">Nada en camino ni pedido</span>;

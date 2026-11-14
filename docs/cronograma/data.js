@@ -83,7 +83,7 @@ const PHASES = [
       { id: 'B1b', name: 'Riesgo: evaluación periódica y avisos', owner: 'Kevin', s: 8, e: 9, st: 'pendiente',
         what: 'Código escrito el 12 nov: evaluación cada hora con la cola, historial de cambios de semáforo, un correo por ronda con los SKU que pasaron a rojo (la empresa puede apagarlo en Configuración), evento de webhook y botón «Evaluar ahora». Falta correr las pruebas con Docker. Sigue pendiente: fechas de llegada para OCs que aún no viajan.', dep: 'B1, A11' },
       { id: 'B2', name: 'Dashboard Control Tower (vista de riesgo)', owner: 'Dev', s: 10, e: 12, st: 'pendiente',
-        what: 'Reemplaza el resumen centrado en envíos: SKUs en riesgo, OCs atrasadas, vencimientos próximos y tareas del día.', dep: 'B1' },
+        what: 'Código escrito el 13 nov (sin ejecutar el stack): la pantalla de Resumen abre con la torre de control (SKU en rojo, OC atrasadas, excepciones abiertas, tareas vencidas, SKU en riesgo con su acción recomendada, mis tareas de hoy y vencimientos de los próximos 7 días) y debajo conserva los envíos. API GET /control-tower. Falta correr su prueba e2e y la de navegador.', dep: 'B1' },
       { id: 'B3', name: 'Workflow humano: tareas, comentarios y bitácora', owner: 'Ambos', s: 11, e: 13, st: 'pendiente',
         what: 'Código escrito el 13 nov (sin ejecutar el stack): tareas con responsable, prioridad, fecha límite y vínculo a una OC, envío o SKU; comentarios; bitácora de quién hizo qué y cuándo (solo se agrega); pantalla Tareas. Falta correr sus pruebas e2e y de navegador. Sigue pendiente: evidencia adjunta y avisos al asignar.', dep: 'A7' },
       { id: 'B4', name: 'Centro de excepciones: reglas, severidad, SLA y escalamiento', owner: 'Ambos', s: 12, e: 14, st: 'pendiente',
