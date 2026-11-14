@@ -1,5 +1,8 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { RolUsuario } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { Public } from '../../common/decorators/public.decorator';
 import { ShipmentsService } from './shipments.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
@@ -18,14 +21,19 @@ export class ShipmentsController {
     return this.shipmentsService.trackByCodigoGuia(codigoGuia);
   }
 
+  // El cliente final (destinatario) entra al portal y ve solo SUS envíos, sin datos internos.
   @Get()
-  findAll(@CurrentUser('tenantId') tenantId: string) {
-    return this.shipmentsService.findAll(tenantId);
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin, RolUsuario.cliente_final)
+  findAll(@CurrentUser() user: RequestUser) {
+    if (user.rol === RolUsuario.cliente_final) return this.shipmentsService.findAllDeCliente(user.tenantId, user.email);
+    return this.shipmentsService.findAll(user.tenantId);
   }
 
   @Get(':id')
-  findOne(@CurrentUser('tenantId') tenantId: string, @Param('id') id: string) {
-    return this.shipmentsService.findOne(tenantId, id);
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin, RolUsuario.cliente_final)
+  findOne(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    if (user.rol === RolUsuario.cliente_final) return this.shipmentsService.findOneDeCliente(user.tenantId, user.email, id);
+    return this.shipmentsService.findOne(user.tenantId, id);
   }
 
   @Post()

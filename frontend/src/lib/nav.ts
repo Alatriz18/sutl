@@ -38,7 +38,7 @@ export interface NavItem {
   icon: LucideIcon;
   roles?: RolUsuario[];
   badge?: string;
-  // Visible también para el proveedor externo (que por defecto no ve nada).
+  // Visible también para el proveedor y el cliente final (que por defecto no ven nada).
   externo?: boolean;
 }
 
@@ -46,7 +46,8 @@ export interface NavItem {
 // el proveedor externo solo ve lo que se le marca expresamente (el servidor lo impone igual).
 export function itemVisible(item: NavItem, rol: RolUsuario | undefined): boolean {
   if (!rol) return false;
-  if (rol === 'proveedor') return item.externo === true || item.roles?.includes('proveedor') === true;
+  // Proveedor y cliente final: solo lo marcado para ellos (el servidor lo impone igual).
+  if (rol === 'proveedor' || rol === 'cliente_final') return item.externo === true || item.roles?.includes(rol) === true;
   const efectivo: RolUsuario = rol === 'analista_sutl' ? 'operador' : rol;
   return !item.roles || item.roles.includes(rol) || item.roles.includes(efectivo);
 }
@@ -68,6 +69,7 @@ export const navGroups: NavGroup[] = [
     label: 'Mis órdenes',
     items: [
       { href: '/dashboard/mis-ordenes', label: 'Mis órdenes de compra', icon: PackageSearch, roles: ['proveedor'] },
+      { href: '/dashboard/mis-envios', label: 'Mis envíos', icon: Package, roles: ['cliente_final'] },
     ],
   },
   {

@@ -1,12 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useId, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Conversacion } from '@/components/portal/conversacion';
+import { useToast } from '@/lib/toast-context';
 import { EstadoBadge } from '@/components/ui/badge';
 import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
 import { extractApiError, formatDate, formatMoney, formatNumber } from '@/lib/format';
@@ -15,8 +18,12 @@ import type { OrdenDeProveedor } from '@/types/proveedor';
 // Detalle de solo lectura de una orden del proveedor externo.
 export default function MiOrdenPage() {
   const { id } = useParams<{ id: string }>();
+  const uid = useId();
+  const toast = useToast();
   const [orden, setOrden] = useState<OrdenDeProveedor | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fecha, setFecha] = useState('');
+  const [confirmando, setConfirmando] = useState(false);
 
   const cargar = useCallback(() => {
     setError(null);
@@ -29,6 +36,20 @@ export default function MiOrdenPage() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  async function confirmar(e: FormEvent) {
+    e.preventDefault();
+    setConfirmando(true);
+    try {
+      const r = await api.post<OrdenDeProveedor>(`/portal/ordenes/${id}/confirmar`, { fechaConfirmada: new Date(`${fecha}T12:00:00`).toISOString() });
+      setOrden(r.data);
+      toast.success('Orden confirmada. La empresa ya ve tu fecha de despacho.');
+    } catch (err) {
+      toast.error(extractApiError(err, 'No se pudo confirmar la orden.'));
+    } finally {
+      setConfirmando(false);
+    }
+  }
 
   if (error) {
     return (
@@ -48,6 +69,20 @@ export default function MiOrdenPage() {
         <h1 className="text-2xl font-bold text-navy">Orden {orden.numero}</h1>
         <EstadoOcBadge estado={orden.estado} />
       </div>
+
+      {orden.estado === 'emitida' && (
+        <Card className="mt-6">
+          <CardTitle>Confirmar la orden</CardTitle>
+          <p className="mt-1 text-sm text-navy/60">Indica la fecha en que te comprometes a despachar. La empresa recibe un aviso.</p>
+          <form onSubmit={confirmar} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div>
+              <label htmlFor={`${uid}-fecha`} className="mb-1 block text-sm font-medium text-navy">Fecha de despacho comprometida</label>
+              <Input id={`${uid}-fecha`} type="date" required value={fecha} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setFecha(e.target.value)} />
+            </div>
+            <Button type="submit" disabled={confirmando || !fecha}>{confirmando ? 'Confirmando…' : 'Confirmar orden'}</Button>
+          </form>
+        </Card>
+      )}
 
       <Card className="mt-6">
         <CardTitle>Datos de la orden</CardTitle>
@@ -112,6 +147,8 @@ export default function MiOrdenPage() {
           </table>
         </div>
       </Card>
+
+      <Conversacion tipo="orden_compra" id={orden.id} titulo="Mensajes con la empresa" ayuda="Aclara plazos, cantidades o cualquier novedad de esta orden." />
     </div>
   );
 }

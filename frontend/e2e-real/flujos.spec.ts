@@ -127,7 +127,8 @@ test.describe('Backend real', () => {
 
     await page.getByRole('button', { name: /^Revocar la API key E2E/ }).first().click();
     await page.getByRole('button', { name: 'Sí, revocar' }).click();
-    await expect(page.getByText(/revocada/).first()).toBeVisible();
+    // El aviso de esta acción es único: «revocada» a secas también sale en llaves de ejecuciones anteriores.
+    await expect(page.getByText('API key revocada: deja de funcionar de inmediato.')).toBeVisible();
     expect((await fetch(`${API}/v1/shipments`, { headers: { 'X-API-Key': llave } })).status).toBe(401);
   });
 

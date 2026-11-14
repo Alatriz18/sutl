@@ -43,6 +43,20 @@ export class TrackingEventsService {
     return evento;
   }
 
+  // Para el cliente final: solo si el envío es suyo, y sin el correo del responsable interno.
+  async findByShipmentParaCliente(tenantId: string, email: string, shipmentId: string): Promise<Record<string, unknown>[]> {
+    const envio = await this.prisma.shipment.findFirst({
+      where: { id: shipmentId, tenantId, destinatarioEmail: { equals: email, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    if (!envio) throw new NotFoundException('Envío no encontrado');
+    const eventos = await this.trackingEventModel.find({ tenantId, shipmentId }).sort({ timestamp: -1 }).lean();
+    return eventos.map(({ responsable: _interno, ...publico }) => {
+      void _interno;
+      return publico;
+    });
+  }
+
   findByShipment(tenantId: string, shipmentId: string) {
     return this.trackingEventModel
       .find({ tenantId, shipmentId })

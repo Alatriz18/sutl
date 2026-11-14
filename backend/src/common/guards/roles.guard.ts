@@ -5,6 +5,8 @@ import { EXTERNO_KEY } from '../decorators/externo.decorator';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RequestUser } from '../interfaces/jwt-payload.interface';
 
+const ROLES_EXTERNOS: RolUsuario[] = [RolUsuario.proveedor, RolUsuario.cliente_final];
+
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
@@ -14,10 +16,10 @@ export class RolesGuard implements CanActivate {
     const requiredRoles = this.reflector.getAllAndOverride<RolUsuario[]>(ROLES_KEY, destinos);
     const { user }: { user: RequestUser } = context.switchToHttp().getRequest();
 
-    // Proveedor (usuario externo): acceso denegado por defecto. Solo entra donde
-    // se le nombra en @Roles o la ruta está marcada con @Externo().
-    if (user?.rol === RolUsuario.proveedor) {
-      if (requiredRoles && requiredRoles.length > 0) return requiredRoles.includes(RolUsuario.proveedor);
+    // Usuarios externos (proveedor y cliente final): acceso denegado por defecto. Solo
+    // entran donde se les nombra en @Roles o la ruta está marcada con @Externo().
+    if (user && ROLES_EXTERNOS.includes(user.rol)) {
+      if (requiredRoles && requiredRoles.length > 0) return requiredRoles.includes(user.rol);
       return this.reflector.getAllAndOverride<boolean>(EXTERNO_KEY, destinos) === true;
     }
 

@@ -53,13 +53,14 @@ export default function DashboardOverviewPage() {
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // El proveedor externo no tiene panel de envíos: su inicio son sus órdenes.
+  // Los externos no tienen este panel: el proveedor entra a sus órdenes y el cliente final a sus envíos.
   useEffect(() => {
     if (user?.rol === 'proveedor') router.replace('/dashboard/mis-ordenes');
+    if (user?.rol === 'cliente_final') router.replace('/dashboard/mis-envios');
   }, [user?.rol, router]);
 
   useEffect(() => {
-    if (user?.rol === 'proveedor') return;
+    if (user?.rol === 'proveedor' || user?.rol === 'cliente_final') return;
     Promise.all([api.get<Shipment[]>('/shipments'), api.get<Carrier[]>('/carriers')])
       .then(([shipRes, carRes]) => {
         setShipments(shipRes.data);
@@ -140,7 +141,7 @@ export default function DashboardOverviewPage() {
       <h1 className="text-2xl font-bold text-navy">Resumen</h1>
       <p className="mt-1 text-navy/60">Bienvenido, {user?.email}</p>
 
-      {user?.rol !== 'cliente_final' && (
+      {user?.rol !== 'cliente_final' && user?.rol !== 'proveedor' && (
         <div className="mt-6">
           <ControlTower />
         </div>

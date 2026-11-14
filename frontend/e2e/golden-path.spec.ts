@@ -431,6 +431,17 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('Falta', { exact: true }).first()).toBeVisible();
   });
 
+  test('portal: el equipo conversa sobre un envío y el mensaje queda en la conversación', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/shipments/s1');
+    await expect(page.getByRole('heading', { name: 'Conversación con el cliente' })).toBeVisible();
+    await expect(page.getByText('Todavía no hay mensajes.')).toBeVisible();
+    await page.getByLabel('Escribir un mensaje').fill('Su carga sale mañana.');
+    await page.getByRole('button', { name: 'Enviar' }).click();
+    await expect(page.getByRole('list', { name: 'Mensajes' }).getByText('Su carga sale mañana.')).toBeVisible();
+    await expect(page.getByText('Equipo', { exact: true })).toBeVisible();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

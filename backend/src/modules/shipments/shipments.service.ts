@@ -35,6 +35,47 @@ export class ShipmentsService {
     });
   }
 
+  // Lo que un cliente final ve de SUS envíos: sin datos internos (reserva, contenedor,
+  // órdenes de compra del cliente de la empresa ni el costo).
+  private static readonly SELECT_CLIENTE = {
+    id: true,
+    codigoGuia: true,
+    tipo: true,
+    modo: true,
+    estado: true,
+    origen: true,
+    destino: true,
+    puertoOrigen: true,
+    puertoDestino: true,
+    pesoKg: true,
+    referenciaDocumento: true,
+    remitenteNombre: true,
+    destinatarioNombre: true,
+    fechaEstimadaSalida: true,
+    fechaEstimadaLlegada: true,
+    createdAt: true,
+    carrier: { select: { nombre: true } },
+  } as const;
+
+  // El destinatario del envío se identifica por su correo (sin distinguir mayúsculas).
+  findAllDeCliente(tenantId: string, email: string) {
+    return this.prisma.shipment.findMany({
+      where: { tenantId, destinatarioEmail: { equals: email, mode: 'insensitive' } },
+      orderBy: { createdAt: 'desc' },
+      select: ShipmentsService.SELECT_CLIENTE,
+    });
+  }
+
+  async findOneDeCliente(tenantId: string, email: string, id: string) {
+    const shipment = await this.prisma.shipment.findFirst({
+      where: { id, tenantId, destinatarioEmail: { equals: email, mode: 'insensitive' } },
+      select: ShipmentsService.SELECT_CLIENTE,
+    });
+    // Un envío de otro cliente responde igual que uno inexistente.
+    if (!shipment) throw new NotFoundException('Envío no encontrado');
+    return shipment;
+  }
+
   async findOne(tenantId: string, id: string) {
     const shipment = await this.prisma.shipment.findFirst({
       where: { id, tenantId },

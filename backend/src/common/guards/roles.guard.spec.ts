@@ -19,7 +19,7 @@ function contexto(rol: RolUsuario | undefined, metadata: { roles?: RolUsuario[];
 
 describe('RolesGuard', () => {
   it('sin @Roles deja pasar a cualquier usuario interno', () => {
-    for (const rol of ['super_admin', 'admin_tenant', 'operador', 'cliente_final', 'analista_sutl'] as RolUsuario[]) {
+    for (const rol of ['super_admin', 'admin_tenant', 'operador', 'analista_sutl'] as RolUsuario[]) {
       const { guard, ctx } = contexto(rol, {});
       expect(guard.canActivate(ctx)).toBe(true);
     }
@@ -48,6 +48,25 @@ describe('RolesGuard', () => {
     it('no entra a rutas solo de super_admin', () => {
       const { guard, ctx } = contexto('analista_sutl', { roles: ['super_admin'] });
       expect(guard.canActivate(ctx)).toBe(false);
+    });
+  });
+
+  describe('cliente_final (acceso denegado por defecto, como el proveedor)', () => {
+    it('no entra a una ruta sin @Roles ni @Externo', () => {
+      const { guard, ctx } = contexto('cliente_final', {});
+      expect(guard.canActivate(ctx)).toBe(false);
+    });
+
+    it('entra donde @Roles lo nombra, no donde nombra a otros', () => {
+      const si = contexto('cliente_final', { roles: ['operador', 'cliente_final'] });
+      expect(si.guard.canActivate(si.ctx)).toBe(true);
+      const no = contexto('cliente_final', { roles: ['admin_tenant', 'operador', 'super_admin'] });
+      expect(no.guard.canActivate(no.ctx)).toBe(false);
+    });
+
+    it('entra a las rutas de su cuenta marcadas @Externo', () => {
+      const { guard, ctx } = contexto('cliente_final', { externo: true });
+      expect(guard.canActivate(ctx)).toBe(true);
     });
   });
 

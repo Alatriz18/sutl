@@ -32,6 +32,7 @@ import {
   totalOc,
 } from '@/lib/purchase-orders';
 import { useTenantConfig } from '@/lib/tenant-config';
+import { Conversacion } from '@/components/portal/conversacion';
 import { PurchaseOrder, Shipment, Warehouse } from '@/types';
 
 const ESTADOS_VINCULO = ['emitida', 'confirmada', 'despachada', 'recibida_parcial'];
@@ -670,6 +671,8 @@ export default function OrdenCompraDetallePage() {
           </ol>
         )}
       </div>
+
+      <Conversacion tipo="orden_compra" id={oc.id} titulo="Conversación con el proveedor" ayuda="El proveedor ve esta conversación desde su portal y recibe un aviso por correo." />
     </div>
   );
 }

@@ -27,6 +27,7 @@ import * as supply from './supply';
 import { manejarTareas } from './tasks';
 import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { resumenTorre } from './control-tower';
+import { listarMensajes, publicarMensaje } from './portal';
 import { checklistEnvio, revisarDocumento } from './documents';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
@@ -1011,6 +1012,14 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       if (!alerta) throw new MockApiError(404, 'Alerta no encontrada.');
       Object.assign(alerta, body, { updatedAt: nowIso() });
       return delay(ok(config, alerta));
+    }
+
+    // --- PORTAL (conversación del equipo) ---
+    if (path === '/portal/mensajes') {
+      const usuario = currentUser();
+      if (!usuario || usuario.rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
+      if (method === 'get') return delay(ok(config, listarMensajes(usuario, qs.get('entidadTipo'), qs.get('entidadId'))));
+      if (method === 'post') return delay(ok(config, publicarMensaje(usuario, body), 201), 240);
     }
 
     // --- TORRE DE CONTROL ---

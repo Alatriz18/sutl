@@ -1,5 +1,8 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { RolUsuario } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { TrackingEventsService } from './tracking-events.service';
 import { CreateTrackingEventDto } from './dto/create-tracking-event.dto';
 import { ApiTags } from '@nestjs/swagger';
@@ -19,10 +22,11 @@ export class TrackingEventsController {
   }
 
   @Get('shipment/:shipmentId')
-  findByShipment(
-    @CurrentUser('tenantId') tenantId: string,
-    @Param('shipmentId') shipmentId: string,
-  ) {
-    return this.trackingEventsService.findByShipment(tenantId, shipmentId);
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin, RolUsuario.cliente_final)
+  findByShipment(@CurrentUser() user: RequestUser, @Param('shipmentId') shipmentId: string) {
+    if (user.rol === RolUsuario.cliente_final) {
+      return this.trackingEventsService.findByShipmentParaCliente(user.tenantId, user.email, shipmentId);
+    }
+    return this.trackingEventsService.findByShipment(user.tenantId, shipmentId);
   }
 }

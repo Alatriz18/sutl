@@ -222,6 +222,7 @@ model Tenant {
   tasks                      Task[]
   exceptionCases             ExceptionCase[]
   analystGrants              AnalystGrant[]
+  portalMessages             PortalMessage[]
   taskComments               TaskComment[]
 
   @@map("tenants")
@@ -265,6 +266,7 @@ model User {
   tareasCreadas        Task[]                 @relation("TareaCreadaPor")
   comentariosTarea     TaskComment[]          @relation("ComentarioAutor")
   mfaRecoveryCodes     MfaRecoveryCode[]
+  mensajesPortal       PortalMessage[]       @relation("MensajeAutor")
   accesosAnalista      AnalystGrant[]        @relation("GrantAnalista")
   accesosOtorgados     AnalystGrant[]        @relation("GrantOtorgadoPor")
 
@@ -1270,6 +1272,26 @@ model AnalystGrant {
   @@unique([analystId, tenantId])
   @@index([tenantId])
   @@map("analyst_grants")
+}
+
+// ---------- Portal colaborativo (C3) ----------
+
+// Conversación entre el equipo de la empresa y un tercero sobre una operación:
+// el proveedor sobre una orden de compra, el cliente final sobre un envío suyo.
+model PortalMessage {
+  id          String   @id @default(uuid())
+  tenantId    String
+  entidadTipo String // 'orden_compra' | 'envio'
+  entidadId   String
+  autorId     String
+  texto       String
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  autor  User   @relation("MensajeAutor", fields: [autorId], references: [id])
+
+  @@index([tenantId, entidadTipo, entidadId, createdAt])
+  @@map("portal_messages")
 }
 
 // ---------- Segundo factor de autenticación (C2) ----------

@@ -13,6 +13,7 @@ import { useToast } from '@/lib/toast-context';
 import { extractApiError, formatDateTime, formatKg, formatNumber } from '@/lib/format';
 import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
 import { DocumentsChecklist } from '@/components/documents-checklist';
+import { Conversacion } from '@/components/portal/conversacion';
 import { EstadoEnvio, Shipment, TrackingEvent } from '@/types';
 
 const ESTADOS: EstadoEnvio[] = ['creado', 'en_transito', 'en_aduana', 'entregado', 'incidencia'];
@@ -176,6 +177,8 @@ export default function ShipmentDetailPage() {
       </div>
 
       <DocumentsChecklist shipmentId={shipment.id} />
+
+      <Conversacion tipo="envio" id={shipment.id} titulo="Conversación con el cliente" ayuda="El destinatario la ve desde su portal si tiene usuario con el mismo correo que figura en el envío." />
 
       {(shipment.ordenesCompraLineas?.length ?? 0) > 0 && (
         <Card className="mt-6">

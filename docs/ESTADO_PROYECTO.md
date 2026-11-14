@@ -85,6 +85,17 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — C3: portal colaborativo (proveedor y cliente final), construido y probado con el stack completo
+
+Probado con Docker: **392 unitarias y 305 e2e del backend, 60 de navegador en demo y 17 contra el backend real, todas en verde.**
+
+- **Hueco de seguridad cerrado (existía antes):** un `cliente_final` podía listar **todos** los envíos de la empresa, crear/editar envíos y registrar eventos de seguimiento. Ahora el cliente final es un rol externo con **acceso denegado por defecto** (igual que el proveedor): solo entra donde se le nombra en `@Roles` o la ruta es `@Externo()` (su cuenta). Ve únicamente los envíos donde su correo es el del destinatario (sin distinguir mayúsculas), sin datos internos (reserva, contenedor, carrier interno), y el seguimiento de esos envíos **sin el correo del responsable interno**. Lo ajeno responde 404.
+- **Conversación** (`portal_messages`, migración `20261114130000_portal_mensajes`): `GET/POST /api/portal/mensajes` sobre una orden de compra (equipo ↔ proveedor) o un envío (equipo ↔ cliente final). El servidor impone quién ve qué (el proveedor solo sus OC emitidas, el cliente solo sus envíos, ninguno entra a lo del otro); el otro lado solo ve si habló el equipo, no el rol exacto. Límite de 20 mensajes por minuto, texto de hasta 2000 caracteres, bitácora `portal.mensaje` y **aviso por correo**: si escribe un externo, a los administradores; si escribe el equipo, a los externos de esa operación. Un correo que falla no rompe el mensaje.
+- **El proveedor confirma su orden:** `POST /api/portal/ordenes/:id/confirmar` con su fecha de despacho (no en el pasado), solo sobre una OC suya en estado «emitida»; usa la transición normal de la OC (atómica y con webhooks), deja `portal.orden_confirmada` en la bitácora y avisa a los administradores. Una analista de SUTL en solo lectura no puede escribir (lo bloquea el guard de B5).
+- **Frontend:** «Mis envíos» (lista, detalle con seguimiento y conversación) para el cliente final; «Mis órdenes de compra» con formulario de confirmación y conversación para el proveedor; el equipo ve y responde desde el detalle de la OC y del envío. Cada externo entra directo a lo suyo y su menú no muestra nada del equipo.
+- **De paso:** una prueba del navegador real tenía una carrera (esperaba el texto «revocada», que ya existía por llaves de ejecuciones anteriores): ahora espera el aviso exacto de la acción.
+- **Pendiente de C3:** compartir documentos con proveedor y cliente, que el proveedor registre el despacho real y avisos por WhatsApp.
+
 ### 2026-11-14 — A13: todo lo escrito sin ejecutar, probado con el stack completo
 
 Kevin autorizó probar. Se encendió Docker (Postgres, Mongo, Redis y Mailpit) y se verificó, en este orden:
