@@ -133,7 +133,9 @@ li { font-size: 8.2pt; }
 .gate h3 { font-size: 10pt; color:#7C5B16; margin-bottom: 1.2mm; }
 .gate p, .gate li { font-size: 8.2pt; }
 .two.three { grid-template-columns: repeat(3, 1fr); gap: 5mm; }
-.two.three li { font-size: 8.4pt; }
+.two.three li { font-size: 7.7pt; margin-bottom: 0.3mm; }
+.two.three .grp2 { margin-bottom: 2mm; }
+.two.three .grp2 h3 { font-size: 8.8pt; }
 .cod h3:before { content:''; display:inline-block; width:2.4mm; height:2.4mm; border-radius:50%; background: var(--teal); margin-right: 1.6mm; }
 .prog { display:grid; grid-template-columns: repeat(6, 1fr); gap: 2.5mm; margin-top: 2mm; }
 .prog .p { border:1px solid var(--line); border-radius: 2mm; padding: 1.4mm 2.4mm; background:#fff; }

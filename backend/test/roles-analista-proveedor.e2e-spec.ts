@@ -95,10 +95,10 @@ describe('Roles analista_sutl y proveedor (e2e)', () => {
       expect(r.status).toBe(403);
     });
 
-    it('no puede hacer lo que solo hace un administrador (usuarios, configuración)', async () => {
+    it('no puede hacer lo que solo hace un administrador (bitácora, configuración)', async () => {
       const cambio = await http().post('/api/auth/empresa-activa').set(auth(analistaToken)).send({ tenantId: a.tenantId });
       const token = cambio.body.accessToken as string;
-      expect((await http().get('/api/users').set(auth(token))).status).toBe(403);
+      expect((await http().get('/api/audit').set(auth(token))).status).toBe(403);
       expect((await http().patch('/api/tenant-config').set(auth(token)).send({ restablecer: true })).status).toBe(403);
     });
 

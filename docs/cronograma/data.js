@@ -59,14 +59,14 @@ const PHASES = [
         what: 'Listos: plantilla de PR, CODEOWNERS, CI en develop, guía en docs/CONTRIBUTING.md y badge. Falta activar la protección de main y crear develop en GitHub (15 min, solo el dueño del repo).', dep: '—' },
       { id: 'A3', name: 'ADRs de arquitectura (001–003)', owner: 'Kevin', s: 5, e: 5, st: 'hecho',
         what: 'Multi-tenancy por fila (con las reglas obligatorias de aislamiento), Postgres + Mongo y configuración por empresa, en docs/adr.', dep: '—' },
-      { id: 'A4', name: 'Canal de contacto para «agendar diagnóstico»', owner: 'Kevin', s: 6, e: 6, st: 'codigo', decision: true,
-        what: 'Código escrito el 12 nov (sin ejecutar): formulario «Agenda tu diagnóstico» en la landing que guarda el contacto y avisa por correo al equipo (CONTACT_INBOX_EMAIL). Falta correr sus pruebas y que Kevin confirme si además quiere un botón de WhatsApp.', dep: 'Pruebas con Docker' },
+      { id: 'A4', name: 'Canal de contacto para «agendar diagnóstico»', owner: 'Kevin', s: 6, e: 6, st: 'hecho', decision: true,
+        what: 'Hecho y probado el 14 nov: formulario «Agenda tu diagnóstico» en la landing que guarda el contacto y avisa por correo al equipo (CONTACT_INBOX_EMAIL).', dep: 'Pruebas con Docker' },
       { id: 'A8', name: 'Pruebas e2e del frontend contra backend real y accesibilidad', owner: 'Dev', s: 6, e: 6, st: 'hecho',
         what: 'Segunda suite de Playwright contra la API real (9 flujos, incluido el aislamiento entre empresas) y auditoría de accesibilidad con axe en 29 pantallas: 0 violaciones WCAG A/AA (el contraste de color queda para una revisión de diseño).', dep: '—' },
       { id: 'A5', name: 'Importación de OCs desde CSV con mapeo por empresa', owner: 'Ambos', s: 5, e: 5, st: 'hecho',
         what: 'Detecta el separador, lee números y fechas al estilo de la región, valida fila por fila sin guardar, omite OCs existentes y recuerda el mapeo de columnas de cada empresa. También importa parámetros por SKU.', dep: 'Control de OCs (hecho)' },
-      { id: 'A13', name: 'Verificar con el stack completo lo escrito sin ejecutarlo', owner: 'Ambos', s: 7, e: 7, st: 'siguiente',
-        what: 'Encender Docker y correr: las 7 migraciones escritas a mano, las 8 suites e2e nuevas (75 pruebas), los casos nuevos de navegador y la cobertura del backend. Corregir lo que falle y marcar A4, A10, B1b, B2, B3, B4, B5, C1 y C2 como hechas.', dep: 'A4, A10, B1b–B5, C1, C2' },
+      { id: 'A13', name: 'Verificar con el stack completo lo escrito sin ejecutarlo', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho el 14 nov: las 8 migraciones nuevas aplicadas en Postgres real, 291 pruebas e2e del backend y 59+14 de navegador en verde. Encontró y corrigió dos fallos de prueba y un defecto de fondo: ninguna migración creaba las tablas base (partners, cotizaciones, almacén, flota…), así que una base vacía no podía migrar; se agregó la migración puente 20261001000000. Medición de cobertura pendiente (A9).', dep: 'A4, A10, B1b–B5, C1, C2' },
       { id: 'A12', name: 'Importar archivos Excel (.xlsx), además de CSV', owner: 'Dev', s: 6, e: 6, st: 'hecho',
         what: 'El asistente de importación lee .xlsx directo (primera hoja) además de CSV: respeta números y fechas reales de Excel, descarta filas vacías y reporta la línea real de la hoja. Límite de 2 MB por archivo; el .xls antiguo se rechaza con un mensaje claro.', dep: 'A5' },
       { id: 'A6', name: 'Cobertura de inventario: consumo, seguridad y días', owner: 'Ambos', s: 5, e: 5, st: 'hecho',
@@ -75,8 +75,8 @@ const PHASES = [
         what: 'Redis en Docker y CI, cola de mantenimiento con un trabajo programado que corre solo, reintentos y estado solo para super_admin. Base para evaluar reglas y enviar notificaciones y webhooks sin frenar la API.', dep: '—' },
       { id: 'A9', name: 'Deuda técnica: npm audit y cobertura ≥ 70%', owner: 'Dev', s: 8, e: 9, st: 'pendiente',
         what: 'Avance 7 nov: se quitó la crítica del backend (bcrypt 6) y las 4 altas del frontend sin cambio de versión mayor. Quedan 12 en el backend (migrar NestJS 10 → 12) y 2 en el frontend (Next 14 → 16, el crítico es de next): requieren tu aprobación porque cambian el stack. Falta además subir la cobertura de pruebas unitarias a ≥ 70%.', dep: '—' },
-      { id: 'A10', name: 'API pública v1: API keys y webhooks por empresa', owner: 'Kevin', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 12 nov: API pública v1 de solo lectura con X-API-Key (guardada solo como huella, 300 peticiones/min), webhooks firmados con HMAC-SHA256 (secreto cifrado AES-256-GCM, protección SSRF, 5 reintentos, historial de entregas), eventos de envíos, OCs y riesgo, y la pantalla de Integraciones conectada. Falta correr las pruebas e2e con Docker.', dep: 'A7' },
+      { id: 'A10', name: 'API pública v1: API keys y webhooks por empresa', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado (14 nov): API pública v1 de solo lectura con X-API-Key (guardada solo como huella, 300 peticiones/min), webhooks firmados con HMAC-SHA256 (secreto cifrado AES-256-GCM, protección SSRF, 5 reintentos, historial de entregas), eventos de envíos, OCs y riesgo, y la pantalla de Integraciones conectada.', dep: 'A7' },
       { id: 'A11', name: 'Notificaciones reales: correo y WhatsApp', owner: 'Dev', s: 7, e: 7, st: 'hecho',
         what: 'Envío real por correo (SMTP; en desarrollo Mailpit) y por WhatsApp Cloud API, a través de la cola con 3 reintentos, reenvío manual de las fallidas y validación de destinos. Para que WhatsApp envíe de verdad faltan las credenciales de la cuenta de Meta del cliente y, fuera de la ventana de 24 h, plantillas aprobadas; push y SMS siguen sin proveedor.', dep: 'A7' },
     ],
@@ -86,25 +86,25 @@ const PHASES = [
     tasks: [
       { id: 'B1', name: 'Motor de riesgo de abastecimiento v1', owner: 'Kevin', s: 7, e: 7, st: 'hecho',
         what: 'Proyecta cuándo se acaba cada SKU y lo compara con la ETA de lo que llega: semáforo, días sin stock y acción recomendada (urgir al proveedor, partir envío, compra urgente, confirmar fecha, planificar). Motor puro con 21 pruebas, API GET /supply-risk, pantalla propia y 9 pruebas e2e. Es el diferenciador del Business Plan.', dep: 'A1, A6, A7' },
-      { id: 'B1b', name: 'Riesgo: evaluación periódica y avisos', owner: 'Kevin', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 12 nov: evaluación cada hora con la cola, historial de cambios de semáforo, un correo por ronda con los SKU que pasaron a rojo (la empresa puede apagarlo en Configuración), evento de webhook y botón «Evaluar ahora». Falta correr las pruebas con Docker. Sigue pendiente: fechas de llegada para OCs que aún no viajan.', dep: 'B1, A11' },
-      { id: 'B2', name: 'Dashboard Control Tower (vista de riesgo)', owner: 'Dev', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 13 nov (sin ejecutar el stack): la pantalla de Resumen abre con la torre de control (SKU en rojo, OC atrasadas, excepciones abiertas, tareas vencidas, SKU en riesgo con su acción recomendada, mis tareas de hoy y vencimientos de los próximos 7 días) y debajo conserva los envíos. API GET /control-tower. Falta correr su prueba e2e y la de navegador.', dep: 'B1' },
-      { id: 'B3', name: 'Workflow humano: tareas, comentarios y bitácora', owner: 'Ambos', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 13 nov (sin ejecutar el stack): tareas con responsable, prioridad, fecha límite y vínculo a una OC, envío o SKU; comentarios; bitácora de quién hizo qué y cuándo (solo se agrega); pantalla Tareas. Falta correr sus pruebas e2e y de navegador. Sigue pendiente: evidencia adjunta y avisos al asignar.', dep: 'A7' },
-      { id: 'B4', name: 'Centro de excepciones: reglas, severidad, SLA y escalamiento', owner: 'Ambos', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 13 nov (sin ejecutar el stack): SKU en rojo y OC atrasada abren una excepción con plazo (SLA) configurable por empresa y una tarea; se resuelve sola cuando el problema desaparece y, si el plazo vence, escala a crítica y avisa por correo a los administradores. Pantalla Excepciones. Falta correr sus pruebas e2e. Regla de documento faltante hecha con C1 (14 nov). Pendiente: responsable por regla y aviso por WhatsApp.', dep: 'B1, B3' },
-      { id: 'B5', name: 'Roles analista_sutl y proveedor', owner: 'Kevin', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 14 nov (sin ejecutar el stack): el analista de SUTL trabaja en empresas cliente solo con un permiso explícito que otorga el super_admin (solo lectura por defecto, revocable al instante, con el ingreso anotado en la bitácora de la empresa) y elige la empresa en la barra superior; el proveedor externo queda ligado a un proveedor, solo ve sus OC ya emitidas sin datos internos y todo lo demás le está vedado por defecto. Falta correr su prueba e2e. Pendiente: exigir segundo factor a analistas y avisos a proveedores.', dep: 'B3' },
+      { id: 'B1b', name: 'Riesgo: evaluación periódica y avisos', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado (14 nov): evaluación cada hora con la cola, historial de cambios de semáforo, un correo por ronda con los SKU que pasaron a rojo (la empresa puede apagarlo en Configuración), evento de webhook y botón «Evaluar ahora». Sigue pendiente: fechas de llegada para OCs que aún no viajan.', dep: 'B1, A11' },
+      { id: 'B2', name: 'Dashboard Control Tower (vista de riesgo)', owner: 'Dev', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado el 14 nov: la pantalla de Resumen abre con la torre de control (SKU en rojo, OC atrasadas, excepciones abiertas, tareas vencidas, SKU en riesgo con su acción recomendada, mis tareas de hoy y vencimientos de los próximos 7 días) y debajo conserva los envíos. API GET /control-tower.', dep: 'B1' },
+      { id: 'B3', name: 'Workflow humano: tareas, comentarios y bitácora', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado el 14 nov: tareas con responsable, prioridad, fecha límite y vínculo a una OC, envío o SKU; comentarios; bitácora de quién hizo qué y cuándo (solo se agrega); pantalla Tareas. Sigue pendiente: evidencia adjunta y avisos al asignar.', dep: 'A7' },
+      { id: 'B4', name: 'Centro de excepciones: reglas, severidad, SLA y escalamiento', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado el 14 nov: SKU en rojo y OC atrasada abren una excepción con plazo (SLA) configurable por empresa y una tarea; se resuelve sola cuando el problema desaparece y, si el plazo vence, escala a crítica y avisa por correo a los administradores. Pantalla Excepciones. Regla de documento faltante hecha con C1 (14 nov). Pendiente: responsable por regla y aviso por WhatsApp.', dep: 'B1, B3' },
+      { id: 'B5', name: 'Roles analista_sutl y proveedor', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado el 14 nov: el analista de SUTL trabaja en empresas cliente solo con un permiso explícito que otorga el super_admin (solo lectura por defecto, revocable al instante, con el ingreso anotado en la bitácora de la empresa) y elige la empresa en la barra superior; el proveedor externo queda ligado a un proveedor, solo ve sus OC ya emitidas sin datos internos y todo lo demás le está vedado por defecto. Pendiente: exigir segundo factor a analistas y avisos a proveedores.', dep: 'B3' },
     ],
   },
   {
     key: 'C', name: 'Fase C · Portal colaborativo, analítica y panel SaaS', range: 'Sem 14–22 · 4 ene – 5 mar', note: 'Hito H4 · 19 feb (con colchón)',
     tasks: [
-      { id: 'C1', name: 'Checklist de documentos por operación y vencimientos', owner: 'Dev', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 14 nov (sin ejecutar el stack): cada envío exige los documentos que la empresa configure (factura, lista de empaque, BL o AWB según el modo, pedimento en importaciones); cada documento se aprueba o rechaza con motivo, tiene versión vigente y fecha de vencimiento (vencido / por vencer); checklist en el detalle del envío; un envío por llegar sin su documentación abre una excepción (regla pendiente de B4) y los documentos por vencer salen en la torre de control. Falta correr sus pruebas e2e y de navegador.', dep: 'B4' },
-      { id: 'C2', name: 'MFA (TOTP) y bitácora de auditoría completa', owner: 'Kevin', s: 6, e: 6, st: 'codigo',
-        what: 'Código escrito el 13 nov (sin ejecutar el stack): segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Falta correr sus pruebas e2e. Pendiente: exigirlo a administradores por política, código QR en pantalla y visor de bitácora.', dep: '—' },
+      { id: 'C1', name: 'Checklist de documentos por operación y vencimientos', owner: 'Dev', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado el 14 nov: cada envío exige los documentos que la empresa configure (factura, lista de empaque, BL o AWB según el modo, pedimento en importaciones); cada documento se aprueba o rechaza con motivo, tiene versión vigente y fecha de vencimiento (vencido / por vencer); checklist en el detalle del envío; un envío por llegar sin su documentación abre una excepción (regla pendiente de B4) y los documentos por vencer salen en la torre de control.', dep: 'B4' },
+      { id: 'C2', name: 'MFA (TOTP) y bitácora de auditoría completa', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
+        what: 'Hecho y probado el 14 nov: segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Pendiente: exigirlo a administradores por política, código QR en pantalla y visor de bitácora.', dep: '—' },
       { id: 'C3', name: 'Portal colaborativo para proveedor y cliente', owner: 'Ambos', s: 17, e: 19, st: 'pendiente',
         what: 'El proveedor confirma fechas y sube documentos desde su acceso; el cliente final ve el estado; todo queda en la bitácora.', dep: 'B3, B5' },
       { id: 'C4', name: 'Analítica: OTIF, lead time, aging y cumplimiento', owner: 'Ambos', s: 18, e: 20, st: 'pendiente',
@@ -161,61 +161,51 @@ const COVERAGE = [
   ['Control de OCs', 'hecho', 'Enlazado a embarques; importable por CSV y Excel', 'A1, A5, A12 · Sem 5–6'],
   ['Seguimiento de embarques', 'hecho', 'Enlazado con las OCs que trae', 'A1 · Sem 5'],
   ['Inventario y cobertura', 'hecho', 'Alimenta el motor de riesgo', 'A6 · Sem 5'],
-  ['Motor de riesgo de abastecimiento', 'hecho', 'Semáforo y acción recomendada; evaluación periódica con código listo', 'B1, B1b · Sem 6'],
-  ['Control Tower (vista de riesgo)', 'parcial', 'Código listo en el Resumen; falta probarlo', 'B2 · Sem 6'],
-  ['Workflow humano (tareas)', 'parcial', 'Código listo; falta probarlo', 'B3 · Sem 6'],
-  ['Motor de excepciones', 'parcial', 'Código listo: plazo, escalamiento y documentos faltantes', 'B4 · Sem 6'],
-  ['Roles analista y proveedor', 'parcial', 'Código listo; falta probarlo y exigirles segundo factor', 'B5 · Sem 6'],
-  ['Portal colaborativo', 'parcial', 'Tracking público; el proveedor ya ve sus OC', 'C3 · Sem 17–19'],
-  ['Documentos', 'parcial', 'Checklist y vencimientos con código listo', 'C1 · Sem 6'],
+  ['Motor de riesgo de abastecimiento', 'hecho', 'Semáforo, acción recomendada y evaluación periódica con aviso', 'B1, B1b · Sem 6'],
+  ['Control Tower (vista de riesgo)', 'hecho', 'Resumen con riesgo, OC atrasadas, tareas y vencimientos', 'B2 · Sem 6'],
+  ['Workflow humano (tareas)', 'hecho', 'Tareas, comentarios y bitácora; falta evidencia adjunta', 'B3 · Sem 6'],
+  ['Motor de excepciones', 'hecho', 'Plazo, escalamiento y documentos faltantes', 'B4 · Sem 6'],
+  ['Roles analista y proveedor', 'hecho', 'Acceso explícito y revocable; falta exigirles segundo factor', 'B5 · Sem 6'],
+  ['Portal colaborativo', 'parcial', 'Tracking público; el proveedor ya ve sus OC en solo lectura', 'C3 · Sem 17–19'],
+  ['Documentos', 'hecho', 'Checklist por envío, revisión y vencimientos', 'C1 · Sem 6'],
   ['Analítica (OTIF, lead time)', 'parcial', 'Reportes sin estas métricas', 'C4 · Sem 18–20'],
   ['Movimientos nacionales y POD', 'parcial', 'Falta POD', 'C6 · Sem 19–20'],
-  ['Seguridad (RBAC, MFA, auditoría)', 'parcial', 'Segundo factor y bitácora con código listo; falta exigirlo por política', 'C2 · Sem 6'],
+  ['Seguridad (RBAC, MFA, auditoría)', 'parcial', 'Segundo factor y bitácora listos; falta exigirlo por política', 'C2 · Sem 6'],
 ];
 
 const YA_FUNCIONA = [
   ['Abastecimiento', [
     'Control de OCs: ciclo borrador → recibida, recepciones parciales con historial y alerta de fecha.',
-    'Vínculo OC ↔ embarque con alerta por la llegada real.',
-    'Cobertura de inventario por SKU: consumo, stock de seguridad y días, con alerta configurable.',
-    'Motor de riesgo: semáforo por SKU, día de quiebre y acción recomendada.',
+    'Vínculo OC ↔ embarque con alerta por la llegada real; cobertura de inventario por SKU.',
+    'Motor de riesgo: semáforo por SKU, día de quiebre y acción recomendada, con evaluación periódica y aviso por correo.',
     'Importación de OCs y parámetros por SKU desde CSV o Excel, con mapeo guardado por empresa.',
     'La recepción suma al inventario; configuración por empresa con 4 perfiles.',
   ]],
+  ['Control Tower', [
+    'Resumen con torre de control: SKU en riesgo, OC atrasadas, tareas del día y vencimientos.',
+    'Tareas con responsable, comentarios y bitácora; excepciones con plazo, escalamiento y documentos faltantes.',
+    'Checklist de documentos por envío con revisión y fechas de vencimiento.',
+  ]],
   ['Operación logística', [
     'Envíos con tracking por hitos (Mongo) y tracking público por código de guía.',
-    'Cotizaciones, reservas, tarifas, facturación, contenedores, navieras, almacén, flota, documentos, alertas y reportes.',
-    'Notificaciones reales por correo (SMTP) y WhatsApp con cola y reintentos.',
+    'Cotizaciones, reservas, tarifas, facturación, contenedores, navieras, almacén, flota, alertas y reportes.',
+    'Notificaciones reales por correo y WhatsApp; API pública v1 con webhooks; formulario de contacto de la landing.',
   ]],
-  ['Plataforma y seguridad', [
-    'Multi-tenant por fila, probado de punta a punta en todos los módulos que existían.',
-    'Login JWT con refresh, límite de peticiones y registro restringido.',
-    'Redis + BullMQ para tareas programadas.',
+  ['Seguridad y roles', [
+    'Multi-tenant por fila, probado de punta a punta; login JWT con refresh y límite de peticiones.',
+    'Segundo factor (Authenticator) con códigos de recuperación y bitácora de seguridad.',
+    'Analista de SUTL con acceso explícito y revocable por empresa; proveedor externo que solo ve sus OC.',
   ]],
   ['Calidad', [
-    'CI en GitHub Actions, ADRs, documento de estado vivo, lint, tsc y build limpios.',
-    '374 pruebas unitarias del backend en verde y pruebas e2e contra backend real y de accesibilidad en lo anterior a la semana 6.',
+    '374 unitarias y 291 de punta a punta del backend, 59 de navegador en demo y 14 contra el backend real, todas en verde.',
+    'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
 
 const CODIGO_LISTO = [
-  ['Control Tower', [
-    'Riesgo con evaluación periódica, historial y aviso por correo al pasar a rojo (B1b).',
-    'Resumen con torre de control: SKU en riesgo, OC atrasadas, tareas del día y vencimientos (B2).',
-    'Tareas con responsable, comentarios y bitácora de quién hizo qué (B3).',
-    'Excepciones con plazo, escalamiento y documentos faltantes (B4).',
-  ]],
-  ['Seguridad y roles', [
-    'Segundo factor (Google/Microsoft Authenticator) con códigos de recuperación y bitácora de seguridad (C2).',
-    'Analista de SUTL con acceso explícito y revocable por empresa; proveedor externo que solo ve sus OC (B5).',
-  ]],
-  ['Documentos, API y contacto', [
-    'Checklist de documentos por envío, revisión y vencimientos (C1).',
-    'API pública v1 con llaves y webhooks por empresa (A10).',
-    'Formulario de contacto de la landing (A4).',
-  ]],
-  ['Para darlo por hecho', [
-    'Correr con Docker las 7 migraciones escritas a mano, 8 suites e2e nuevas (75 pruebas) y unos 10 casos nuevos de navegador (A13).',
+  ['En construcción', [
+    'Nada pendiente de probar: todo lo escrito hasta el 14 nov pasó sus pruebas.',
+    'Siguiente módulo grande: portal colaborativo (C3), sobre el rol de proveedor.',
   ]],
 ];
 
@@ -242,7 +232,7 @@ const FALTA = [
 ];
 
 const RIESGOS = [
-  ['Mucho código sin probar con el stack completo', '9 tareas están escritas y con pruebas unitarias, pero no se han corrido contra Postgres, Mongo y Redis reales ni en el navegador; mientras más se acumule, más fallas encadenadas pueden aparecer.', 'Verificarlo todo junto en la semana 7 (A13) en cuanto el equipo lo permita y corregir por tarea; no escribir más módulos grandes antes.'],
+  ['Probar tarde lo que se escribe', 'Esta semana se escribió código sin ejecutar el stack; al probarlo salió bien casi todo, pero apareció un defecto de fondo (las migraciones no reconstruían una base vacía) que llevaba semanas.', 'Probar con Docker al cerrar cada módulo grande, y la base vacía en CI.'],
   ['Entorno en línea sin definir', 'Sin staging no hay piloto con un cliente real; es la ruta crítica del cronograma.', 'Decidir nube y crear cuentas antes de la Sem 6 (13 nov). Propuesta: staging liviano primero, AWS completo después.'],
   ['Equipo de dos personas', 'Una ausencia detiene el avance (ya señalado en el Plan Maestro).', 'PRs pequeños, ADRs y documentación al día, revisión cruzada.'],
   ['Semanas con muchos frentes', 'Las Sem 6–8 y 19–22 concentran entre 5 y 6 tareas en paralelo; Navidad, Año Nuevo y Carnaval bajan la capacidad.', 'Estimaciones con ±1 semana de margen y las Fases A y B terminan antes de lo que exige el Plan Maestro; si algo se atrasa, se mueve primero C8 y C9, no las Fases A y B.'],
@@ -283,39 +273,38 @@ const HORIZONTE = [
 
 // Lo avanzado en la semana 6 (9–14 nov).
 const LOGROS_SEMANA = [
-  ['Redis + BullMQ, pruebas contra el backend real y de accesibilidad, e importación desde Excel', 'A7, A8, A12 · hechas y probadas'],
-  ['Motor de riesgo de abastecimiento con semáforo y acción recomendada', 'B1 · hecho y probado'],
-  ['Notificaciones reales por correo y WhatsApp con cola y reintentos', 'A11 · hecho y probado'],
-  ['Dependencias vulnerables actualizadas sin cambiar el stack', 'parte de A9'],
-  ['Código listo, con pruebas unitarias: API pública y webhooks, evaluación periódica del riesgo, contacto de la landing', 'A10, B1b, A4'],
-  ['Código listo: tareas y bitácora, excepciones con plazo, torre de control, segundo factor y bitácora de seguridad', 'B3, B4, B2, C2'],
-  ['Código listo: checklist de documentos y vencimientos, roles de analista y proveedor', 'C1, B5'],
-  ['374 pruebas unitarias del backend en verde, tsc y lint limpios en backend y frontend', 'calidad'],
+  ['Redis + BullMQ, pruebas contra el backend real y de accesibilidad, e importación desde Excel', 'A7, A8, A12'],
+  ['Motor de riesgo de abastecimiento con semáforo y acción recomendada', 'B1'],
+  ['Notificaciones reales por correo y WhatsApp con cola y reintentos', 'A11'],
+  ['API pública y webhooks, evaluación periódica del riesgo y contacto de la landing', 'A10, B1b, A4'],
+  ['Tareas y bitácora, excepciones con plazo, torre de control, segundo factor y bitácora de seguridad', 'B3, B4, B2, C2'],
+  ['Checklist de documentos y vencimientos; roles de analista y proveedor', 'C1, B5'],
+  ['Todo lo anterior probado: 8 migraciones, 291 e2e, 59 + 14 de navegador y 374 unitarias en verde', 'A13'],
+  ['Corregido: una base vacía no podía migrar (faltaban las tablas base); ahora sí, con una migración puente', 'defecto'],
 ];
 
 // Qué cambió respecto de la versión anterior del cronograma.
 const CAMBIOS = [
-  'Estado nuevo «Código listo»: la tarea está escrita y con pruebas unitarias, pero falta probarla con el stack completo. Se distingue de «Hecho», que sí está probado.',
-  'A4, A10, B1b, B2, B3, B4, B5, C1 y C2 pasan a «Código listo» y se anotan en la semana 6, cuando se escribieron; estaban planeadas entre las semanas 6 y 16.',
-  'Tarea nueva A13 (semana 7): verificar con Docker lo escrito sin ejecutar. Hasta no cerrarla, esas 9 tareas no se dan por hechas.',
-  'La Fase B va adelantada en código; en verificación está en deuda. No se escriben módulos grandes nuevos antes de probar.',
-  'Los hitos del Plan Maestro no se mueven; el colchón de la Fase B crece, pero depende de que A13 salga limpia.',
+  'A4, A10, B1b, B2, B3, B4, B5, C1 y C2 pasan de «Código listo» a «Hecho»: se probaron con el stack completo (A13).',
+  'La Fase B termina en la semana 6, con unas 6 semanas de adelanto sobre lo planeado; el hito H3 queda con mucho colchón.',
+  'Esa holgura se usa para adelantar la Fase C (portal, analítica, planes). El orden sigue lo que más pesa para el piloto: C3, C4 y luego C5–C7.',
+  'Los hitos del Plan Maestro no se mueven. Lo que no se adelanta por falta de decisión de Kevin: nube (D1) y trámites externos (SRI, pasarela).',
 ];
 
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
-  { id: 'A13', titulo: 'Verificar con el stack completo lo escrito', resp: 'Ambos', hecho: 'Docker encendido, 7 migraciones aplicadas, 8 suites e2e y los casos de navegador en verde; las 9 tareas pasan a «Hecho».', nota: 'Se hace cuando tu PC lo permita; si algo falla se corrige por tarea.' },
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya está escrito.', decision: true },
+  { id: 'C3', titulo: 'Portal colaborativo (primera parte)', resp: 'Ambos', hecho: 'El proveedor confirma fecha y comenta sus OC, y el cliente final sigue su carga, todo con bitácora.', nota: 'Se construye sobre el rol de proveedor ya probado.' },
+  { id: 'A9', titulo: 'Deuda técnica: cobertura y subida de versiones', resp: 'Dev', hecho: 'Cobertura medida (meta ≥ 70%) y plan de la subida de NestJS y Next listo para tu aprobación.', nota: 'La subida en sí necesita tu aprobación.' },
+  { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
-  { id: 'A9', titulo: 'Deuda técnica: cobertura y subida de versiones', resp: 'Dev', hecho: 'Cobertura medida (meta ≥ 70%) y plan de la subida de NestJS y Next listo para tu aprobación.', nota: 'La subida en sí va después de A13.' },
   { id: 'E1', titulo: 'Entrevistas con el cliente ideal (sigue)', resp: 'Kevin', hecho: 'Avance confirmado y lista de candidatos a design partner.', nota: 'No tengo datos de cuántas llevas.' },
 ];
 
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
-  { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis); los escritos esta semana aún no se probaron con el stack completo' },
-  { n: '374', t: 'pruebas unitarias del backend en verde; las e2e anteriores a la semana 6 pasaron, y 8 suites nuevas (75 pruebas) y unos 10 casos de navegador están escritos sin correr' },
+  { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
+  { n: '738', t: 'pruebas en verde: 374 unitarias y 291 de punta a punta del backend, 59 de navegador en demo y 14 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];
@@ -323,8 +312,8 @@ const KPIS = [
 const URGENTE = {
   titulo: 'Lo urgente de la próxima semana (16–20 nov):',
   items: [
-    '<b>Verificar con Docker lo escrito</b> (A13): 9 tareas esperan pruebas reales para darse por hechas.',
     '<b>Decidir dónde vive el staging</b> (D1): es la ruta crítica para hacer un piloto con un cliente real.',
+    '<b>Aprobar o no</b> la subida de NestJS 10→12 y Next 14→16 (A9), ahora con la suite completa como red de seguridad.',
     '<b>Dar la dirección real</b> del formulario de contacto (A4) y activar la protección de ramas en GitHub (A2, 15 min).',
   ],
 };

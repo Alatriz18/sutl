@@ -85,6 +85,18 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — A13: todo lo escrito sin ejecutar, probado con el stack completo
+
+Kevin autorizó probar. Se encendió Docker (Postgres, Mongo, Redis y Mailpit) y se verificó, en este orden:
+
+- **Migraciones:** las 7 hechas a mano se aplicaron sin error en Postgres real y la base quedó **idéntica al esquema** (`prisma migrate diff` vacío).
+- **Backend e2e:** **291 pruebas en 24 suites, todas en verde** (las 75 nuevas incluidas). Falló una sola aserción, y era de la prueba, no del sistema: `GET /users` lo puede leer cualquier rol interno (la pantalla de tareas lo necesita); la prueba de «solo administrador» ahora usa la bitácora.
+- **Navegador, modo demo:** 59 pruebas en verde. Una del flujo de login chocaba porque la guía `SUTL-DEMO-0001` ahora sale también en la torre de control: se acotó el selector a la tabla.
+- **Navegador contra el backend real:** 14 en verde.
+- **Defecto de fondo encontrado y corregido: una base vacía no podía migrar.** Ninguna migración creaba las tablas base (`partners`, cotizaciones, reservas, tarifas, contratos, facturas, contenedores, almacén, flota): se habían generado con `prisma db push`. `prisma migrate deploy` en una base nueva (el CI, un staging) fallaba en `20261028120000` con «relation "partners" does not exist». Se agregó `20261001000000_tablas_base_comerciales`, **idempotente** (no cambia nada en una base que ya las tiene). Verificado: base vacía → migra completa → idéntica al esquema; base de desarrollo → no-op.
+- **Pendiente:** medir la cobertura (A9, meta ≥ 70%); la medición solo con unitarias no es representativa, hay que correrla sobre las e2e.
+- A4, A10, B1b, B2, B3, B4, B5, C1 y C2 pasan a «Hecho». **26 de 47 tareas hechas.**
+
 ### 2026-11-14 — Cronograma (PDF) al corte de la semana 6
 
 - `docs/Cronograma_SUTL.pdf` regenerado con `node docs/cronograma/build.js`. Ahora todo lo que cambia con el avance sale de `docs/cronograma/data.js` (`CORTE`, `KPIS`, `URGENTE`, estados) o se calcula solo (avance por fase); ya no hay fechas ni cifras fijas dentro de `build.js`.

@@ -21,7 +21,7 @@ test.describe('Flujo principal (modo demo)', () => {
     await page.getByRole('button', { name: 'Ingresar' }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
-    await expect(page.getByText('SUTL-DEMO-0001')).toBeVisible();
+    await expect(page.getByRole('table').getByText('SUTL-DEMO-0001')).toBeVisible();
     await expect(page.getByText('Envíos totales')).toBeVisible();
   });
 
