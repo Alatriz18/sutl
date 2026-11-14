@@ -5,15 +5,17 @@ const D = require('./data.js');
 const { chromium } = require(path.join(__dirname, '../../frontend/node_modules/@playwright/test'));
 
 // Uso: node docs/cronograma/build.js [carpeta-de-salida]  (por defecto docs/)
-// Para actualizar el cronograma edita data.js (tareas, semanas, estados) y vuelve a correrlo.
+// Para actualizar el cronograma edita data.js (tareas, semanas, estados, corte, indicadores) y vuelve a correrlo:
+// todo lo que cambia con el avance (fecha de corte, indicadores, avance por fase) sale de ahí o se calcula solo.
 
 const OUT_DIR = process.argv[2] || path.join(__dirname, "..");
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const STATUS_LABEL = { hecho: 'Hecho', siguiente: 'Siguiente', pendiente: 'Pendiente' };
+// codigo = el código está escrito y revisado con pruebas unitarias, pero aún no se probó con el stack completo.
+const STATUS_LABEL = { hecho: 'Hecho', codigo: 'Código listo', siguiente: 'Siguiente', pendiente: 'Pendiente' };
 
 const css = `
 @page { size: A4 landscape; }
-:root { --navy:#0D2040; --sky:#2E86AB; --gold:#B38A3C; --green:#1F8A63; --red:#B3362B; --ink:#1B2B45; --mute:#5B6B82; --line:#DDE4EE; --tint:#F3F6FA; }
+:root { --teal:#2A9D8F; --navy:#0D2040; --sky:#2E86AB; --gold:#B38A3C; --green:#1F8A63; --red:#B3362B; --ink:#1B2B45; --mute:#5B6B82; --line:#DDE4EE; --tint:#F3F6FA; }
 * { box-sizing: border-box; }
 html, body { margin:0; padding:0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; color: var(--ink); font-size: 9pt; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -22,27 +24,27 @@ body { font-family: 'Segoe UI', Arial, sans-serif; color: var(--ink); font-size:
 h1,h2,h3,p { margin:0; }
 h2 { font-size: 13pt; color: var(--navy); font-weight: 700; letter-spacing: -0.2px; }
 .sub { color: var(--mute); font-size: 8.4pt; margin-top: 1mm; }
-.band { background: var(--navy); color:#fff; border-radius: 2.5mm; padding: 6mm 8mm; display:flex; justify-content:space-between; align-items:flex-end; }
-.band h1 { font-size: 21pt; letter-spacing: -0.4px; font-weight: 700; }
+.band { background: var(--navy); color:#fff; border-radius: 2.5mm; padding: 3.6mm 8mm; display:flex; justify-content:space-between; align-items:flex-end; }
+.band h1 { font-size: 18pt; letter-spacing: -0.4px; font-weight: 700; }
 .band .k { font-size: 8pt; text-transform: uppercase; letter-spacing: 1.4px; color: #9CC3D6; margin-bottom: 1.5mm; }
 .band .r { text-align:right; font-size: 8.6pt; color:#D6E4EE; line-height: 1.5; }
 .band .r b { color:#fff; }
-.kpis { display:grid; grid-template-columns: repeat(4,1fr); gap: 4mm; margin-top: 4mm; }
-.kpi { border:1px solid var(--line); border-radius: 2mm; padding: 3mm 4mm; background:#fff; }
-.kpi .n { font-size: 20pt; font-weight: 700; color: var(--navy); line-height: 1.05; }
-.kpi .t { font-size: 8pt; color: var(--mute); margin-top: 1mm; }
-.cols { display:grid; grid-template-columns: 1.55fr 1fr; gap: 6mm; margin-top: 5mm; }
+.kpis { display:grid; grid-template-columns: repeat(4,1fr); gap: 3mm; margin-top: 3mm; }
+.kpi { border:1px solid var(--line); border-radius: 2mm; padding: 2mm 3mm; background:#fff; }
+.kpi .n { font-size: 15pt; font-weight: 700; color: var(--navy); line-height: 1.05; }
+.kpi .t { font-size: 7.2pt; color: var(--mute); margin-top: 0.4mm; line-height: 1.25; }
+.cols { display:grid; grid-template-columns: 1.55fr 1fr; gap: 6mm; margin-top: 3mm; }
 .sec-t { font-size: 10pt; font-weight: 700; color: var(--navy); margin-bottom: 2mm; padding-bottom: 1.2mm; border-bottom: 1.5px solid var(--navy); display:flex; justify-content:space-between; align-items:baseline; }
 .sec-t small { font-weight: 400; color: var(--mute); font-size: 7.6pt; }
 table { border-collapse: collapse; width:100%; }
-.cov td { padding: 1.35mm 1.4mm; border-bottom: 1px solid var(--line); font-size: 8pt; vertical-align: middle; }
+.cov td { padding: 0.8mm 1.4mm; border-bottom: 1px solid var(--line); font-size: 7.6pt; vertical-align: middle; }
 .cov td.nm { font-weight: 600; color: var(--navy); }
 .cov td.nt { color: var(--mute); }
 .cov td.rf { color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .chip { display:inline-block; border-radius: 1.2mm; padding: 0.3mm 1.8mm; font-size: 7pt; font-weight: 700; color:#fff; white-space: nowrap; }
 .chip.hecho { background: var(--green); } .chip.parcial { background: var(--gold); } .chip.falta { background: var(--red); }
-.chip.siguiente { background: var(--gold); } .chip.pendiente { background: var(--sky); }
-.ms { display:flex; gap: 2.5mm; align-items:flex-start; padding: 1.5mm 0; border-bottom: 1px solid var(--line); font-size: 8pt; }
+.chip.siguiente { background: var(--gold); } .chip.pendiente { background: var(--sky); } .chip.codigo { background: var(--teal); }
+.ms { display:flex; gap: 2.5mm; align-items:flex-start; padding: 0.9mm 0; border-bottom: 1px solid var(--line); font-size: 8pt; }
 .ms .cd { flex:none; width: 8mm; text-align:center; border-radius: 1.2mm; background: var(--navy); color:#fff; font-weight:700; font-size: 7.2pt; padding: 0.7mm 0; }
 .ms .cd.done { background: var(--green); }
 .ms .dt { flex:none; width: 11mm; font-weight:700; color: var(--navy); }
@@ -52,7 +54,7 @@ ul { margin: 0; padding-left: 4.2mm; }
 li { font-size: 8.2pt; }
 .two li { font-size: 9pt; margin-bottom: 0.8mm; }
 .two .grp2 h3 { font-size: 9.6pt; margin-bottom: 1.2mm; }
-.call { margin-top: 4mm; border: 1px solid var(--gold); background: #FBF6EA; border-radius: 2mm; padding: 3mm 4mm; font-size: 8.2pt; }
+.call { margin-top: 2.5mm; border: 1px solid var(--gold); background: #FBF6EA; border-radius: 2mm; padding: 3mm 4mm; font-size: 8.2pt; }
 .call b { color: #7C5B16; }
 
 /* Gantt */
@@ -69,7 +71,7 @@ li { font-size: 8.2pt; }
 .gt .grp td { background: #E7EEF6; color: var(--navy); font-weight:700; font-size: 7.4pt; height: 5mm; padding: 0 2mm; border-top: 1px solid #fff; }
 .gt .grp .rg { font-weight:400; color: var(--mute); margin-left: 2mm; }
 .gt .grp .nt { float:right; font-weight:600; color: var(--navy); }
-.gt tr.r td { height: 4.9mm; border-bottom: 1px solid #EEF2F7; }
+.gt tr.r td { height: 4.5mm; border-bottom: 1px solid #EEF2F7; }
 .gt td.nm { padding-left: 1.5mm; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; color: var(--ink); }
 .gt td.nm .id { display:inline-block; width: 6.5mm; font-weight:700; color: var(--mute); }
 .gt td.ow { text-align:center; color: var(--mute); font-size: 6.4pt; }
@@ -77,8 +79,8 @@ li { font-size: 8.2pt; }
 .gt td.w.sp { box-shadow: inset 1px 0 0 #CBD5E2; }
 .gt td.w.today { background-color: rgba(179,138,60,0.13); }
 .gt td.w.next { background-color: rgba(46,134,171,0.08); }
-.gt .b { height: 3.2mm; margin: 0.8mm 0; }
-.gt .b.hecho { background: var(--green); } .gt .b.siguiente { background: var(--gold); } .gt .b.pendiente { background: var(--sky); }
+.gt .b { height: 2.8mm; margin: 0.7mm 0; }
+.gt .b.hecho { background: var(--green); } .gt .b.siguiente { background: var(--gold); } .gt .b.pendiente { background: var(--sky); } .gt .b.codigo { background: var(--teal); }
 .gt .b:not(.s) { margin-left: -1px; }
 .gt .b.s { border-top-left-radius: 1.6mm; border-bottom-left-radius: 1.6mm; margin-left: 0.6mm; }
 .gt .b.e { border-top-right-radius: 1.6mm; border-bottom-right-radius: 1.6mm; margin-right: 0.6mm; }
@@ -117,7 +119,7 @@ li { font-size: 8.2pt; }
 
 /* Riesgos / decisiones */
 .rt th { background: var(--navy); color:#fff; text-align:left; font-weight:600; padding: 1.4mm 2mm; font-size: 7.4pt; }
-.rt td { padding: 1.6mm 2mm; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 7.8pt; }
+.rt td { padding: 1mm 2mm; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 7.4pt; }
 .rt td.nm { font-weight:700; color: var(--navy); width: 42mm; }
 .rt td.dl { white-space: nowrap; font-weight:700; color: #7C5B16; width: 26mm; }
 
@@ -130,6 +132,16 @@ li { font-size: 8.2pt; }
 .gate { margin-top: 5mm; border: 1.5px dashed var(--gold); background:#FBF6EA; border-radius: 2mm; padding: 4mm 5mm; }
 .gate h3 { font-size: 10pt; color:#7C5B16; margin-bottom: 1.2mm; }
 .gate p, .gate li { font-size: 8.2pt; }
+.two.three { grid-template-columns: repeat(3, 1fr); gap: 5mm; }
+.two.three li { font-size: 8.4pt; }
+.cod h3:before { content:''; display:inline-block; width:2.4mm; height:2.4mm; border-radius:50%; background: var(--teal); margin-right: 1.6mm; }
+.prog { display:grid; grid-template-columns: repeat(6, 1fr); gap: 2.5mm; margin-top: 2mm; }
+.prog .p { border:1px solid var(--line); border-radius: 2mm; padding: 1.4mm 2.4mm; background:#fff; }
+.prog .p .h { font-size: 8pt; font-weight:700; color: var(--navy); display:flex; justify-content:space-between; }
+.prog .p .h small { font-weight:400; color: var(--mute); font-size: 7pt; }
+.prog .bar { display:flex; height: 2.6mm; border-radius: 1.3mm; overflow:hidden; background: #E7EEF6; margin: 1.4mm 0 1mm; }
+.prog .bar i { display:block; height:100%; }
+.prog .p .x { font-size: 6.9pt; color: var(--mute); }
 .note { font-size: 7.4pt; color: var(--mute); margin-top: 3mm; }
 .logros { margin: 0; padding-left: 4.4mm; }
 .logros li { font-size: 8.6pt; margin-bottom: 1.6mm; }
@@ -189,11 +201,12 @@ function ganttTable(phaseKeys) {
 
 function legend() {
   return `<div class="legend">
-    <span><span class="sw" style="background:var(--green)"></span>Hecho</span>
+    <span><span class="sw" style="background:var(--green)"></span>Hecho y probado</span>
+    <span><span class="sw" style="background:var(--teal)"></span>Código listo, falta probar</span>
     <span><span class="sw" style="background:var(--gold)"></span>Siguiente</span>
     <span><span class="sw" style="background:var(--sky)"></span>Pendiente</span>
-    <span><span class="sw" style="background:rgba(179,138,60,.25);border:1px solid var(--gold)"></span>Hoy · 6 nov, semana 5</span>
-    <span><span class="sw" style="background:rgba(46,134,171,.2);border:1px solid var(--sky)"></span>Próxima semana (9–13 nov)</span>
+    <span><span class="sw" style="background:rgba(179,138,60,.25);border:1px solid var(--gold)"></span>Hoy · ${D.CORTE.corta}, semana ${D.CORTE.semana}</span>
+    <span><span class="sw" style="background:rgba(46,134,171,.2);border:1px solid var(--sky)"></span>Próxima semana (${D.CORTE.proxima})</span>
     <span><span class="dec" style="background:var(--red);color:#fff;border-radius:1mm;font-size:5.6pt;font-weight:700;padding:0 1mm">DECISIÓN</span> la tarea espera una decisión de Kevin</span>
     <span>Resp.: Kevin · Dev (desarrollador de apoyo) · Ambos</span>
   </div>`;
@@ -221,6 +234,26 @@ function groups(list, cls) {
 
 const chipFor = (s) => `<span class="chip ${s}">${{ hecho: 'Hecho', parcial: 'Parcial', falta: 'Falta' }[s]}</span>`;
 
+// Avance por fase, calculado a partir del estado de cada tarea.
+function progresoPorFase() {
+  const cuenta = (tasks, st) => tasks.filter((t) => t.st === st).length;
+  return `<div class="prog">${D.PHASES.map((p) => {
+    const n = p.tasks.length;
+    const h = cuenta(p.tasks, 'hecho');
+    const c = cuenta(p.tasks, 'codigo');
+    const pct = (k) => ((k / n) * 100).toFixed(1);
+    const corto = p.name.split(' · ')[0];
+    const resto = n - h - c;
+    return `<div class="p"><div class="h"><span>${esc(corto)}</span><small>${h + c} de ${n}</small></div>
+      <div class="bar"><i style="width:${pct(h)}%;background:var(--green)"></i><i style="width:${pct(c)}%;background:var(--teal)"></i></div>
+      <div class="x">${h} hecha${h === 1 ? '' : 's'}${c ? ` · ${c} con código listo` : ''}${resto ? ` · ${resto} por hacer` : ''}</div></div>`;
+  }).join('')}</div>`;
+}
+
+const todasLasTareas = D.PHASES.flatMap((p) => p.tasks);
+const totalHechas = todasLasTareas.filter((t) => t.st === 'hecho').length;
+const totalCodigo = todasLasTareas.filter((t) => t.st === 'codigo').length;
+
 const hechoCount = D.COVERAGE.filter((c) => c[1] === 'hecho').length;
 const parcialCount = D.COVERAGE.filter((c) => c[1] === 'parcial').length;
 const faltaCount = D.COVERAGE.filter((c) => c[1] === 'falta').length;
@@ -232,14 +265,13 @@ const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>
   <div class="band">
     <div><div class="k">SVK Solutions · SUTL</div><h1>Cronograma y hoja de ruta</h1>
       <div style="font-size:9.4pt;color:#D6E4EE;margin-top:1.5mm">Lo que ya tenemos, lo que falta y cuándo se construye</div></div>
-    <div class="r"><b>Corte: 6 de noviembre de 2026</b> · fin de la semana 5 de 25<br>Meta: producción la semana del <b>22 de marzo de 2027</b><br>Documento interno · sin precios</div>
+    <div class="r"><b>Corte: ${D.CORTE.fecha}</b> · fin de la semana ${D.CORTE.semana} de ${D.TOTAL_WEEKS}<br>Meta: producción la semana del <b>22 de marzo de 2027</b><br>Documento interno · sin precios</div>
   </div>
   <div class="kpis">
-    <div class="kpi"><div class="n">23</div><div class="t">módulos de backend funcionando contra Postgres y Mongo reales</div></div>
-    <div class="kpi"><div class="n">332</div><div class="t">pruebas automáticas: 93 unitarias, 182 de punta a punta y 57 de navegador (46 en modo demo y 11 contra el backend real)</div></div>
-    <div class="kpi"><div class="n">21</div><div class="t">secciones del panel, más landing, login, tracking público y modo demo</div></div>
-    <div class="kpi"><div class="n" style="color:var(--red)">Local</div><div class="t">único entorno activo; staging y producción siguen sin desplegarse</div></div>
+    ${D.KPIS.map((k) => `<div class="kpi"><div class="n"${k.color ? ` style="color:var(--${k.color})"` : ''}>${esc(k.n)}</div><div class="t">${esc(k.t)}</div></div>`).join('')}
   </div>
+  <div class="sec-t" style="margin-top:3mm;margin-bottom:0"><span>Avance por fase</span><small>${totalHechas} tareas hechas y probadas · ${totalCodigo} con código listo a la espera de pruebas · ${todasLasTareas.length} en total</small></div>
+  ${progresoPorFase()}
   <div class="cols">
     <div>
       <div class="sec-t"><span>Mapa de cobertura del Business Plan</span><small>${hechoCount} hechos · ${parcialCount} parciales · ${faltaCount} faltan</small></div>
@@ -250,23 +282,21 @@ const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>
     <div>
       <div class="sec-t"><span>Hitos</span><small>fechas del Plan Maestro v1.0</small></div>
       ${D.MILESTONES.map((m) => `<div class="ms"><span class="cd${m.done ? ' done' : ''}">${m.code}</span><span class="dt">${m.date}</span><span class="tx">${esc(m.text)}</span></div>`).join('')}
-      <div class="call"><b>Lo urgente de la próxima semana (9–13 nov):</b>
+      <div class="call"><b>${esc(D.URGENTE.titulo)}</b>
         <ul style="margin-top:1mm">
-          <li><b>Decidir dónde vive el staging</b> (D1): es la ruta crítica para hacer un piloto con un cliente real.</li>
-          <li><b>Definir el canal de contacto</b> de la landing (A4).</li>
-          <li>Activar la protección de ramas en GitHub (A2, 15 min).</li>
-        </ul>Detalle en la página siguiente.</div>
+          ${D.URGENTE.items.map((i) => `<li>${i}</li>`).join('')}
+        </ul></div>
     </div>
   </div>
 </section>
 
-<!-- 1b. Semana 5 y plan de la semana 6 -->
+<!-- 1b. Semana en revisión y plan de la siguiente -->
 <section class="page">
-  <h2>Semana 5 en revisión y plan de la semana 6</h2>
-  <p class="sub">Lo que se cerró del 2 al 6 de noviembre, qué cambió en el cronograma y qué se hace del 9 al 13.</p>
+  <h2>Semana ${D.CORTE.semana} en revisión y plan de la semana ${D.CORTE.semana + 1}</h2>
+  <p class="sub">Lo que se avanzó del ${D.CORTE.rangoSemana}, qué cambió en el cronograma y qué se hace del ${D.CORTE.proxima}.</p>
   <div class="cols" style="grid-template-columns: 1fr 1.25fr; margin-top: 3mm">
     <div>
-      <div class="sec-t"><span>Cerrado en la semana 5</span></div>
+      <div class="sec-t"><span>Avanzado en la semana ${D.CORTE.semana}</span></div>
       <ul class="logros">
         ${D.LOGROS_SEMANA.map(([t, r]) => `<li>${esc(t)} <span class="ref">${esc(r)}</span></li>`).join('')}
       </ul>
@@ -274,7 +304,7 @@ const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>
       <ul class="logros">${D.CAMBIOS.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
     </div>
     <div>
-      <div class="sec-t"><span>Plan de la semana 6 · 9–13 nov</span><small>qué se da por hecho al terminar</small></div>
+      <div class="sec-t"><span>Plan de la semana ${D.CORTE.semana + 1} · ${D.CORTE.proxima}</span><small>qué se da por hecho al terminar</small></div>
       <table class="rt"><thead><tr><th>Tarea</th><th>Resp.</th><th>Está hecha cuando</th></tr></thead><tbody>
         ${D.PLAN_SEMANA.map((t) => `<tr><td class="nm" style="width:46mm">${t.id} · ${esc(t.titulo)}${t.decision ? '<span class="dec" style="background:var(--red);color:#fff;border-radius:1mm;font-size:5.8pt;font-weight:700;padding:0 1.2mm;margin-left:1.5mm">DECISIÓN</span>' : ''}</td><td style="white-space:nowrap">${t.resp}</td><td>${esc(t.hecho)}<span style="display:block;color:var(--mute);font-size:7pt;margin-top:0.6mm">${esc(t.nota)}</span></td></tr>`).join('')}
       </tbody></table>
@@ -286,8 +316,9 @@ const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>
 <section class="page">
   <h2>Lo que ya tenemos y lo que falta</h2>
   <p class="sub">Entre paréntesis, el ID de la tarea del cronograma que cubre cada pendiente.</p>
-  <div class="two">
-    <div><div class="colh">Ya funciona</div>${groups(D.YA_FUNCIONA, 'ok')}</div>
+  <div class="two three">
+    <div><div class="colh">Ya funciona y está probado</div>${groups(D.YA_FUNCIONA, 'ok')}</div>
+    <div><div class="colh">Código listo, falta probarlo</div>${groups(D.CODIGO_LISTO, 'cod')}</div>
     <div><div class="colh">Todavía no existe</div>${groups(D.FALTA, 'no')}</div>
   </div>
 </section>
@@ -323,7 +354,7 @@ const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>
   <table class="rt"><thead><tr><th>Decisión</th><th>Detalle</th><th>Para cuándo</th></tr></thead><tbody>
     ${D.DECISIONES.map(([n, d, f]) => `<tr><td class="nm">${esc(n)}</td><td>${esc(d)}</td><td class="dl">${f}</td></tr>`).join('')}
   </tbody></table>
-  <div class="sec-t" style="margin-top:6mm"><span>Riesgos y cómo los manejamos</span></div>
+  <div class="sec-t" style="margin-top:4mm"><span>Riesgos y cómo los manejamos</span></div>
   <table class="rt"><thead><tr><th>Riesgo</th><th>Por qué importa</th><th>Qué hacemos</th></tr></thead><tbody>
     ${D.RIESGOS.map(([n, d, m]) => `<tr><td class="nm">${esc(n)}</td><td>${esc(d)}</td><td>${esc(m)}</td></tr>`).join('')}
   </tbody></table>
@@ -359,7 +390,7 @@ const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>
     printBackground: true,
     displayHeaderFooter: true,
     headerTemplate: '<span></span>',
-    footerTemplate: `<div style="width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:7px;color:#5B6B82;padding:0 12mm;display:flex;justify-content:space-between"><span>SUTL · SVK Solutions · Cronograma v1 · corte 6 nov 2026 · Documento interno</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`,
+    footerTemplate: `<div style="width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:7px;color:#5B6B82;padding:0 12mm;display:flex;justify-content:space-between"><span>SUTL · SVK Solutions · Cronograma v1 · corte ${D.CORTE.corta} 2026 · Documento interno</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`,
     margin: { top: '10mm', bottom: '12mm', left: '12mm', right: '12mm' },
   });
   await browser.close();

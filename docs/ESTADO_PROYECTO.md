@@ -85,6 +85,13 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — Cronograma (PDF) al corte de la semana 6
+
+- `docs/Cronograma_SUTL.pdf` regenerado con `node docs/cronograma/build.js`. Ahora todo lo que cambia con el avance sale de `docs/cronograma/data.js` (`CORTE`, `KPIS`, `URGENTE`, estados) o se calcula solo (avance por fase); ya no hay fechas ni cifras fijas dentro de `build.js`.
+- **Estado nuevo «Código listo»** (`codigo`): escrito y con pruebas unitarias, pero sin probar con el stack completo. A4, A10, B1b, B2, B3, B4, B5, C1 y C2 están así; **16 de 47 tareas están hechas y probadas, 9 con código listo.** Se anotan en la semana 6, cuando se escribieron.
+- Tarea nueva **A13** (semana 7): verificar con Docker lo escrito (7 migraciones a mano, 8 suites e2e nuevas con 75 pruebas y unos 10 casos de navegador). Hasta cerrarla, esas 9 tareas no se dan por hechas.
+- Nueva página «Lo que ya tenemos»: tres columnas (probado / código listo / falta). Riesgos y decisiones actualizados (staging sigue sin decidirse; NestJS y Next necesitan tu aprobación).
+
 ### 2026-11-14 — B5: roles analista_sutl y proveedor (escrito SIN ejecutar el stack)
 
 Verificado: `tsc`, lint y **374 pruebas unitarias** del backend (55 nuevas), `tsc`/lint del frontend. **Sin correr:** `backend/test/roles-analista-proveedor.e2e-spec.ts` y la migración `20261114120000_roles_analista_proveedor` (a mano; agrega dos valores al enum `RolUsuario`, `users.partnerId`, `users.empresaActivaId` y la tabla `analyst_grants`).
