@@ -21,8 +21,9 @@ function montar() {
       ],
     }),
   };
-  const service = new ControlTowerService(prisma as never, risk as never);
-  return { service, prisma, risk };
+  const documents = { proximosVencimientos: jest.fn().mockResolvedValue([]) };
+  const service = new ControlTowerService(prisma as never, risk as never, documents as never);
+  return { service, prisma, risk, documents };
 }
 
 describe('ControlTowerService', () => {
@@ -68,6 +69,18 @@ describe('ControlTowerService', () => {
     ]);
     const r = await service.resumen('t1', 'u1', HOY);
     expect(r.excepciones).toEqual({ abiertas: 6, criticas: 2, altas: 3, medias: 1 });
+  });
+
+  it('incluye los documentos por vencer o vencidos de la empresa', async () => {
+    const { service, documents } = montar();
+    documents.proximosVencimientos.mockResolvedValueOnce([
+      { id: 'd1', shipmentId: 's1', codigoGuia: 'G-1', tipo: 'factura', estado: 'vencido', diasParaVencer: -2 },
+      { id: 'd2', shipmentId: 's2', codigoGuia: 'G-2', tipo: 'bl', estado: 'por_vencer', diasParaVencer: 5 },
+    ]);
+    const r = await service.resumen('t1', 'u1', HOY);
+    expect(documents.proximosVencimientos).toHaveBeenCalledWith('t1', HOY);
+    expect(r.vencimientos.documentos.total).toBe(2);
+    expect(r.vencimientos.documentos.items[0]).toMatchObject({ codigoGuia: 'G-1', estado: 'vencido' });
   });
 
   it('usa una ventana de 7 días para los vencimientos próximos', async () => {

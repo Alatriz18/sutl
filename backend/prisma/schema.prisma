@@ -70,6 +70,13 @@ enum TipoDocumento {
   otro
 }
 
+// Revisión de un documento por el equipo (C1).
+enum EstadoDocumento {
+  pendiente
+  aprobado
+  rechazado
+}
+
 enum CanalNotificacion {
   email
   push
@@ -236,6 +243,7 @@ model User {
   tenant           Tenant     @relation(fields: [tenantId], references: [id])
 
   documentosSubidos Document[]     @relation("DocumentoSubidoPor")
+  documentosRevisados Document[]   @relation("DocumentoRevisadoPor")
   reportesGenerados Report[]       @relation("ReporteGeneradoPor")
   notificaciones    Notification[] @relation("NotificacionDestinatario")
   auditLogs         AuditLog[]     @relation("AuditLogActor")
@@ -349,14 +357,22 @@ model Document {
   urlArchivo    String
   version       Int           @default(1)
   subidoPorId   String?
+  // Revisión (C1): un documento nuevo queda pendiente hasta que alguien lo aprueba o rechaza.
+  estado          EstadoDocumento @default(pendiente)
+  fechaVencimiento DateTime? // certificados, permisos y similares que caducan
+  motivoRechazo   String?
+  revisadoPorId   String?
+  revisadoAt      DateTime?
   createdAt     DateTime      @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id])
   shipment Shipment @relation(fields: [shipmentId], references: [id])
   subidoPor User?   @relation("DocumentoSubidoPor", fields: [subidoPorId], references: [id])
+  revisadoPor User? @relation("DocumentoRevisadoPor", fields: [revisadoPorId], references: [id])
 
   @@index([tenantId])
   @@index([shipmentId])
+  @@index([tenantId, fechaVencimiento])
   @@map("documents")
 }
 

@@ -85,6 +85,19 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-14 — C1: checklist de documentos y vencimientos (escrito SIN ejecutar el stack)
+
+Verificado: `tsc`, lint y **319 pruebas unitarias** del backend (23 nuevas), `tsc`/lint del frontend. **Sin correr:** `backend/test/documents-checklist.e2e-spec.ts`, el caso nuevo de Playwright y la migración `20261113150000_documentos_revision` (a mano).
+
+- **Qué exige cada envío** (`documents/checklist.ts`, función pura): factura, lista de empaque, documento de transporte (BL si es marítimo, AWB si es aéreo, nada si es terrestre) y pedimento solo en importaciones. Cada empresa apaga lo que no usa en Configuración → «Documentos exigidos» (sección `documentos` de tenant-config, con perfil y ajustes; manufactura y comercio traen el pedimento activado).
+- **Revisión:** un documento subido queda `pendiente`; `PATCH /api/documents/:id/revision` (admin, operador, super_admin) lo aprueba o rechaza (el rechazo exige motivo). Solo se revisa la versión vigente (una carga nueva reemplaza a la anterior; revisar una vieja da 409). Todo queda en la bitácora (`documento.subido/aprobado/rechazado`).
+- **Vencimientos:** al subir se puede indicar «vence el»; el estado pasa a `por_vencer` dentro de la ventana configurada (15 días) y a `vencido` después. Un documento por vencer sigue valiendo; uno vencido ya no cumple.
+- **Checklist por envío:** `GET /api/documents/checklist/:shipmentId` y tarjeta «Documentos del envío» en su detalle (estado en texto, aprobar/rechazar, enlace para subir).
+- **Excepciones (cierra el pendiente de B4):** un envío activo cuya llegada estimada está a ≤ 5 días (configurable) o ya pasó, con documentación incompleta, abre una excepción `documento_faltante` ligada al envío: moderada, o grave si faltan 2 días o menos. Se resuelve sola al completarse.
+- **Torre de control:** «Próximos 7 días» ahora incluye los documentos por vencer o vencidos.
+- Nota: el endpoint antiguo de listado/subida/descarga de documentos no restringe por rol (existía antes); queda como mejora para B5.
+- **Pendiente de C1:** alertas por correo de vencimiento y checklist propio por cliente/producto (hoy es por tipo y modo de envío).
+
 ### 2026-11-13 (cont.) — B2: torre de control en el Resumen (escrito SIN ejecutar el stack)
 
 Verificado: `tsc`, lint y **296 pruebas unitarias** del backend (6 nuevas) y `tsc`/lint del frontend. **Sin correr:** `backend/test/control-tower.e2e-spec.ts` y el caso nuevo de Playwright «torre de control».

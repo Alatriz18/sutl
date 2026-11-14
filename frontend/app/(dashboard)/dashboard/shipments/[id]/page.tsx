@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/lib/toast-context';
 import { extractApiError, formatDateTime, formatKg, formatNumber } from '@/lib/format';
 import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
+import { DocumentsChecklist } from '@/components/documents-checklist';
 import { EstadoEnvio, Shipment, TrackingEvent } from '@/types';
 
 const ESTADOS: EstadoEnvio[] = ['creado', 'en_transito', 'en_aduana', 'entregado', 'incidencia'];
@@ -173,6 +174,8 @@ export default function ShipmentDetailPage() {
           </form>
         </Card>
       </div>
+
+      <DocumentsChecklist shipmentId={shipment.id} />
 
       {(shipment.ordenesCompraLineas?.length ?? 0) > 0 && (
         <Card className="mt-6">

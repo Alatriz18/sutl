@@ -69,6 +69,36 @@ export class ExcepcionesConfigDto {
   crearTareas?: boolean;
 }
 
+export class DocumentosConfigDto {
+  @IsOptional()
+  @IsBoolean()
+  exigirFactura?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  exigirPackingList?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  exigirDocumentoTransporte?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  exigirPedimento?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  diasAvisoVencimiento?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(90)
+  diasAntesEtaFaltante?: number;
+}
+
 export class ConfiguracionDto {
   @IsOptional()
   @ValidateNested()
@@ -89,6 +119,11 @@ export class ConfiguracionDto {
   @ValidateNested()
   @Type(() => ExcepcionesConfigDto)
   excepciones?: ExcepcionesConfigDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DocumentosConfigDto)
+  documentos?: DocumentosConfigDto;
 }
 
 export class UpdateTenantConfigDto {

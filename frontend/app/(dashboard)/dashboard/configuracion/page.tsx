@@ -455,6 +455,82 @@ export default function ConfiguracionPage() {
           </div>
         </Card>
 
+        <Card className="mt-6">
+          <CardTitle>Documentos exigidos</CardTitle>
+          <p className="mt-1 text-sm text-navy/60">
+            Qué documentos debe tener cada envío. Si un envío está por llegar sin ellos aprobados, se abre una excepción.
+          </p>
+          <div className="mt-4 max-w-2xl space-y-3">
+            {([
+              ['exigirFactura', 'Factura'],
+              ['exigirPackingList', 'Lista de empaque (packing list)'],
+              ['exigirDocumentoTransporte', 'Documento de transporte (BL si es marítimo, AWB si es aéreo)'],
+              ['exigirPedimento', 'Pedimento (solo importaciones)'],
+            ] as const).map(([clave, texto]) => (
+              <Campo key={clave} label={texto} sugerido={sugerido.documentos[clave] ? 'se exige' : 'no se exige'} ajustado={ajustado('documentos', clave)}>
+                <label className="flex items-center gap-2 text-sm text-navy">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky"
+                    disabled={!puedeEditar}
+                    checked={form.documentos[clave]}
+                    onChange={(e) => set('documentos', { [clave]: e.target.checked })}
+                  />
+                  Exigir este documento
+                </label>
+              </Campo>
+            ))}
+          </div>
+          <div className="mt-5 grid max-w-2xl grid-cols-1 gap-5 sm:grid-cols-2">
+            <Campo
+              htmlFor={`${id}-doc-eta`}
+              label="Exigirlos desde"
+              ayuda="Días antes de la llegada estimada en que la falta de un documento abre una excepción."
+              sugerido={`${sugerido.documentos.diasAntesEtaFaltante} días`}
+              ajustado={ajustado('documentos', 'diasAntesEtaFaltante')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-doc-eta`}
+                  type="number"
+                  min={0}
+                  max={90}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.documentos.diasAntesEtaFaltante) ? '' : form.documentos.diasAntesEtaFaltante}
+                  onChange={(e) => set('documentos', { diasAntesEtaFaltante: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">días antes</span>
+              </div>
+            </Campo>
+            <Campo
+              htmlFor={`${id}-doc-venc`}
+              label="Aviso de vencimiento"
+              ayuda="Días antes de que caduque un documento en que se marca «por vencer»."
+              sugerido={`${sugerido.documentos.diasAvisoVencimiento} días`}
+              ajustado={ajustado('documentos', 'diasAvisoVencimiento')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-doc-venc`}
+                  type="number"
+                  min={1}
+                  max={365}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.documentos.diasAvisoVencimiento) ? '' : form.documentos.diasAvisoVencimiento}
+                  onChange={(e) => set('documentos', { diasAvisoVencimiento: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">días antes</span>
+              </div>
+            </Campo>
+          </div>
+        </Card>
+
         {puedeEditar && (
           <div className="sticky bottom-0 mt-6 flex flex-col gap-2 border-t border-navy/10 bg-slate-50/95 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-end">
             {sinGuardar && <span className="text-sm text-navy/60 sm:mr-auto">Tienes cambios sin guardar.</span>}

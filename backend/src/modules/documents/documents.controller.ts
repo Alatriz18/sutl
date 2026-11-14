@@ -4,6 +4,8 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Res,
   UploadedFile,
@@ -16,7 +18,10 @@ import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { mkdirSync } from 'fs';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolUsuario } from '@prisma/client';
 import { DocumentsService } from './documents.service';
+import { RevisarDocumentDto } from './dto/revisar-document.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -30,6 +35,25 @@ export class DocumentsController {
   @Get()
   findAll(@CurrentUser('tenantId') tenantId: string) {
     return this.documentsService.findAll(tenantId);
+  }
+
+  // Checklist de documentos exigidos para un envío (según la configuración de la empresa).
+  @Get('checklist/:shipmentId')
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin)
+  checklist(@CurrentUser('tenantId') tenantId: string, @Param('shipmentId', ParseUUIDPipe) shipmentId: string) {
+    return this.documentsService.checklist(tenantId, shipmentId);
+  }
+
+  // Aprobar o rechazar la versión vigente de un documento.
+  @Patch(':id/revision')
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin)
+  revisar(
+    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser('userId') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RevisarDocumentDto,
+  ) {
+    return this.documentsService.revisar(tenantId, userId, id, dto);
   }
 
   @Post()

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EstadoOrdenCompra, EstadoTarea } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { DocumentsService } from '../documents/documents.service';
 import { SupplyRiskService } from '../supply-risk/supply-risk.service';
 
 const DIA_MS = 86_400_000;
@@ -17,6 +18,7 @@ export class ControlTowerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly risk: SupplyRiskService,
+    private readonly documents: DocumentsService,
   ) {}
 
   // `hoy` se inyecta para poder probar con fechas fijas.
@@ -25,7 +27,7 @@ export class ControlTowerService {
     const finDelDia = new Date(hoy);
     finDelDia.setHours(23, 59, 59, 999);
 
-    const [riesgo, ocsAtrasadas, ocsAtrasadasTotal, ocsPorVencer, ocsPorVencerTotal, embarquesPorLlegar, embarquesPorLlegarTotal, excepciones, tareasVencidas, tareasHoy] =
+    const [riesgo, ocsAtrasadas, ocsAtrasadasTotal, ocsPorVencer, ocsPorVencerTotal, embarquesPorLlegar, embarquesPorLlegarTotal, excepciones, tareasVencidas, tareasHoy, docsPorVencer] =
       await Promise.all([
         this.risk.evaluar(tenantId, hoy),
         this.prisma.purchaseOrder.findMany({
@@ -62,6 +64,7 @@ export class ControlTowerService {
           orderBy: { fechaLimite: 'asc' },
           take: MAX_TAREAS_HOY,
         }),
+        this.documents.proximosVencimientos(tenantId, hoy),
       ]);
 
     const cuentaSeveridad = (s: string) => excepciones.find((e) => e.severidad === s)?._count._all ?? 0;
@@ -94,6 +97,7 @@ export class ControlTowerService {
       vencimientos: {
         ocs: { total: ocsPorVencerTotal, items: ocsPorVencer.map((o) => ({ id: o.id, numero: o.numero, proveedor: o.proveedor.nombre, fechaRequerida: o.fechaRequerida })) },
         embarques: { total: embarquesPorLlegarTotal, items: embarquesPorLlegar },
+        documentos: { total: docsPorVencer.length, items: docsPorVencer.slice(0, TOP) },
       },
       excepciones: { abiertas: criticas + altas + medias, criticas, altas, medias },
       tareas: { vencidasEmpresa: tareasVencidas, misTareasHoy: tareasHoy },

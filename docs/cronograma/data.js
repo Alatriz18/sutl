@@ -87,7 +87,7 @@ const PHASES = [
       { id: 'B3', name: 'Workflow humano: tareas, comentarios y bitácora', owner: 'Ambos', s: 11, e: 13, st: 'pendiente',
         what: 'Código escrito el 13 nov (sin ejecutar el stack): tareas con responsable, prioridad, fecha límite y vínculo a una OC, envío o SKU; comentarios; bitácora de quién hizo qué y cuándo (solo se agrega); pantalla Tareas. Falta correr sus pruebas e2e y de navegador. Sigue pendiente: evidencia adjunta y avisos al asignar.', dep: 'A7' },
       { id: 'B4', name: 'Centro de excepciones: reglas, severidad, SLA y escalamiento', owner: 'Ambos', s: 12, e: 14, st: 'pendiente',
-        what: 'Código escrito el 13 nov (sin ejecutar el stack): SKU en rojo y OC atrasada abren una excepción con plazo (SLA) configurable por empresa y una tarea; se resuelve sola cuando el problema desaparece y, si el plazo vence, escala a crítica y avisa por correo a los administradores. Pantalla Excepciones. Falta correr sus pruebas e2e. Pendiente: reglas de documento faltante (con C1) y responsable por regla.', dep: 'B1, B3' },
+        what: 'Código escrito el 13 nov (sin ejecutar el stack): SKU en rojo y OC atrasada abren una excepción con plazo (SLA) configurable por empresa y una tarea; se resuelve sola cuando el problema desaparece y, si el plazo vence, escala a crítica y avisa por correo a los administradores. Pantalla Excepciones. Falta correr sus pruebas e2e. Regla de documento faltante hecha con C1 (14 nov). Pendiente: responsable por regla y aviso por WhatsApp.', dep: 'B1, B3' },
       { id: 'B5', name: 'Roles analista_sutl y proveedor', owner: 'Kevin', s: 12, e: 13, st: 'pendiente',
         what: 'El analista de SUTL ve varias empresas clientes con permisos explícitos, sin romper el aislamiento; el proveedor ve solo sus OCs.', dep: 'B3' },
     ],
@@ -96,7 +96,7 @@ const PHASES = [
     key: 'C', name: 'Fase C · Portal colaborativo, analítica y panel SaaS', range: 'Sem 14–22 · 4 ene – 5 mar', note: 'Hito H4 · 19 feb (con colchón)',
     tasks: [
       { id: 'C1', name: 'Checklist de documentos por operación y vencimientos', owner: 'Dev', s: 15, e: 16, st: 'pendiente',
-        what: 'Documentos exigidos por tipo de operación (factura, packing list, BL, certificados), estado, vencimientos y alertas.', dep: 'B4' },
+        what: 'Código escrito el 14 nov (sin ejecutar el stack): cada envío exige los documentos que la empresa configure (factura, lista de empaque, BL o AWB según el modo, pedimento en importaciones); cada documento se aprueba o rechaza con motivo, tiene versión vigente y fecha de vencimiento (vencido / por vencer); checklist en el detalle del envío; un envío por llegar sin su documentación abre una excepción (regla pendiente de B4) y los documentos por vencer salen en la torre de control. Falta correr sus pruebas e2e y de navegador.', dep: 'B4' },
       { id: 'C2', name: 'MFA (TOTP) y bitácora de auditoría completa', owner: 'Kevin', s: 14, e: 15, st: 'pendiente',
         what: 'Código escrito el 13 nov (sin ejecutar el stack): segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Falta correr sus pruebas e2e. Pendiente: exigirlo a administradores por política, código QR en pantalla y visor de bitácora.', dep: '—' },
       { id: 'C3', name: 'Portal colaborativo para proveedor y cliente', owner: 'Ambos', s: 17, e: 19, st: 'pendiente',

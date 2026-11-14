@@ -16,6 +16,7 @@ describe('ExceptionsService', () => {
   let config: { getEfectiva: Mock };
   let audit: { registrar: Mock };
   let notifications: { create: Mock };
+  let documents: { enviosConDocumentosPendientes: Mock };
   let service: ExceptionsService;
   let existentes: Record<string, unknown>[];
 
@@ -42,7 +43,8 @@ describe('ExceptionsService', () => {
     config = { getEfectiva: jest.fn().mockResolvedValue({ excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true } }) };
     audit = { registrar: jest.fn().mockResolvedValue(undefined) };
     notifications = { create: jest.fn().mockResolvedValue({}) };
-    service = new ExceptionsService(prisma as never, risk as never, config as never, audit as never, notifications as never);
+    documents = { enviosConDocumentosPendientes: jest.fn().mockResolvedValue([]) };
+    service = new ExceptionsService(prisma as never, risk as never, config as never, audit as never, documents as never, notifications as never);
   });
 
   it('un SKU en rojo abre una excepción grave con plazo de 24 h y una tarea', async () => {
@@ -68,6 +70,20 @@ describe('ExceptionsService', () => {
     expect(b).toMatchObject({ clave: 'oc2', severidad: 'alta' });
     expect(a.detalle).toContain('hace 3 días');
     expect(prisma.purchaseOrder.findMany.mock.calls[0][0].where).toMatchObject({ tenantId: 't1', fechaRequerida: { lt: hoy } });
+  });
+
+  it('un envío por llegar sin documentos completos abre una excepción ligada al envío (moderada o grave según la cercanía)', async () => {
+    documents.enviosConDocumentosPendientes.mockResolvedValue([
+      { shipmentId: 's1', codigoGuia: 'G-1', detalle: 'faltan documentos', urgente: false },
+      { shipmentId: 's2', codigoGuia: 'G-2', detalle: 'faltan documentos', urgente: true },
+    ]);
+    await service.evaluarEmpresa('t1', hoy);
+    expect(documents.enviosConDocumentosPendientes).toHaveBeenCalledWith('t1', hoy);
+    const [a, b] = prisma.exceptionCase.create.mock.calls.map((c) => c[0].data);
+    expect(a).toMatchObject({ tipo: 'documento_faltante', clave: 's1', severidad: 'media' });
+    expect(a.venceSlaAt).toEqual(new Date(hoy.getTime() + 72 * hora));
+    expect(b).toMatchObject({ clave: 's2', severidad: 'alta' });
+    expect(prisma.task.create.mock.calls[0][0].data).toMatchObject({ entidadTipo: 'envio', entidadId: 's1' });
   });
 
   it('si la empresa apagó las tareas, abre la excepción sin tarea', async () => {

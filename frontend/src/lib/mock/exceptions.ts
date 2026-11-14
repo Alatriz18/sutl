@@ -1,5 +1,6 @@
 import { Excepcion, ResultadoExcepciones } from '@/types';
 import * as db from './data';
+import { enviosConDocumentosPendientes } from './documents';
 import { riesgo } from './supply';
 import { configEfectivaDemo } from './tenant-config';
 
@@ -34,6 +35,19 @@ export function evaluarExcepciones(hoy = new Date()): ResultadoExcepciones {
       titulo: `OC ${oc.numero} atrasada`,
       detalle: `La OC ${oc.numero} de ${oc.proveedor?.nombre ?? 'su proveedor'} debía llegar hace ${dias} día${dias === 1 ? '' : 's'} y sigue sin recibirse completa.`,
     });
+  }
+
+  const tenantId = db.shipments[0]?.tenantId;
+  if (tenantId) {
+    for (const d of enviosConDocumentosPendientes(tenantId, hoy)) {
+      candidatas.push({
+        tipo: 'documento_faltante',
+        clave: d.shipmentId,
+        severidad: d.urgente ? 'alta' : 'media',
+        titulo: `Documentos pendientes del envío ${d.codigoGuia}`,
+        detalle: d.detalle,
+      });
+    }
   }
 
   const r: ResultadoExcepciones = { abiertas: 0, resueltas: 0, escaladas: 0 };

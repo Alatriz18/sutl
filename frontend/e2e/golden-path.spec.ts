@@ -421,6 +421,16 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page).toHaveURL(/\/dashboard\/riesgo/);
   });
 
+  test('documentos: el envío muestra su checklist de documentos con el estado en texto', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/shipments/s1');
+    const tarjeta = page.getByRole('heading', { name: 'Documentos del envío' });
+    await expect(tarjeta).toBeVisible();
+    // El envío de ejemplo no tiene toda su documentación: el checklist lo dice con texto, no solo con color.
+    await expect(page.getByText('Documentación incompleta')).toBeVisible();
+    await expect(page.getByText('Falta', { exact: true }).first()).toBeVisible();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

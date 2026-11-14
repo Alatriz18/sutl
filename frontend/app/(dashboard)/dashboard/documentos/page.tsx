@@ -21,6 +21,8 @@ const TIPO_LABEL: Record<TipoDocumento, string> = {
   otro: 'Otro',
 };
 
+const ESTADO_REVISION = { pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado' } as const;
+
 const TIPO_COLOR: Record<TipoDocumento, string> = {
   bl: 'bg-blue-100 text-blue-700',
   awb: 'bg-violet-100 text-violet-700',
@@ -38,7 +40,7 @@ export default function DocumentosPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [descargando, setDescargando] = useState<string | null>(null);
-  const [form, setForm] = useState({ shipmentId: '', tipo: 'bl' as TipoDocumento });
+  const [form, setForm] = useState({ shipmentId: '', tipo: 'bl' as TipoDocumento, fechaVencimiento: '' });
 
   async function cargar() {
     setLoading(true);
@@ -70,12 +72,14 @@ export default function DocumentosPage() {
     const body = new FormData();
     body.append('shipmentId', form.shipmentId);
     body.append('tipo', form.tipo);
+    if (form.fechaVencimiento) body.append('fechaVencimiento', form.fechaVencimiento);
     body.append('file', file);
 
     setUploading(true);
     try {
       await api.post('/documents', body);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      setForm((f) => ({ ...f, fechaVencimiento: '' }));
       toast.success('Documento subido correctamente.');
       await cargar();
     } catch (err) {
@@ -120,6 +124,8 @@ export default function DocumentosPage() {
                     <th className="px-4 py-3 font-medium">Tipo</th>
                     <th className="px-4 py-3 font-medium">Envío</th>
                     <th className="px-4 py-3 font-medium">Versión</th>
+                    <th className="px-4 py-3 font-medium">Revisión</th>
+                    <th className="px-4 py-3 font-medium">Vence</th>
                     <th className="px-4 py-3 font-medium">Subido por</th>
                     <th className="px-4 py-3 font-medium">Fecha</th>
                     <th className="px-4 py-3 font-medium"></th>
@@ -128,7 +134,7 @@ export default function DocumentosPage() {
                 <tbody>
                   {documents.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-6 text-center text-navy/50">
+                      <td colSpan={9} className="px-4 py-6 text-center text-navy/50">
                         Aún no hay documentos subidos.
                       </td>
                     </tr>
@@ -148,6 +154,8 @@ export default function DocumentosPage() {
                       </td>
                       <td className="px-4 py-3 text-sky">{d.shipment?.codigoGuia ?? '—'}</td>
                       <td className="px-4 py-3 text-navy/60">v{d.version}</td>
+                      <td className="px-4 py-3 text-navy/60">{ESTADO_REVISION[d.estado ?? 'aprobado']}</td>
+                      <td className="px-4 py-3 text-navy/60">{d.fechaVencimiento ? formatDate(d.fechaVencimiento) : '—'}</td>
                       <td className="px-4 py-3 text-navy/60">{d.subidoPor?.nombre ?? '—'}</td>
                       <td className="px-4 py-3 text-navy/60">{formatDate(d.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
@@ -205,6 +213,16 @@ export default function DocumentosPage() {
               accept=".pdf,.jpg,.jpeg,.png,.xlsx,.doc,.docx"
               className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-navy/10 file:px-3 file:py-1.5 file:text-navy"
             />
+            <div>
+              <label htmlFor="doc-vence" className="mb-1 block text-xs font-medium text-navy/70">Vence el (opcional, para certificados y permisos)</label>
+              <input
+                id="doc-vence"
+                type="date"
+                value={form.fechaVencimiento}
+                onChange={(e) => setForm((f) => ({ ...f, fechaVencimiento: e.target.value }))}
+                className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm"
+              />
+            </div>
             <p className="text-xs text-navy/40">PDF, imágenes, Word o Excel — máx. 10 MB.</p>
             <Button type="submit" disabled={uploading}>
               <Upload size={16} />

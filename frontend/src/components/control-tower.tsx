@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatTile } from '@/components/ui/stat-tile';
 import { extractApiError, formatDate } from '@/lib/format';
 import { ACCION_RIESGO } from '@/lib/riesgo-labels';
+import { ESTADO_DOC, ETIQUETA_TIPO_DOC } from '@/components/documents-checklist';
 import { ControlTowerResumen, SemaforoRiesgo } from '@/types';
 
 // El color nunca va solo: cada semáforo lleva su texto.
@@ -143,7 +144,7 @@ export function ControlTower() {
 
         <Card className="lg:col-span-2">
           <CardTitle>Próximos {datos.ventanaDias} días</CardTitle>
-          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <h3 className="text-sm font-semibold text-navy">OC requeridas ({vencimientos.ocs.total})</h3>
               {vencimientos.ocs.items.length === 0 ? (
@@ -168,6 +169,22 @@ export function ControlTower() {
                     <li key={s.id} className="py-1.5 text-sm">
                       <Link href={`/dashboard/shipments/${s.id}`} className="font-medium text-sky hover:underline">{s.codigoGuia}</Link>
                       <span className="text-navy/60"> · {s.destino} · {formatDate(s.fechaEstimadaLlegada)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-navy">Documentos por vencer ({vencimientos.documentos.total})</h3>
+              {vencimientos.documentos.items.length === 0 ? (
+                <Vacio>Ninguno por vencer.</Vacio>
+              ) : (
+                <ul className="mt-1 divide-y divide-navy/5">
+                  {vencimientos.documentos.items.map((d) => (
+                    <li key={d.id} className="py-1.5 text-sm">
+                      <Link href={`/dashboard/shipments/${d.shipmentId}`} className="font-medium text-sky hover:underline">{d.codigoGuia}</Link>
+                      <span className="text-navy/60"> · {ETIQUETA_TIPO_DOC[d.tipo]} · </span>
+                      <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${ESTADO_DOC[d.estado].clase}`}>{ESTADO_DOC[d.estado].texto}</span>
                     </li>
                   ))}
                 </ul>

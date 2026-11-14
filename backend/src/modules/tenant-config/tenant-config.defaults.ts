@@ -42,6 +42,19 @@ export interface ConfigOperacion {
     // Si cada excepción nueva abre una tarea automáticamente.
     crearTareas: boolean;
   };
+  documentos: {
+    // Documentos que cada envío debe tener antes de llegar (los sube y aprueba el equipo).
+    exigirFactura: boolean;
+    exigirPackingList: boolean;
+    // BL (marítimo) o AWB (aéreo); el terrestre no lo necesita.
+    exigirDocumentoTransporte: boolean;
+    // Solo en importaciones: el pedimento o declaración aduanera.
+    exigirPedimento: boolean;
+    // Días antes del vencimiento de un documento en que se marca «por vencer».
+    diasAvisoVencimiento: number;
+    // Cuántos días antes de la llegada estimada un documento faltante abre una excepción.
+    diasAntesEtaFaltante: number;
+  };
 }
 
 export interface PerfilOperacion {
@@ -59,6 +72,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
     },
   },
   manufactura: {
@@ -69,6 +83,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
     },
   },
   comercio: {
@@ -79,6 +94,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
     },
   },
   erp_externo: {
@@ -89,6 +105,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
     },
   },
 } satisfies Record<string, PerfilOperacion>;
@@ -145,6 +162,7 @@ export function resolverConfig(perfil: string, ajustes: unknown): ConfigOperacio
     inventario: { ...base.inventario, ...limpio.inventario },
     riesgo: { ...base.riesgo, ...limpio.riesgo },
     excepciones: { ...base.excepciones, ...limpio.excepciones },
+    documentos: { ...base.documentos, ...limpio.documentos },
   };
 }
 
@@ -155,5 +173,6 @@ export function combinarAjustes(actuales: AjustesOperacion, nuevos: AjustesOpera
     inventario: { ...actuales.inventario, ...nuevos.inventario },
     riesgo: { ...actuales.riesgo, ...nuevos.riesgo },
     excepciones: { ...actuales.excepciones, ...nuevos.excepciones },
+    documentos: { ...actuales.documentos, ...nuevos.documentos },
   });
 }

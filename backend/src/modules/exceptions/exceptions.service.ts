@@ -5,6 +5,7 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { DocumentsService } from '../documents/documents.service';
 import { COLA_EXCEPCIONES } from '../queues/queues.constants';
 import { SupplyRiskService } from '../supply-risk/supply-risk.service';
 import { TenantConfigService } from '../tenant-config/tenant-config.service';
@@ -24,7 +25,7 @@ const cadaMinutos = () => {
 };
 
 interface Candidata {
-  tipo: 'sku_en_rojo' | 'oc_atrasada';
+  tipo: 'sku_en_rojo' | 'oc_atrasada' | 'documento_faltante';
   clave: string;
   severidad: SeveridadExcepcion;
   titulo: string;
@@ -49,6 +50,7 @@ export class ExceptionsService implements OnApplicationBootstrap {
     private readonly risk: SupplyRiskService,
     private readonly tenantConfig: TenantConfigService,
     private readonly audit: AuditService,
+    private readonly documents: DocumentsService,
     @Optional() private readonly notifications?: NotificationsService,
     @Optional() @InjectQueue(COLA_EXCEPCIONES) private readonly cola?: Queue,
   ) {}
@@ -189,6 +191,16 @@ export class ExceptionsService implements OnApplicationBootstrap {
         detalle: `La OC ${oc.numero} de ${oc.proveedor.nombre} debía llegar hace ${dias} día${dias === 1 ? '' : 's'} y sigue sin recibirse completa.`,
       });
     }
+    // Envíos que están por llegar (o ya llegaron) sin su documentación completa.
+    for (const d of await this.documents.enviosConDocumentosPendientes(tenantId, hoy)) {
+      out.push({
+        tipo: 'documento_faltante',
+        clave: d.shipmentId,
+        severidad: d.urgente ? 'alta' : 'media',
+        titulo: `Documentos pendientes del envío ${d.codigoGuia}`,
+        detalle: d.detalle,
+      });
+    }
     return out;
   }
 
@@ -204,7 +216,7 @@ export class ExceptionsService implements OnApplicationBootstrap {
         descripcion: c.detalle,
         prioridad: c.severidad === 'media' ? 'media' : 'alta',
         fechaLimite: venceSlaAt,
-        entidadTipo: c.tipo === 'sku_en_rojo' ? 'sku' : 'orden_compra',
+        entidadTipo: c.tipo === 'sku_en_rojo' ? 'sku' : c.tipo === 'documento_faltante' ? 'envio' : 'orden_compra',
         entidadId: c.clave,
       },
       select: { id: true },

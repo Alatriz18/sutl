@@ -27,6 +27,7 @@ import * as supply from './supply';
 import { manejarTareas } from './tasks';
 import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { resumenTorre } from './control-tower';
+import { checklistEnvio, revisarDocumento } from './documents';
 import { actualizarConfigDemo, configDemo, configEfectivaDemo } from './tenant-config';
 import { nextId } from './data';
 
@@ -936,11 +937,25 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     if (method === 'get' && path === '/documents') {
       return delay(ok(config, db.documents.map(db.documentExpanded)));
     }
+    m = match(path, /^\/documents\/checklist\/([^/]+)$/);
+    if (method === 'get' && m) {
+      const usuario = currentUser();
+      if (!usuario || usuario.rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
+      return delay(ok(config, checklistEnvio(usuario.tenantId, m[1])));
+    }
+    m = match(path, /^\/documents\/([^/]+)\/revision$/);
+    if (method === 'patch' && m) {
+      const usuario = currentUser();
+      if (!usuario || usuario.rol === 'cliente_final') throw new MockApiError(403, 'Forbidden resource');
+      return delay(ok(config, revisarDocumento(usuario.tenantId, usuario.id, m[1], body)), 260);
+    }
     if (method === 'post' && path === '/documents') {
       const formData = config.data as FormData;
       const shipmentId = String(formData.get('shipmentId') ?? '');
       const tipo = String(formData.get('tipo') ?? 'otro');
+      const vencimiento = String(formData.get('fechaVencimiento') ?? '');
       const file = formData.get('file') as File | null;
+      const previas = db.documents.filter((d) => d.shipmentId === shipmentId && d.tipo === tipo);
       const doc = {
         id: nextId('doc'),
         tenantId: currentUser()?.tenantId ?? 't-demo',
@@ -948,8 +963,11 @@ export const mockAdapter: AxiosAdapter = async (config) => {
         tipo: tipo as SutlDocumentTipo,
         nombreArchivo: file?.name ?? `documento-${Date.now()}.pdf`,
         urlArchivo: `mock://documentos/${file?.name ?? 'documento.pdf'}`,
-        version: 1,
+        version: previas.reduce((max, d) => Math.max(max, d.version), 0) + 1,
         subidoPorId: currentUser()?.id ?? null,
+        estado: 'pendiente' as const,
+        fechaVencimiento: vencimiento ? new Date(vencimiento).toISOString() : null,
+        motivoRechazo: null,
         createdAt: nowIso(),
       };
       db.documents.push(doc);

@@ -20,6 +20,7 @@ const SEVERIDAD: Record<SeveridadExcepcion, { texto: string; clase: string }> = 
 const TIPO: Record<Excepcion['tipo'], string> = {
   sku_en_rojo: 'SKU en rojo',
   oc_atrasada: 'OC atrasada',
+  documento_faltante: 'Documentos pendientes',
 };
 
 // Tiempo que falta (o que lleva vencido) respecto del plazo.

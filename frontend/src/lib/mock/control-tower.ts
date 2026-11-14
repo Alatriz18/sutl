@@ -1,5 +1,6 @@
 import { ControlTowerResumen, Tarea, User } from '@/types';
 import * as db from './data';
+import { proximosVencimientosDocs } from './documents';
 import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { riesgo } from './supply';
 import { manejarTareas } from './tasks';
@@ -60,6 +61,10 @@ export function resumenTorre(usuario: User, hoy = new Date(), ventanaDias = 7): 
     },
     vencimientos: {
       ocs: { total: porVencer.length, items: porVencer.slice(0, TOP).map((o) => ({ id: o.id, numero: o.numero, proveedor: o.proveedor?.nombre ?? '—', fechaRequerida: o.fechaRequerida as string })) },
+      documentos: (() => {
+        const docs = proximosVencimientosDocs(usuario.tenantId, hoy);
+        return { total: docs.length, items: docs.slice(0, TOP) };
+      })(),
       embarques: {
         total: porLlegar.length,
         items: porLlegar.slice(0, TOP).map((s) => ({ id: s.id, codigoGuia: s.codigoGuia, destino: s.destino, estado: s.estado, fechaEstimadaLlegada: s.fechaEstimadaLlegada as string })),

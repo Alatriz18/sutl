@@ -331,7 +331,30 @@ export interface SutlDocument {
   version: number;
   subidoPorId: string | null;
   subidoPor?: User | null;
+  // Revisión (C1). Los documentos de ejemplo de la demo no los traen: se tratan como aprobados.
+  estado?: EstadoDocumento;
+  fechaVencimiento?: string | null;
+  motivoRechazo?: string | null;
   createdAt: string;
+}
+
+export type EstadoDocumento = 'pendiente' | 'aprobado' | 'rechazado';
+export type EstadoItemChecklist = 'faltante' | 'pendiente' | 'aprobado' | 'rechazado' | 'vencido' | 'por_vencer';
+
+export interface ItemChecklist {
+  tipo: TipoDocumento;
+  requerido: boolean;
+  estado: EstadoItemChecklist;
+  documento: { id: string; version: number; estado: EstadoDocumento; fechaVencimiento: string | null; motivoRechazo: string | null; nombreArchivo: string } | null;
+  diasParaVencer: number | null;
+}
+
+export interface ChecklistEnvio {
+  envio: { id: string; codigoGuia: string; tipo: TipoEnvio; modo: ModoTransporte };
+  items: ItemChecklist[];
+  extras: ItemChecklist[];
+  completo: boolean;
+  problemas: { tipo: TipoDocumento; estado: EstadoItemChecklist }[];
 }
 
 export type TipoAlerta =
@@ -577,6 +600,14 @@ export interface ConfigOperacion {
     slaMediaHoras: number;
     crearTareas: boolean;
   };
+  documentos: {
+    exigirFactura: boolean;
+    exigirPackingList: boolean;
+    exigirDocumentoTransporte: boolean;
+    exigirPedimento: boolean;
+    diasAvisoVencimiento: number;
+    diasAntesEtaFaltante: number;
+  };
 }
 
 export type AjustesOperacion = {
@@ -689,6 +720,7 @@ export interface ControlTowerResumen {
   vencimientos: {
     ocs: { total: number; items: { id: string; numero: string; proveedor: string; fechaRequerida: string }[] };
     embarques: { total: number; items: { id: string; codigoGuia: string; destino: string; estado: EstadoEnvio; fechaEstimadaLlegada: string }[] };
+    documentos: { total: number; items: { id: string; shipmentId: string; codigoGuia: string; tipo: TipoDocumento; estado: EstadoItemChecklist; diasParaVencer: number | null }[] };
   };
   excepciones: { abiertas: number; criticas: number; altas: number; medias: number };
   tareas: {
@@ -771,7 +803,7 @@ export type SeveridadExcepcion = 'media' | 'alta' | 'critica';
 
 export interface Excepcion {
   id: string;
-  tipo: 'sku_en_rojo' | 'oc_atrasada';
+  tipo: 'sku_en_rojo' | 'oc_atrasada' | 'documento_faltante';
   clave: string;
   severidad: SeveridadExcepcion;
   titulo: string;
