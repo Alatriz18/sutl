@@ -23,6 +23,57 @@ async function api(token: string, metodo: string, ruta: string, cuerpo?: unknown
   return { status: r.status, body: await r.json().catch(() => ({})) };
 }
 
+test.describe('Documentos compartidos (backend real)', () => {
+  test('el equipo comparte un documento y el cliente final lo ve y sube el suyo; el proveedor solo lo que le toca', async ({ page }) => {
+    const id = unico();
+    const emailCliente = `cli-doc-${id}@portal-e2e.com`;
+    const emailProv = `prov-doc-${id}@portal-e2e.com`;
+    const login = await fetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(DEMO) });
+    const token = (await login.json()).accessToken as string;
+    const prov = await api(token, 'POST', '/partners', { tipo: 'proveedor', nombre: `Prov doc ${id}` });
+    expect((await api(token, 'POST', '/users', { email: emailCliente, password: CLAVE, nombre: 'Cliente Doc', rol: 'cliente_final' })).status).toBe(201);
+    expect((await api(token, 'POST', '/users', { email: emailProv, password: CLAVE, nombre: 'Proveedor Doc', rol: 'proveedor', partnerId: prov.body.id })).status).toBe(201);
+    const envio = await api(token, 'POST', '/shipments', { tipo: 'importacion', modo: 'maritimo', remitenteNombre: 'Remitente', destinatarioNombre: 'Cliente Doc', destinatarioEmail: emailCliente, origen: 'Shanghai', destino: 'Guayaquil' });
+    expect(envio.status).toBe(201);
+    const oc = await api(token, 'POST', '/purchase-orders', { numero: `OC-DOC-${id}`, proveedorId: prov.body.id, lineas: [{ sku: `S-${id}`, descripcion: 'Material', cantidad: 10, unidad: 'kg' }] });
+    expect((await api(token, 'POST', `/purchase-orders/${oc.body.id}/transicion`, { estado: 'emitida' })).status).toBe(201);
+    expect((await api(token, 'POST', `/purchase-orders/${oc.body.id}/embarques`, { shipmentId: envio.body.id, lineas: [{ lineaId: oc.body.lineas[0].id, cantidad: 5 }] })).status).toBe(201);
+
+    // El equipo sube un documento y lo comparte solo con el cliente, desde la pantalla.
+    const form = new FormData();
+    form.append('shipmentId', envio.body.id);
+    form.append('tipo', 'factura');
+    form.append('file', new Blob(['%PDF-1.4 factura'], { type: 'application/pdf' }), `factura-${id}.pdf`);
+    const subida = await fetch(`${API}/documents`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+    expect(subida.status).toBe(201);
+    await ingresar(page, DEMO.email, DEMO.password);
+    await page.waitForURL('**/dashboard');
+    await page.goto(`/dashboard/shipments/${envio.body.id}`);
+    await page.getByLabel(`Compartir factura-${id}.pdf con el cliente`).check();
+    await expect(page.getByLabel(`Compartir factura-${id}.pdf con el cliente`)).toBeChecked();
+
+    // El cliente lo ve, descarga y sube el suyo.
+    await page.context().clearCookies();
+    await ingresar(page, emailCliente, CLAVE);
+    await page.waitForURL('**/dashboard/**');
+    await page.goto(`/dashboard/mis-envios/${envio.body.id}`);
+    const lista = page.getByRole('list', { name: 'Documentos del envío' });
+    await expect(lista.getByText(`factura-${id}.pdf`)).toBeVisible();
+    await page.getByLabel('Archivo').setInputFiles({ name: `orden-${id}.pdf`, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 orden') });
+    await page.getByRole('button', { name: 'Subir documento' }).click();
+    await expect(lista.getByText(`orden-${id}.pdf`)).toBeVisible();
+    await expect(lista.getByText('subido por ti').first()).toBeVisible();
+
+    // El proveedor no ve nada de eso (no se compartió con proveedores ni es suyo).
+    await page.context().clearCookies();
+    await ingresar(page, emailProv, CLAVE);
+    await page.waitForURL('**/dashboard/**');
+    await page.goto(`/dashboard/mis-ordenes/${oc.body.id}`);
+    await expect(page.getByText('Todavía no hay documentos compartidos contigo.')).toBeVisible();
+    await expect(page.getByText(`factura-${id}.pdf`)).toHaveCount(0);
+  });
+});
+
 test.describe('Seguimiento en vivo (backend real)', () => {
   test('la página pública se actualiza sola cuando la empresa registra un movimiento, y dibuja el recorrido', async ({ page }) => {
     const login = await fetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(DEMO) });

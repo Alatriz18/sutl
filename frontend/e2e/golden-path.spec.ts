@@ -506,6 +506,22 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByRole('img', { name: /Mapa del recorrido: 3 puntos; último: Puerto de Manta/ })).toBeVisible();
   });
 
+  test('documentos compartidos: son internos hasta que el equipo los comparte con el cliente o los proveedores', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/shipments/s3');
+    await expect(page.getByRole('heading', { name: 'Documentos compartidos' })).toBeVisible();
+    const lista = page.getByRole('list', { name: 'Documentos del envío' });
+    const alCliente = lista.getByLabel('Compartir BL-MSCU9988776.pdf con el cliente');
+    const aProveedores = lista.getByLabel('Compartir BL-MSCU9988776.pdf con proveedores');
+    await expect(alCliente).not.toBeChecked();
+    await expect(aProveedores).not.toBeChecked();
+    await alCliente.check();
+    await expect(alCliente).toBeChecked();
+    await expect(aProveedores).not.toBeChecked();
+    await alCliente.uncheck();
+    await expect(alCliente).not.toBeChecked();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

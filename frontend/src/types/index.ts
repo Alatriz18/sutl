@@ -349,6 +349,8 @@ export interface SutlDocument {
   estado?: EstadoDocumento;
   fechaVencimiento?: string | null;
   motivoRechazo?: string | null;
+  visibleCliente?: boolean;
+  visibleProveedor?: boolean;
   createdAt: string;
 }
 

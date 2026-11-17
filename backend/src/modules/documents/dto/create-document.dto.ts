@@ -13,3 +13,13 @@ export class CreateDocumentDto {
   @IsDateString()
   fechaVencimiento?: string;
 }
+
+// Lo que sube un externo: sin envío en el cuerpo (va en la ruta).
+export class SubirExternoDto {
+  @IsEnum(TipoDocumento)
+  tipo: TipoDocumento;
+
+  @IsOptional()
+  @IsDateString()
+  fechaVencimiento?: string;
+}

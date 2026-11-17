@@ -380,6 +380,9 @@ model Document {
   motivoRechazo   String?
   revisadoPorId   String?
   revisadoAt      DateTime?
+  // Compartir (C3b): por defecto un documento es interno; el equipo decide quién más lo ve.
+  visibleCliente   Boolean @default(false)
+  visibleProveedor Boolean @default(false)
   createdAt     DateTime      @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id])

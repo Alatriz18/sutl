@@ -956,6 +956,33 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     if (method === 'get' && path === '/documents') {
       return delay(ok(config, db.documents.map(db.documentExpanded)));
     }
+    // Documentos de un envío y con quién se comparten (en la demo solo entra el equipo).
+    m = match(path, /^\/documents\/shipment\/([^/]+)$/);
+    if (method === 'get' && m) {
+      const usuario = currentUser();
+      if (!usuario || usuario.rol === 'cliente_final' || usuario.rol === 'proveedor') throw new MockApiError(403, 'Forbidden resource');
+      const docs = db.documents
+        .filter((d) => d.shipmentId === m![1] && d.tenantId === usuario.tenantId)
+        .sort((a, b) => a.tipo.localeCompare(b.tipo) || b.version - a.version)
+        .map((d) => ({
+          id: d.id, tipo: d.tipo, version: d.version, estado: d.estado ?? 'aprobado', nombreArchivo: d.nombreArchivo,
+          fechaVencimiento: d.fechaVencimiento ?? null, motivoRechazo: d.motivoRechazo ?? null, createdAt: d.createdAt,
+          visibleCliente: !!d.visibleCliente, visibleProveedor: !!d.visibleProveedor,
+          subidoPor: d.subidoPorId ? (() => { const u = db.users.find((x) => x.id === d.subidoPorId); return u ? { nombre: u.nombre, rol: u.rol } : null; })() : null,
+        }));
+      return delay(ok(config, docs));
+    }
+    m = match(path, /^\/documents\/([^/]+)\/compartir$/);
+    if (method === 'patch' && m) {
+      const usuario = currentUser();
+      if (!usuario || usuario.rol === 'cliente_final' || usuario.rol === 'proveedor') throw new MockApiError(403, 'Forbidden resource');
+      const doc = db.documents.find((d) => d.id === m![1] && d.tenantId === usuario.tenantId);
+      if (!doc) throw new MockApiError(404, 'Documento no encontrado');
+      if (typeof body.visibleCliente !== 'boolean' && typeof body.visibleProveedor !== 'boolean') throw new MockApiError(400, 'Indica con quién compartir');
+      if (typeof body.visibleCliente === 'boolean') doc.visibleCliente = body.visibleCliente;
+      if (typeof body.visibleProveedor === 'boolean') doc.visibleProveedor = body.visibleProveedor;
+      return delay(ok(config, { id: doc.id, visibleCliente: !!doc.visibleCliente, visibleProveedor: !!doc.visibleProveedor }), 200);
+    }
     m = match(path, /^\/documents\/checklist\/([^/]+)$/);
     if (method === 'get' && m) {
       const usuario = currentUser();

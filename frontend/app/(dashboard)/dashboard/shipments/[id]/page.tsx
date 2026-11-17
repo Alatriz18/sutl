@@ -13,6 +13,7 @@ import { useToast } from '@/lib/toast-context';
 import { extractApiError, formatDateTime, formatKg, formatNumber } from '@/lib/format';
 import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
 import { DocumentsChecklist } from '@/components/documents-checklist';
+import { DocumentosCompartidos } from '@/components/documents/documentos-compartidos';
 import { Conversacion } from '@/components/portal/conversacion';
 import { PruebaEntregaCard } from '@/components/delivery/prueba-entrega';
 import { EstadoEnvio, Shipment, TrackingEvent } from '@/types';
@@ -208,6 +209,7 @@ export default function ShipmentDetailPage() {
       </div>
 
       <DocumentsChecklist shipmentId={shipment.id} />
+      <DocumentosCompartidos shipmentId={shipment.id} modo="equipo" />
 
       <PruebaEntregaCard shipmentId={shipment.id} modo="equipo" onRegistrada={cargar} />
 

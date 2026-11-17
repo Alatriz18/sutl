@@ -85,6 +85,17 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-17 — C3: documentos compartidos con el cliente final y los proveedores, probado
+
+Probado con Docker: **431 unitarias y 348 e2e del backend, 67 de navegador en demo y 21 contra el backend real, todas en verde.** Migración nueva `20261117120000_documentos_compartidos` (`visibleCliente` y `visibleProveedor` en `documents`, falsos por defecto).
+
+- **Interno por defecto:** un documento nuevo no lo ve nadie fuera del equipo. `PATCH /api/documents/:id/compartir` (admin, operador, super_admin) decide si lo ve el cliente final y/o los proveedores; queda en bitácora (`documento.compartido`) y se avisa por correo a quienes lo reciben.
+- **Quién ve qué:** el cliente final, los documentos compartidos de SUS envíos; el proveedor, los de envíos que traen carga de SUS órdenes (no borradores). Un proveedor **nunca ve lo que subió otro proveedor**, aunque el equipo lo comparta con proveedores. Lo ajeno responde 404, como lo inexistente. El externo no ve quién subió cada documento, solo si es de la empresa o suyo, ni las rutas del disco.
+- **Subir desde el portal** (`POST /api/documents/shipment/:id/externo`): el cliente solo «otro»; el proveedor factura, lista de empaque u otro. Nunca BL, AWB ni pedimento (no pueden reemplazar la versión vigente que maneja el equipo). Queda pendiente de revisión, visible solo para su lado y el equipo, con bitácora (`documento.subido_externo`) y aviso por correo a los administradores. Mismos tipos de archivo y límite de 10 MB que el equipo.
+- **Descarga** (`GET /api/documents/:id/download`): ahora con roles explícitos; un externo solo descarga lo visible para él en un envío suyo.
+- **Frontend:** tarjeta «Documentos compartidos» en el detalle del envío (casillas Cliente / Proveedores), «Documentos» en el portal del cliente y por cada envío en el detalle de la OC del proveedor, con formulario de subida.
+- **Límite:** el proveedor solo sube a envíos que ya traen carga de su orden; no hay carga previa al envío.
+
 ### 2026-11-17 — C7: seguimiento en vivo y mapa del recorrido, probado
 
 Probado con Docker: **431 unitarias y 338 e2e del backend, 66 de navegador en demo y 20 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas.

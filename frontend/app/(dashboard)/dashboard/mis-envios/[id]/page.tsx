@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EstadoBadge } from '@/components/ui/badge';
 import { Conversacion } from '@/components/portal/conversacion';
 import { PruebaEntregaCard } from '@/components/delivery/prueba-entrega';
+import { DocumentosCompartidos } from '@/components/documents/documentos-compartidos';
 import { extractApiError, formatDate, formatDateTime, formatKg } from '@/lib/format';
 import { useEnVivo } from '@/lib/en-vivo';
 import { IndicadorEnVivo } from '@/components/tracking/indicador-en-vivo';
@@ -112,6 +113,8 @@ export default function MiEnvioPage() {
       </Card>
 
       <PruebaEntregaCard shipmentId={envio.id} modo="cliente" />
+
+      <DocumentosCompartidos shipmentId={envio.id} modo="cliente" />
 
       <Conversacion tipo="envio" id={envio.id} titulo="Mensajes con la empresa" ayuda="Escribe aquí cualquier duda sobre este envío; el equipo te responde y te avisa por correo." />
     </div>

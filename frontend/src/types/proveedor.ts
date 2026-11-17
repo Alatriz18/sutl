@@ -22,6 +22,6 @@ export interface OrdenDeProveedor {
     cantidad: number;
     cantidadRecibida: number;
     precioUnitario: number | null;
-    embarques: { cantidad: number; shipment: { codigoGuia: string; estado: EstadoEnvio; fechaEstimadaLlegada: string | null } }[];
+    embarques: { cantidad: number; shipment: { id: string; codigoGuia: string; estado: EstadoEnvio; fechaEstimadaLlegada: string | null } }[];
   }[];
 }

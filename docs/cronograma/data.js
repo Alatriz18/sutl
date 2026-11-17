@@ -106,7 +106,7 @@ const PHASES = [
       { id: 'C2', name: 'MFA (TOTP) y bitácora de auditoría completa', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Pendiente: exigirlo a administradores por política, código QR en pantalla y visor de bitácora.', dep: '—' },
       { id: 'C3', name: 'Portal colaborativo para proveedor y cliente', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
-        what: 'Hecho y probado el 14 nov: el proveedor confirma sus órdenes con su fecha de despacho y conversa con la empresa; el cliente final entra a un portal de solo lectura con SUS envíos (seguimiento sin datos internos) y conversa sobre ellos; la empresa ve y responde desde el detalle de la OC y del envío, con aviso por correo a cada lado y bitácora. Corrige un hueco: antes un cliente final podía ver todos los envíos de la empresa y crear envíos y eventos. Pendiente: documentos compartidos y que el proveedor suba el despacho.', dep: 'B3, B5' },
+        what: 'Hecho y probado el 14 nov: el proveedor confirma sus órdenes con su fecha de despacho y conversa con la empresa; el cliente final entra a un portal de solo lectura con SUS envíos (seguimiento sin datos internos) y conversa sobre ellos; la empresa ve y responde desde el detalle de la OC y del envío, con aviso por correo a cada lado y bitácora. Corrige un hueco: antes un cliente final podía ver todos los envíos de la empresa y crear envíos y eventos. Actualización 17 nov: documentos compartidos (el equipo decide con quién; el cliente y el proveedor ven lo suyo y suben los suyos, con aviso). Pendiente: que el proveedor registre el despacho real.', dep: 'B3, B5' },
       { id: 'C4', name: 'Analítica: OTIF, lead time, aging y cumplimiento', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: pantalla y API GET /analytics/resumen con OTIF (a tiempo y completas), lead time (promedio, mediana, P90), atraso de las OC abiertas por tramos, tendencia de 6 meses, cumplimiento de la fecha prometida por el proveedor y puntualidad de los envíos, con detalle por proveedor ordenado del peor al mejor. Definiciones visibles en pantalla. Pendiente: exportar a Excel y metas por empresa.', dep: 'A1, B4' },
       { id: 'C5', name: 'Planes, suscripción y pasarela de pago', owner: 'Kevin', s: 16, e: 17, st: 'pendiente',
@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '431 unitarias y 338 de punta a punta del backend, 66 de navegador en demo y 20 contra el backend real, todas en verde.',
+    '431 unitarias y 348 de punta a punta del backend, 67 de navegador en demo y 21 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -206,7 +206,7 @@ const YA_FUNCIONA = [
 const CODIGO_LISTO = [
   ['En construcción', [
     'Nada pendiente de probar: todo lo escrito hasta el 14 nov pasó sus pruebas.',
-    'Siguiente módulo: documentos compartidos con proveedor y cliente; planes y pasarela (C5) esperan la cuenta de la pasarela.',
+    'Siguiente módulo: metas de OTIF por empresa y exportación de la analítica; planes y pasarela (C5) esperan la cuenta de la pasarela.',
   ]],
 ];
 
@@ -216,7 +216,7 @@ const FALTA = [
     'Observabilidad, backups con simulacro de restauración y pentest (D3, D5, D6).',
   ]],
   ['Producto', [
-    'Documentos compartidos con proveedor y cliente final.',
+    'Metas de OTIF por empresa, exportación de la analítica y MFA obligatorio para administradores.',
     'Fechas de llegada para OC que todavía no viajan (B1b) y evidencia adjunta en tareas (B3).',
     'Exigir el segundo factor por política y mostrar el QR (C2).',
     'Firma en pantalla y fotos desde el celular (C6) y metas de OTIF por empresa.',
@@ -285,7 +285,8 @@ const LOGROS_SEMANA = [
   ['Seguimiento público con la marca de cada empresa; se cerró una fuga de correos internos en esa ruta', 'C8'],
   ['Prueba de entrega con evidencia y recepción de la OC desde la entrega', 'C6'],
   ['Seguimiento en vivo y mapa del recorrido, sin dependencias nuevas', 'C7'],
-  ['Todo lo anterior probado con el stack completo: 10 migraciones, 338 e2e, 66 + 20 de navegador y 431 unitarias en verde', 'A13'],
+  ['Documentos compartidos con el cliente final y los proveedores (suben y ven lo suyo)', 'C3'],
+  ['Todo lo anterior probado con el stack completo: 11 migraciones, 348 e2e, 67 + 21 de navegador y 431 unitarias en verde', 'A13'],
   ['Corregido: una base vacía no podía migrar (faltaban las tablas base); ahora sí, con una migración puente', 'defecto'],
 ];
 
@@ -300,7 +301,7 @@ const CAMBIOS = [
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'C3b', titulo: 'Documentos compartidos con proveedor y cliente final', resp: 'Dev', hecho: 'El proveedor y el cliente ven y suben los documentos que les corresponden, con aviso al equipo.', nota: 'Siguiente módulo tras C7.' },
+  { id: 'C4b', titulo: 'Metas de OTIF por empresa y exportación de la analítica', resp: 'Dev', hecho: 'Cada empresa fija su meta de OTIF y puede descargar la analítica en Excel.', nota: 'Siguiente módulo tras C3.' },
   { id: 'A9', titulo: 'Deuda técnica: cobertura y subida de versiones', resp: 'Dev', hecho: 'Cobertura medida (meta ≥ 70%) y plan de la subida de NestJS y Next listo para tu aprobación.', nota: 'La subida en sí necesita tu aprobación.' },
   { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
@@ -310,7 +311,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '855', t: 'pruebas en verde: 431 unitarias y 338 de punta a punta del backend, 66 de navegador en demo y 20 contra el backend real' },
+  { n: '867', t: 'pruebas en verde: 431 unitarias y 348 de punta a punta del backend, 67 de navegador en demo y 21 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

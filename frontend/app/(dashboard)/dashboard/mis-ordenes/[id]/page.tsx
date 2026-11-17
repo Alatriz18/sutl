@@ -14,6 +14,7 @@ import { EstadoBadge } from '@/components/ui/badge';
 import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
 import { extractApiError, formatDate, formatMoney, formatNumber } from '@/lib/format';
 import type { OrdenDeProveedor } from '@/types/proveedor';
+import { DocumentosCompartidos } from '@/components/documents/documentos-compartidos';
 
 // Detalle de solo lectura de una orden del proveedor externo.
 export default function MiOrdenPage() {
@@ -147,6 +148,10 @@ export default function MiOrdenPage() {
           </table>
         </div>
       </Card>
+
+      {[...new Map(orden.lineas.flatMap((l) => l.embarques.map((e) => [e.shipment.id, e.shipment.codigoGuia] as const))).entries()].map(([shipmentId, guia]) => (
+        <DocumentosCompartidos key={shipmentId} shipmentId={shipmentId} modo="proveedor" titulo={`Documentos del envío ${guia}`} />
+      ))}
 
       <Conversacion tipo="orden_compra" id={orden.id} titulo="Mensajes con la empresa" ayuda="Aclara plazos, cantidades o cualquier novedad de esta orden." />
     </div>

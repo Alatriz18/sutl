@@ -149,7 +149,7 @@ export class PurchaseOrdersService {
         cantidadRecibida: true,
         precioUnitario: true,
         embarques: {
-          select: { cantidad: true, shipment: { select: { codigoGuia: true, estado: true, fechaEstimadaLlegada: true } } },
+          select: { cantidad: true, shipment: { select: { id: true, codigoGuia: true, estado: true, fechaEstimadaLlegada: true } } },
         },
       },
     },
