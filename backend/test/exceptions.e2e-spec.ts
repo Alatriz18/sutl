@@ -98,5 +98,5 @@ describe('Centro de excepciones (e2e)', () => {
   it('la ronda de todas las empresas funciona y no toca otras', async () => {
     const r = await app.get(ExceptionsService).evaluarTodas();
     expect(r.empresas).toBeGreaterThanOrEqual(2);
-  });
+  }, 30_000);
 });

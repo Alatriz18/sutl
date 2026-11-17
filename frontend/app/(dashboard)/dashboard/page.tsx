@@ -176,7 +176,7 @@ export default function DashboardOverviewPage() {
           <CardTitle>Envíos por estado</CardTitle>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={porEstado} barSize={36}>
+              <BarChart accessibilityLayer={false} data={porEstado} barSize={36}>
                 <CartesianGrid vertical={false} stroke={CHART_INK.gridline} />
                 <XAxis
                   dataKey="label"
@@ -208,7 +208,7 @@ export default function DashboardOverviewPage() {
           <CardTitle>Tendencia mensual de envíos</CardTitle>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={tendenciaMensual}>
+              <LineChart accessibilityLayer={false} data={tendenciaMensual}>
                 <CartesianGrid vertical={false} stroke={CHART_INK.gridline} />
                 <XAxis
                   dataKey="mes"
@@ -288,7 +288,7 @@ export default function DashboardOverviewPage() {
               </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topNavieras} layout="vertical" margin={{ left: 16 }}>
+                <BarChart accessibilityLayer={false} data={topNavieras} layout="vertical" margin={{ left: 16 }}>
                   <CartesianGrid horizontal={false} stroke={CHART_INK.gridline} />
                   <XAxis
                     type="number"

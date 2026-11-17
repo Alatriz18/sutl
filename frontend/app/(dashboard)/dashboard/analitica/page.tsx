@@ -92,7 +92,7 @@ export default function AnaliticaPage() {
                   <p className="sr-only">OTIF por proveedor: {proveedores.map((p) => `${p.nombre} ${p.pctOtif} %`).join(', ')}</p>
                   <div aria-hidden="true" className="mt-4" style={{ height: Math.max(160, proveedores.length * 44) }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={proveedores} layout="vertical" margin={{ left: 16 }}>
+                      <BarChart accessibilityLayer={false} data={proveedores} layout="vertical" margin={{ left: 16 }}>
                         <CartesianGrid horizontal={false} stroke={CHART_INK.gridline} />
                         <XAxis type="number" domain={[0, 100]} unit=" %" tick={{ fill: CHART_INK.muted, fontSize: 12 }} axisLine={false} tickLine={false} />
                         <YAxis type="category" dataKey="nombre" width={130} tick={{ fill: CHART_INK.secondary, fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -112,7 +112,7 @@ export default function AnaliticaPage() {
               <p className="sr-only">OTIF mensual: {datos.tendencia.map((t) => `${t.mes} ${t.pctOtif ?? 'sin datos'}`).join(', ')}</p>
               <div aria-hidden="true" className="mt-4 h-52">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={datos.tendencia.map((t) => ({ mes: mesCorto(t.mes), otif: t.pctOtif }))}>
+                  <LineChart accessibilityLayer={false} data={datos.tendencia.map((t) => ({ mes: mesCorto(t.mes), otif: t.pctOtif }))}>
                     <CartesianGrid vertical={false} stroke={CHART_INK.gridline} />
                     <XAxis dataKey="mes" tick={{ fill: CHART_INK.muted, fontSize: 12 }} axisLine={{ stroke: CHART_INK.baseline }} tickLine={false} />
                     <YAxis domain={[0, 100]} unit=" %" tick={{ fill: CHART_INK.muted, fontSize: 12 }} axisLine={false} tickLine={false} />

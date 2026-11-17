@@ -85,6 +85,16 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-17 — A9: subida de NestJS y Next, probada
+
+Rama `chore/a9-upgrade-nest-next`. **Backend: NestJS 10 → 11** (common, core, jwt, mongoose, passport, swagger, config 4, cli, schematics). **Frontend: Next 14 → 16, React 18 → 19, Recharts 2 → 3, ESLint 9** (config plana `eslint.config.mjs`; `next lint` ya no existe y el script es `eslint .`).
+
+- **Resultado:** 426 unitarias, 331 e2e (con Postgres/Mongo/Redis reales), 64 + 19 de navegador y `next build`, todo en verde. Dependencias de **producción: 0 vulnerabilidades** en backend y frontend; el resto del `npm audit` es herramienta de desarrollo (Jest, CLI).
+- **NestJS 12 descartado por ahora:** sus paquetes son solo ESM (`import.meta`); Jest/CommonJS no los carga, y exigiría migrar todo el backend a ESM y Node ≥ 22. Se retoma cuando convenga.
+- **Cambios de código:** `secretOrKey` con `getOrThrow` (falla al arrancar si falta el secreto); `expiresIn` tipado; gráficos con `accessibilityLayer={false}` (Recharts 3 los hacía enfocables dentro de contenedores `aria-hidden`); una prueba e2e con plazo de 30 s.
+- **Aviso:** la regla nueva `react-hooks/set-state-in-effect` queda como aviso (35 sitios con el patrón de cargar datos al montar); migrar a otro enfoque de carga es trabajo aparte.
+- **Pendiente:** medir cobertura ≥ 70% con las e2e.
+
 ### 2026-11-14 — C6: prueba de entrega (POD) y recepción conectada a la OC, probada
 
 Probado con Docker: **426 unitarias y 331 e2e del backend, 65 de navegador en demo y 19 contra el backend real, todas en verde.** Migración nueva `20261114140000_prueba_entrega` (tabla `proofs_of_delivery`).

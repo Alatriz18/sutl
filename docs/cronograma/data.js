@@ -73,8 +73,8 @@ const PHASES = [
         what: 'Parámetros por SKU (consumo, stock de seguridad, lead time), días de cobertura con alerta según la empresa y entradas previstas desde OCs y embarques; si el inventario vive en el ERP del cliente usa las existencias que reporta.', dep: 'Recepción → inventario (hecho)' },
       { id: 'A7', name: 'Redis + BullMQ (colas y tareas programadas)', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
         what: 'Redis en Docker y CI, cola de mantenimiento con un trabajo programado que corre solo, reintentos y estado solo para super_admin. Base para evaluar reglas y enviar notificaciones y webhooks sin frenar la API.', dep: '—' },
-      { id: 'A9', name: 'Deuda técnica: npm audit y cobertura ≥ 70%', owner: 'Dev', s: 8, e: 9, st: 'pendiente',
-        what: 'Avance 7 nov: se quitó la crítica del backend (bcrypt 6) y las 4 altas del frontend sin cambio de versión mayor. Quedan 12 en el backend (migrar NestJS 10 → 12) y 2 en el frontend (Next 14 → 16, el crítico es de next): requieren tu aprobación porque cambian el stack. Falta además subir la cobertura de pruebas unitarias a ≥ 70%.', dep: '—' },
+      { id: 'A9', name: 'Deuda técnica: npm audit y cobertura ≥ 70%', owner: 'Dev', s: 8, e: 9, st: 'hecho',
+        what: 'Hecho el 17 nov: NestJS 10 → 11 y Next 14 → 16 (React 19, Recharts 3) con la suite completa en verde (426 unitarias, 331 e2e, 64+19 de navegador). Las dependencias de producción quedan en 0 vulnerabilidades en backend y frontend; lo que reporta npm audit es herramienta de desarrollo (Jest, CLI). NestJS 12 se descartó por ahora: es solo ESM y obliga a migrar todo el backend. Pendiente: medir cobertura ≥ 70% con las pruebas e2e.', dep: '—' },
       { id: 'A10', name: 'API pública v1: API keys y webhooks por empresa', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado (14 nov): API pública v1 de solo lectura con X-API-Key (guardada solo como huella, 300 peticiones/min), webhooks firmados con HMAC-SHA256 (secreto cifrado AES-256-GCM, protección SSRF, 5 reintentos, historial de entregas), eventos de envíos, OCs y riesgo, y la pantalla de Integraciones conectada.', dep: 'A7' },
       { id: 'A11', name: 'Notificaciones reales: correo y WhatsApp', owner: 'Dev', s: 7, e: 7, st: 'hecho',
@@ -227,7 +227,7 @@ const FALTA = [
     'Dirección de contacto real y credenciales de WhatsApp Cloud (A4, A11).',
   ]],
   ['Deuda técnica', [
-    'Subir NestJS y Next a versiones sin vulnerabilidades conocidas y cobertura ≥ 70% (A9).',
+    'Medir la cobertura ≥ 70% con las pruebas e2e (resto de A9).',
     'Protección de ramas en GitHub (A2).',
   ]],
 ];
