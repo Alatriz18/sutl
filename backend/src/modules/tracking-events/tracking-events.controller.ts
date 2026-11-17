@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Sse, ServiceUnavailableException } from '@nestjs/common';
 import { RolUsuario } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -19,6 +19,16 @@ export class TrackingEventsController {
     @Body() dto: CreateTrackingEventDto,
   ) {
     return this.trackingEventsService.create(tenantId, responsable, dto);
+  }
+
+  // Eventos nuevos del envío en tiempo real (Server-Sent Events). Se valida el acceso al abrir la conexión.
+  @Get('shipment/:shipmentId/stream')
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin, RolUsuario.cliente_final)
+  @Sse()
+  async streamEnvio(@CurrentUser() user: RequestUser, @Param('shipmentId') shipmentId: string) {
+    await this.trackingEventsService.assertAccesoEnVivo(user, shipmentId);
+    if (!this.trackingEventsService.hayCupoEnVivo()) throw new ServiceUnavailableException('Demasiadas conexiones abiertas; intenta de nuevo en unos minutos');
+    return this.trackingEventsService.streamEnvio(user, shipmentId);
   }
 
   @Get('shipment/:shipmentId')

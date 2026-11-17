@@ -23,6 +23,27 @@ async function api(token: string, metodo: string, ruta: string, cuerpo?: unknown
   return { status: r.status, body: await r.json().catch(() => ({})) };
 }
 
+test.describe('Seguimiento en vivo (backend real)', () => {
+  test('la página pública se actualiza sola cuando la empresa registra un movimiento, y dibuja el recorrido', async ({ page }) => {
+    const login = await fetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(DEMO) });
+    const token = (await login.json()).accessToken as string;
+    const envio = await api(token, 'POST', '/shipments', {
+      tipo: 'importacion', modo: 'maritimo', remitenteNombre: 'Remitente', destinatarioNombre: 'Cliente vivo',
+      origen: 'Shanghai', destino: 'Guayaquil',
+    });
+    expect(envio.status).toBe(201);
+    await page.goto(`/tracking/${envio.body.codigoGuia}`);
+    await expect(page.getByTestId('indicador-en-vivo')).toHaveAttribute('data-estado', 'en_vivo');
+    await expect(page.getByTestId('recorrido-mapa')).toHaveCount(0);
+
+    const ev = await api(token, 'POST', '/tracking-events', { shipmentId: envio.body.id, estado: 'en_transito', ubicacion: 'Puerto de Guayaquil', descripcion: 'Zarpó en vivo', lat: -2.28, lng: -79.91 });
+    expect(ev.status).toBe(201);
+    // Sin recargar la página.
+    await expect(page.getByText('Zarpó en vivo')).toBeVisible();
+    await expect(page.getByRole('img', { name: /Mapa del recorrido: 1 punto; último: Puerto de Guayaquil/ })).toBeVisible();
+  });
+});
+
 test.describe('Portal (backend real)', () => {
   const id = unico();
   const emailProveedor = `prov-${id}@portal-e2e.com`;

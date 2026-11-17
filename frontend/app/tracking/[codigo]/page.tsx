@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Card, CardTitle } from '@/components/ui/card';
 import { EstadoBadge } from '@/components/ui/badge';
 import { formatDateTime } from '@/lib/format';
-import { TrackingPublicoResponse } from '@/types';
+import { TrackingEvent, TrackingPublicoResponse } from '@/types';
+import { useEnVivo } from '@/lib/en-vivo';
+import { IndicadorEnVivo } from '@/components/tracking/indicador-en-vivo';
+import { RecorridoMapa, puntosDeRecorrido } from '@/components/tracking/recorrido-mapa';
 
 // Texto legible sobre el color de acento: blanco u oscuro según su luminancia (WCAG).
 function textoSobre(hex: string) {
@@ -24,13 +27,22 @@ export default function TrackingResultPage() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     api
       .get<TrackingPublicoResponse>(`/shipments/tracking/${codigo}`)
       .then((res) => setData(res.data))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [codigo]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  // La página se actualiza sola cuando la empresa registra un movimiento nuevo.
+  const enVivo = useEnVivo<TrackingEvent>(data ? `/shipments/tracking/${codigo}/stream` : null, (ev) =>
+    setData((d) => (d && !d.eventos.some((x) => x._id === ev._id) ? { ...d, estado: ev.estado, eventos: [ev, ...d.eventos] } : d)), cargar);
+  const puntos = data ? puntosDeRecorrido(data.eventos) : [];
 
   // Defensa en profundidad: el servidor ya valida la marca, pero aquí no se confía en ella para estilos ni imágenes.
   const marca = data?.marca;
@@ -74,7 +86,10 @@ export default function TrackingResultPage() {
                     {data.origen} → {data.destino}
                   </p>
                 </div>
-                <EstadoBadge estado={data.estado} />
+                <div className="flex flex-col items-start gap-2 sm:items-end">
+                  <EstadoBadge estado={data.estado} />
+                  <IndicadorEnVivo estado={enVivo} />
+                </div>
               </div>
               <p className="mt-3 text-sm text-navy/60">
                 Destinatario: <span className="text-navy">{data.destinatarioNombre}</span>
@@ -82,6 +97,13 @@ export default function TrackingResultPage() {
             </Card>
 
             {marca?.mensaje && <p className="mt-4 rounded-lg border border-navy/10 bg-white p-4 text-sm text-navy/80">{marca.mensaje}</p>}
+
+            {puntos.length > 0 && (
+              <div className="mt-6">
+                <CardTitle className="mb-3">Recorrido</CardTitle>
+                <RecorridoMapa puntos={puntos} enVivo={enVivo === 'en_vivo'} />
+              </div>
+            )}
 
             <div className="mt-6">
               <CardTitle className="mb-3">Historial</CardTitle>

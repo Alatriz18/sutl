@@ -76,6 +76,8 @@ export interface TrackingEvent {
   estado: EstadoEnvio;
   ubicacion?: string;
   descripcion?: string;
+  lat?: number;
+  lng?: number;
   responsable: string;
   timestamp: string;
 }

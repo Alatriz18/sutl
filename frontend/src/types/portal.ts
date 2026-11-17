@@ -35,5 +35,7 @@ export interface EventoDeCliente {
   estado: EstadoEnvio;
   ubicacion?: string;
   descripcion?: string;
+  lat?: number;
+  lng?: number;
   timestamp: string;
 }

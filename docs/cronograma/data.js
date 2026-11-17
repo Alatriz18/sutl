@@ -113,8 +113,8 @@ const PHASES = [
         what: 'Planes y límites reales por empresa y cobro recurrente; hoy la pantalla de plan es demo.', dep: 'Elegir pasarela' },
       { id: 'C6', name: 'POD y recepción nacional conectada a la OC', owner: 'Dev', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: el equipo registra la prueba de entrega (quién recibió, documento, fecha, observaciones y evidencia en foto o PDF), el envío pasa a «Entregado» con su evento en el seguimiento, y si se pide, la carga que viajaba se recibe en cada orden de compra (sin pasar de lo que falta, con las reglas de inventario de la empresa y resultado por OC). Una sola prueba por envío; el cliente final ve la de SUS envíos y descarga la evidencia. Pendiente: firma en pantalla y fotos desde el celular.', dep: 'A1' },
-      { id: 'C7', name: 'Tiempo real (WebSockets) y mapas en el seguimiento', owner: 'Ambos', s: 16, e: 17, st: 'pendiente',
-        what: 'Actualización en vivo de estados y mapa de ruta con Google Maps.', dep: 'A7' },
+      { id: 'C7', name: 'Tiempo real y mapa del recorrido en el seguimiento', owner: 'Ambos', s: 16, e: 17, st: 'hecho',
+        what: 'Hecho y probado el 17 nov, sin dependencias nuevas: la página pública, el detalle del envío y el portal del cliente se actualizan solos cuando la empresa registra un movimiento (Server-Sent Events, con reconexión automática e indicador «En vivo»), y dibujan el recorrido en un mapa propio en SVG a partir de las coordenadas del evento (que el equipo puede capturar). La conexión pública solo abre para códigos que existen y no lleva datos internos; el equipo y el cliente final solo siguen lo suyo. No se usó Google Maps: cuando se quiera un mapa con calles hará falta una cuenta con el proveedor. Límite: la difusión es por servidor; con varias réplicas hay que pasarla a Redis.', dep: 'A7' },
       { id: 'C8', name: 'Tracking público con la marca de cada empresa', owner: 'Dev', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: cada empresa configura nombre comercial, color de acento, logo (https), mensaje al cliente y si se muestra «Con tecnología de SUTL», con vista previa en Configuración; la página pública de seguimiento la aplica (con texto legible sobre el color elegido) y el servidor descarta colores o logos mal formados. De paso se cerró una fuga: la ruta pública devolvía el correo del responsable interno de cada evento. Pendiente: dominio propio de la empresa.', dep: '—' },
       { id: 'C9', name: 'Facturación electrónica SRI', owner: 'Ambos', s: 19, e: 22, st: 'pendiente',
@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '426 unitarias y 331 de punta a punta del backend, 65 de navegador en demo y 19 contra el backend real, todas en verde.',
+    '431 unitarias y 338 de punta a punta del backend, 66 de navegador en demo y 20 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -206,7 +206,7 @@ const YA_FUNCIONA = [
 const CODIGO_LISTO = [
   ['En construcción', [
     'Nada pendiente de probar: todo lo escrito hasta el 14 nov pasó sus pruebas.',
-    'Siguiente módulo grande: tiempo real y mapas (C7); planes y pasarela (C5) esperan la cuenta de la pasarela.',
+    'Siguiente módulo: documentos compartidos con proveedor y cliente; planes y pasarela (C5) esperan la cuenta de la pasarela.',
   ]],
 ];
 
@@ -216,7 +216,7 @@ const FALTA = [
     'Observabilidad, backups con simulacro de restauración y pentest (D3, D5, D6).',
   ]],
   ['Producto', [
-    'Tiempo real con mapas (C7) y documentos compartidos con proveedor y cliente.',
+    'Documentos compartidos con proveedor y cliente final.',
     'Fechas de llegada para OC que todavía no viajan (B1b) y evidencia adjunta en tareas (B3).',
     'Exigir el segundo factor por política y mostrar el QR (C2).',
     'Firma en pantalla y fotos desde el celular (C6) y metas de OTIF por empresa.',
@@ -284,13 +284,14 @@ const LOGROS_SEMANA = [
   ['Analítica de abastecimiento: OTIF, lead time, atrasos y cumplimiento por proveedor', 'C4'],
   ['Seguimiento público con la marca de cada empresa; se cerró una fuga de correos internos en esa ruta', 'C8'],
   ['Prueba de entrega con evidencia y recepción de la OC desde la entrega', 'C6'],
-  ['Todo lo anterior probado con el stack completo: 10 migraciones, 331 e2e, 65 + 19 de navegador y 426 unitarias en verde', 'A13'],
+  ['Seguimiento en vivo y mapa del recorrido, sin dependencias nuevas', 'C7'],
+  ['Todo lo anterior probado con el stack completo: 10 migraciones, 338 e2e, 66 + 20 de navegador y 431 unitarias en verde', 'A13'],
   ['Corregido: una base vacía no podía migrar (faltaban las tablas base); ahora sí, con una migración puente', 'defecto'],
 ];
 
 // Qué cambió respecto de la versión anterior del cronograma.
 const CAMBIOS = [
-  'A4, A10, B1b, B2, B3, B4, B5, C1 y C2 pasan de «Código listo» a «Hecho»: se probaron con el stack completo (A13). C3 (portal), C4 (analítica), C8 (seguimiento con marca) y C6 (prueba de entrega) se construyeron y probaron el mismo día.',
+  'A4, A10, B1b, B2, B3, B4, B5, C1 y C2 pasan de «Código listo» a «Hecho»: se probaron con el stack completo (A13). C3 (portal), C4 (analítica), C8 (seguimiento con marca) C6 (prueba de entrega) y C7 (tiempo real y mapa) se construyeron y probaron entre el 14 y el 17 de noviembre.',
   'La Fase B termina en la semana 6, con unas 6 semanas de adelanto sobre lo planeado; el hito H3 queda con mucho colchón.',
   'Esa holgura se usa para adelantar la Fase C (portal, analítica, planes). El orden sigue lo que más pesa para el piloto: C3, C4 y luego C5–C7.',
   'Los hitos del Plan Maestro no se mueven. Lo que no se adelanta por falta de decisión de Kevin: nube (D1) y trámites externos (SRI, pasarela).',
@@ -299,7 +300,7 @@ const CAMBIOS = [
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'C7', titulo: 'Tiempo real (WebSockets) y mapas en el seguimiento', resp: 'Ambos', hecho: 'El seguimiento se actualiza solo y muestra el recorrido en un mapa.', nota: 'Siguiente módulo grande tras C6.' },
+  { id: 'C3b', titulo: 'Documentos compartidos con proveedor y cliente final', resp: 'Dev', hecho: 'El proveedor y el cliente ven y suben los documentos que les corresponden, con aviso al equipo.', nota: 'Siguiente módulo tras C7.' },
   { id: 'A9', titulo: 'Deuda técnica: cobertura y subida de versiones', resp: 'Dev', hecho: 'Cobertura medida (meta ≥ 70%) y plan de la subida de NestJS y Next listo para tu aprobación.', nota: 'La subida en sí necesita tu aprobación.' },
   { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
@@ -309,7 +310,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '841', t: 'pruebas en verde: 426 unitarias y 331 de punta a punta del backend, 65 de navegador en demo y 19 contra el backend real' },
+  { n: '855', t: 'pruebas en verde: 431 unitarias y 338 de punta a punta del backend, 66 de navegador en demo y 20 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

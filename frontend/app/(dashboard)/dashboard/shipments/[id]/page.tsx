@@ -16,6 +16,9 @@ import { DocumentsChecklist } from '@/components/documents-checklist';
 import { Conversacion } from '@/components/portal/conversacion';
 import { PruebaEntregaCard } from '@/components/delivery/prueba-entrega';
 import { EstadoEnvio, Shipment, TrackingEvent } from '@/types';
+import { useEnVivo } from '@/lib/en-vivo';
+import { IndicadorEnVivo } from '@/components/tracking/indicador-en-vivo';
+import { RecorridoMapa, puntosDeRecorrido } from '@/components/tracking/recorrido-mapa';
 
 const ESTADOS: EstadoEnvio[] = ['creado', 'en_transito', 'en_aduana', 'entregado', 'incidencia'];
 
@@ -37,7 +40,7 @@ export default function ShipmentDetailPage() {
   const [eventos, setEventos] = useState<TrackingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [form, setForm] = useState({ estado: 'en_transito' as EstadoEnvio, ubicacion: '', descripcion: '' });
+  const [form, setForm] = useState({ estado: 'en_transito' as EstadoEnvio, ubicacion: '', descripcion: '', lat: '', lng: '' });
   const [saving, setSaving] = useState(false);
 
   const cargar = useCallback(async () => {
@@ -60,12 +63,29 @@ export default function ShipmentDetailPage() {
     cargar();
   }, [cargar]);
 
+  // Los movimientos que registra cualquier compañero aparecen solos, sin recargar.
+  const recargarSilencioso = useCallback(() => {
+    Promise.all([api.get<Shipment>(`/shipments/${id}`), api.get<TrackingEvent[]>(`/tracking-events/shipment/${id}`)])
+      .then(([s, e]) => {
+        setShipment(s.data);
+        setEventos(e.data);
+      })
+      .catch(() => undefined);
+  }, [id]);
+  const enVivo = useEnVivo<TrackingEvent>(shipment ? `/tracking-events/shipment/${id}/stream` : null, (ev) => {
+    setEventos((lista) => (lista.some((x) => x._id === ev._id) ? lista : [ev, ...lista]));
+    setShipment((s) => (s ? { ...s, estado: ev.estado } : s));
+  }, recargarSilencioso);
+  const puntos = puntosDeRecorrido(eventos);
+
   async function handleAddEvento(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post('/tracking-events', { shipmentId: id, ...form });
-      setForm({ estado: form.estado, ubicacion: '', descripcion: '' });
+      const { lat, lng, ...resto } = form;
+      const coordenadas = lat.trim() !== '' && lng.trim() !== '' ? { lat: Number(lat), lng: Number(lng) } : {};
+      await api.post('/tracking-events', { shipmentId: id, ...resto, ...coordenadas });
+      setForm({ estado: form.estado, ubicacion: '', descripcion: '', lat: '', lng: '' });
       toast.success('Evento de tracking registrado.');
       await cargar();
     } catch (err) {
@@ -170,7 +190,17 @@ export default function ShipmentDetailPage() {
                 placeholder="Ej. Paquete recibido en bodega"
               />
             </div>
-            <Button type="submit" disabled={saving}>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="lat-evento" className="mb-1 block text-sm font-medium text-navy">Latitud (opcional)</label>
+                <Input id="lat-evento" type="number" step="any" min={-90} max={90} value={form.lat} onChange={(e) => setForm((f) => ({ ...f, lat: e.target.value }))} placeholder="-2.17" />
+              </div>
+              <div>
+                <label htmlFor="lng-evento" className="mb-1 block text-sm font-medium text-navy">Longitud (opcional)</label>
+                <Input id="lng-evento" type="number" step="any" min={-180} max={180} value={form.lng} onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value }))} placeholder="-79.92" />
+              </div>
+            </div>
+            <Button type="submit" disabled={saving || (form.lat.trim() === '') !== (form.lng.trim() === '')}>
               {saving ? 'Guardando...' : 'Agregar evento'}
             </Button>
           </form>
@@ -226,8 +256,18 @@ export default function ShipmentDetailPage() {
         </Card>
       )}
 
+      {puntos.length > 0 && (
+        <div className="mt-6">
+          <CardTitle className="mb-3">Recorrido</CardTitle>
+          <RecorridoMapa puntos={puntos} enVivo={enVivo === 'en_vivo'} />
+        </div>
+      )}
+
       <div className="mt-6">
-        <CardTitle className="mb-3">Historial de eventos</CardTitle>
+        <div className="mb-3 flex items-center gap-3">
+          <CardTitle>Historial de eventos</CardTitle>
+          <IndicadorEnVivo estado={enVivo} />
+        </div>
         <ol className="space-y-3">
           {eventos.length === 0 && (
             <p className="text-sm text-navy/50">Todavía no hay eventos registrados.</p>
@@ -240,7 +280,7 @@ export default function ShipmentDetailPage() {
               </div>
               {ev.ubicacion && <p className="mt-2 text-navy">📍 {ev.ubicacion}</p>}
               {ev.descripcion && <p className="text-navy/70">{ev.descripcion}</p>}
-              <p className="mt-1 text-xs text-navy/40">Registrado por {ev.responsable}</p>
+              {ev.responsable && <p className="mt-1 text-xs text-navy/40">Registrado por {ev.responsable}</p>}
             </li>
           ))}
         </ol>

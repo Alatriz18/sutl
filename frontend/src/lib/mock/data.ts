@@ -251,13 +251,13 @@ export function shipmentWithCarrier(s: Shipment): Shipment {
 
 export const trackingEventsByShipment: Record<string, TrackingEvent[]> = {
   s1: [
-    { _id: 'te-1-1', shipmentId: 's1', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0001', estado: 'creado', ubicacion: 'Guayaquil, EC', descripcion: 'Envío registrado en el sistema.', responsable: 'Admin Demo', timestamp: mesesAtras(0, 3) },
-    { _id: 'te-1-2', shipmentId: 's1', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0001', estado: 'en_transito', ubicacion: 'Puerto de Guayaquil', descripcion: 'Carga embarcada rumbo a Callao.', responsable: 'Operador Demo', timestamp: diasAtras(2) },
+    { _id: 'te-1-1', shipmentId: 's1', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0001', estado: 'creado', ubicacion: 'Guayaquil, EC', descripcion: 'Envío registrado en el sistema.', lat: -2.19, lng: -79.88, responsable: 'Admin Demo', timestamp: mesesAtras(0, 3) },
+    { _id: 'te-1-2', shipmentId: 's1', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0001', estado: 'en_transito', ubicacion: 'Puerto de Guayaquil', descripcion: 'Carga embarcada rumbo a Callao.', lat: -2.28, lng: -79.91, responsable: 'Operador Demo', timestamp: diasAtras(2) },
   ],
   s2: [
-    { _id: 'te-2-1', shipmentId: 's2', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0002', estado: 'creado', ubicacion: 'Shenzhen, CN', descripcion: 'Envío registrado.', responsable: 'Admin Demo', timestamp: mesesAtras(0, 10) },
-    { _id: 'te-2-2', shipmentId: 's2', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0002', estado: 'en_transito', ubicacion: 'Aeropuerto de Shenzhen', descripcion: 'Vuelo de carga despachado.', responsable: 'Operador Demo', timestamp: diasAtras(6) },
-    { _id: 'te-2-3', shipmentId: 's2', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0002', estado: 'en_aduana', ubicacion: 'Aeropuerto José Joaquín de Olmedo', descripcion: 'Retenido para inspección aduanera.', responsable: 'Operador Demo', timestamp: diasAtras(1) },
+    { _id: 'te-2-1', shipmentId: 's2', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0002', estado: 'creado', ubicacion: 'Shenzhen, CN', lat: 22.54, lng: 114.06, descripcion: 'Envío registrado.', responsable: 'Admin Demo', timestamp: mesesAtras(0, 10) },
+    { _id: 'te-2-2', shipmentId: 's2', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0002', estado: 'en_transito', ubicacion: 'Aeropuerto de Shenzhen', lat: 22.64, lng: 113.81, descripcion: 'Vuelo de carga despachado.', responsable: 'Operador Demo', timestamp: diasAtras(6) },
+    { _id: 'te-2-3', shipmentId: 's2', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0002', estado: 'en_aduana', ubicacion: 'Aeropuerto José Joaquín de Olmedo', lat: -2.16, lng: -79.88, descripcion: 'Retenido para inspección aduanera.', responsable: 'Operador Demo', timestamp: diasAtras(1) },
   ],
   s3: [
     { _id: 'te-3-1', shipmentId: 's3', tenantId: 't-demo', codigoGuia: 'SUTL-DEMO-0003', estado: 'creado', ubicacion: 'Guayaquil, EC', descripcion: 'Envío registrado.', responsable: 'Admin Demo', timestamp: mesesAtras(1, 5) },

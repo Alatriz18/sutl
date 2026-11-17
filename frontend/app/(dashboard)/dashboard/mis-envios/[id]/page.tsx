@@ -11,6 +11,9 @@ import { EstadoBadge } from '@/components/ui/badge';
 import { Conversacion } from '@/components/portal/conversacion';
 import { PruebaEntregaCard } from '@/components/delivery/prueba-entrega';
 import { extractApiError, formatDate, formatDateTime, formatKg } from '@/lib/format';
+import { useEnVivo } from '@/lib/en-vivo';
+import { IndicadorEnVivo } from '@/components/tracking/indicador-en-vivo';
+import { RecorridoMapa, puntosDeRecorrido } from '@/components/tracking/recorrido-mapa';
 import type { EnvioDeCliente, EventoDeCliente } from '@/types/portal';
 
 const MODO = { maritimo: 'Marítimo', aereo: 'Aéreo', terrestre: 'Terrestre' } as const;
@@ -36,6 +39,12 @@ export default function MiEnvioPage() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  const enVivo = useEnVivo<EventoDeCliente>(envio ? `/tracking-events/shipment/${id}/stream` : null, (ev) => {
+    setEventos((lista) => (lista.some((x) => x._id === ev._id) ? lista : [ev, ...lista]));
+    setEnvio((e) => (e ? { ...e, estado: ev.estado } : e));
+  }, cargar);
+  const puntos = puntosDeRecorrido(eventos);
 
   if (error) {
     return (
@@ -78,7 +87,11 @@ export default function MiEnvioPage() {
       </Card>
 
       <Card className="mt-6">
-        <CardTitle>Seguimiento</CardTitle>
+        <div className="flex items-center gap-3">
+          <CardTitle>Seguimiento</CardTitle>
+          <IndicadorEnVivo estado={enVivo} />
+        </div>
+        {puntos.length > 0 && <div className="mt-3"><RecorridoMapa puntos={puntos} enVivo={enVivo === 'en_vivo'} /></div>}
         {eventos.length === 0 ? (
           <p className="mt-3 text-sm text-navy/50">Todavía no hay movimientos registrados.</p>
         ) : (

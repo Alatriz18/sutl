@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Sse } from '@nestjs/common';
 import { RolUsuario } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -19,6 +19,13 @@ export class ShipmentsController {
   @Get('tracking/:codigoGuia')
   track(@Param('codigoGuia') codigoGuia: string) {
     return this.shipmentsService.trackByCodigoGuia(codigoGuia);
+  }
+
+  // Lo mismo, en tiempo real (Server-Sent Events): la página pública se actualiza sola.
+  @Public()
+  @Sse('tracking/:codigoGuia/stream')
+  streamTrack(@Param('codigoGuia') codigoGuia: string) {
+    return this.shipmentsService.streamPublico(codigoGuia);
   }
 
   // El cliente final (destinatario) entra al portal y ve solo SUS envíos, sin datos internos.

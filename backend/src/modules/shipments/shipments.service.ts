@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Booking, Partner } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -174,8 +174,18 @@ export class ShipmentsService {
         ubicacion: e.ubicacion,
         descripcion: e.descripcion,
         timestamp: e.timestamp,
+        lat: e.lat,
+        lng: e.lng,
       })),
     };
+  }
+
+  // Seguimiento en vivo de la página pública. Solo se abre si el código existe.
+  async streamPublico(codigoGuia: string) {
+    const existe = await this.prisma.shipment.findUnique({ where: { codigoGuia }, select: { id: true } });
+    if (!existe) throw new NotFoundException('No existe un envío con ese código de guía');
+    if (!this.trackingEventsService.hayCupoEnVivo()) throw new ServiceUnavailableException('Demasiadas conexiones abiertas; intenta de nuevo en unos minutos');
+    return this.trackingEventsService.streamPublico(codigoGuia);
   }
 
   // Usado por BookingsService al confirmar una reserva: crea el envío real y

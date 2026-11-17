@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackingEvent, TrackingEventDocument } from './schemas/tracking-event.schema';
 import { CreateTrackingEventDto } from './dto/create-tracking-event.dto';
+import { TrackingStreamService } from './tracking-stream.service';
 
 @Injectable()
 export class TrackingEventsService {
@@ -11,6 +12,7 @@ export class TrackingEventsService {
     @InjectModel(TrackingEvent.name)
     private readonly trackingEventModel: Model<TrackingEventDocument>,
     private readonly prisma: PrismaService,
+    private readonly stream: TrackingStreamService,
   ) {}
 
   async create(tenantId: string, responsable: string, dto: CreateTrackingEventDto) {
@@ -40,6 +42,22 @@ export class TrackingEventsService {
       data: { estado: dto.estado },
     });
 
+    // Avisa en vivo a quienes tienen abierto el seguimiento de este envío.
+    this.stream.publicar({
+      tenantId,
+      shipmentId: shipment.id,
+      codigoGuia: shipment.codigoGuia,
+      evento: {
+        _id: String(evento._id),
+        estado: evento.estado,
+        ubicacion: evento.ubicacion,
+        descripcion: evento.descripcion,
+        lat: evento.lat,
+        lng: evento.lng,
+        timestamp: evento.timestamp,
+      },
+    });
+
     return evento;
   }
 
@@ -55,6 +73,39 @@ export class TrackingEventsService {
       void _interno;
       return publico;
     });
+  }
+
+  // Quién puede seguir en vivo un envío: el equipo de la empresa y el cliente final dueño del envío.
+  async assertAccesoEnVivo(user: { tenantId: string; email: string; rol: string }, shipmentId: string) {
+    const envio = await this.prisma.shipment.findFirst({
+      where: {
+        id: shipmentId,
+        tenantId: user.tenantId,
+        ...(user.rol === 'cliente_final' ? { destinatarioEmail: { equals: user.email, mode: 'insensitive' as const } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!envio) throw new NotFoundException('Envío no encontrado');
+  }
+
+  // Seguimiento en vivo del equipo y del cliente final dueño. El aviso no lleva el correo del responsable.
+  streamEnvio(user: { tenantId: string }, shipmentId: string) {
+    return this.stream.suscribir(
+      (e) => e.tenantId === user.tenantId && e.shipmentId === shipmentId,
+      (e) => ({ ...e.evento, shipmentId }),
+    );
+  }
+
+  // Seguimiento en vivo de la ruta pública: solo lo que el destinatario ve en la página.
+  streamPublico(codigoGuia: string) {
+    return this.stream.suscribir(
+      (e) => e.codigoGuia === codigoGuia,
+      (e) => ({ ...e.evento }),
+    );
+  }
+
+  hayCupoEnVivo() {
+    return this.stream.hayCupo();
   }
 
   findByShipment(tenantId: string, shipmentId: string) {

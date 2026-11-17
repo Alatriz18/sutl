@@ -490,6 +490,22 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('Entregado a Ana Pérez')).toBeVisible();
   });
 
+  test('recorrido en el mapa: el seguimiento público lo muestra y el equipo agrega coordenadas a un evento', async ({ page }) => {
+    await page.goto('/tracking/SUTL-DEMO-0001');
+    await expect(page.getByTestId('recorrido-mapa')).toBeVisible();
+    await expect(page.getByRole('img', { name: /Mapa del recorrido: 2 puntos/ })).toBeVisible();
+
+    await entrar(page);
+    await page.goto('/dashboard/shipments/s1');
+    await page.getByLabel('Ubicación').fill('Puerto de Manta');
+    await page.getByLabel('Latitud (opcional)').fill('-0.95');
+    // Con solo una de las dos coordenadas no se puede guardar.
+    await expect(page.getByRole('button', { name: 'Agregar evento' })).toBeDisabled();
+    await page.getByLabel('Longitud (opcional)').fill('-80.72');
+    await page.getByRole('button', { name: 'Agregar evento' }).click();
+    await expect(page.getByRole('img', { name: /Mapa del recorrido: 3 puntos; último: Puerto de Manta/ })).toBeVisible();
+  });
+
   test('tracking público de un código inexistente muestra error, no una pantalla rota', async ({ page }) => {
     await page.goto('/tracking/SUTL-NO-EXISTE-0000');
     await expect(page.getByText(/No encontramos un envío/i)).toBeVisible();

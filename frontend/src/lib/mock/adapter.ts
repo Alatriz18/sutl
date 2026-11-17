@@ -297,6 +297,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
         estado: (body.estado as Shipment['estado']) ?? shipment.estado,
         ubicacion: (body.ubicacion as string) || undefined,
         descripcion: (body.descripcion as string) || undefined,
+        ...(typeof body.lat === 'number' && typeof body.lng === 'number' ? { lat: body.lat, lng: body.lng } : {}),
         responsable: currentUser()?.nombre ?? 'Usuario demo',
         timestamp: nowIso(),
       };

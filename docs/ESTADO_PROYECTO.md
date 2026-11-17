@@ -85,6 +85,15 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-17 — C7: seguimiento en vivo y mapa del recorrido, probado
+
+Probado con Docker: **431 unitarias y 338 e2e del backend, 66 de navegador en demo y 20 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas.
+
+- **Tiempo real con Server-Sent Events** (nativo de Nest, sin socket.io): al registrar un evento se publica en memoria y lo reciben las conexiones abiertas. Rutas: `GET /api/shipments/tracking/:codigoGuia/stream` (pública; solo abre si el código existe) y `GET /api/tracking-events/shipment/:id/stream` (equipo de la empresa y cliente final dueño del envío; 404 para ajenos). El aviso no lleva el correo del responsable ni identificadores internos. Latido cada 25 s y tope de 500 conexiones por proceso (503 al pasarlo).
+- **Frontend:** hook `useEnVivo` (fetch con Authorization; reintenta con espera creciente y recarga al volver), indicador «En vivo», y el detalle del envío, el seguimiento público y el portal del cliente se actualizan solos.
+- **Mapa del recorrido** propio en SVG (`RecorridoMapa`): puntos y trayecto sobre una cuadrícula de coordenadas; no carga nada de terceros ni envía coordenadas a nadie. Los eventos aceptan `lat` y `lng` (validados: ±90 y ±180); el formulario del equipo tiene los dos campos opcionales (hay que poner ambos o ninguno). La ruta pública ahora incluye las coordenadas de los eventos.
+- **Límites conocidos:** la difusión es por proceso (con varias réplicas del backend hay que pasarla a Redis pub/sub); el mapa no tiene calles ni satélite (eso exigiría una cuenta con un proveedor de mapas).
+
 ### 2026-11-17 — A9: subida de NestJS y Next, probada
 
 Rama `chore/a9-upgrade-nest-next`. **Backend: NestJS 10 → 11** (common, core, jwt, mongoose, passport, swagger, config 4, cli, schematics). **Frontend: Next 14 → 16, React 18 → 19, Recharts 2 → 3, ESLint 9** (config plana `eslint.config.mjs`; `next lint` ya no existe y el script es `eslint .`).
