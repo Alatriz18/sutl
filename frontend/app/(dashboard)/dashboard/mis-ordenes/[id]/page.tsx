@@ -15,6 +15,7 @@ import { EstadoOcBadge } from '@/components/purchase-orders/estado-oc-badge';
 import { extractApiError, formatDate, formatMoney, formatNumber } from '@/lib/format';
 import type { OrdenDeProveedor } from '@/types/proveedor';
 import { DocumentosCompartidos } from '@/components/documents/documentos-compartidos';
+import { RegistrarDespacho } from '@/components/portal/registrar-despacho';
 
 // Detalle de solo lectura de una orden del proveedor externo.
 export default function MiOrdenPage() {
@@ -84,6 +85,8 @@ export default function MiOrdenPage() {
           </form>
         </Card>
       )}
+
+      {['confirmada', 'despachada', 'recibida_parcial'].includes(orden.estado) && <RegistrarDespacho orden={orden} onRegistrado={setOrden} />}
 
       <Card className="mt-6">
         <CardTitle>Datos de la orden</CardTitle>

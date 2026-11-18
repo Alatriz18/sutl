@@ -21,3 +21,6 @@ export const limiteGlobal = () => limiteDesdeEntorno('RATE_LIMIT', LIMITE_GLOBAL
 export const LIMITE_LEADS_POR_DEFECTO = 5;
 // Formulario público de contacto: por hora y por IP.
 export const limiteLeads = () => limiteDesdeEntorno('LEADS_RATE_LIMIT', LIMITE_LEADS_POR_DEFECTO);
+// Registro de despachos por proveedores externos (crea embarques): por minuto y por IP.
+export const LIMITE_DESPACHO_POR_DEFECTO = 10;
+export const limiteDespacho = () => limiteDesdeEntorno('DESPACHO_RATE_LIMIT', LIMITE_DESPACHO_POR_DEFECTO);

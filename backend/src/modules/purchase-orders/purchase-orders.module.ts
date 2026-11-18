@@ -9,6 +9,6 @@ import { TenantConfigModule } from '../tenant-config/tenant-config.module';
   imports: [TenantConfigModule],
   controllers: [PurchaseOrdersController],
   providers: [PurchaseOrdersService, PurchaseOrderShipmentsService, PurchaseOrdersImportService],
-  exports: [PurchaseOrdersService],
+  exports: [PurchaseOrdersService, PurchaseOrderShipmentsService],
 })
 export class PurchaseOrdersModule {}

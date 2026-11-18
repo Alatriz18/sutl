@@ -17,7 +17,7 @@ export class ShipmentsService {
     @Optional() private readonly webhooks?: WebhooksService,
   ) {}
 
-  private publicarCreado(envio: { codigoGuia: string; estado: string; tipo: string; modo: string; origen: string; destino: string; tenantId: string }) {
+  publicarCreado(envio: { codigoGuia: string; estado: string; tipo: string; modo: string; origen: string; destino: string; tenantId: string }) {
     void this.webhooks?.emitir(envio.tenantId, 'envio.creado', {
       codigoGuia: envio.codigoGuia,
       estado: envio.estado,
@@ -113,13 +113,15 @@ export class ShipmentsService {
     return shipment;
   }
 
-  async create(tenantId: string, dto: CreateShipmentDto) {
+  // `avisar: false` crea el envío sin emitir todavía el webhook (quien llama lo emite con publicarCreado
+  // cuando termine de armarlo, para no anunciar un envío que luego se deshace).
+  async create(tenantId: string, dto: CreateShipmentDto, opciones: { avisar?: boolean } = {}) {
     await assertTenantRefs(this.prisma, tenantId, { carrierId: dto.carrierId });
     const codigoGuia = await this.generarCodigoGuia();
     const creado = await this.prisma.shipment.create({
       data: { ...dto, tenantId, codigoGuia },
     });
-    this.publicarCreado(creado);
+    if (opciones.avisar !== false) this.publicarCreado(creado);
     return creado;
   }
 

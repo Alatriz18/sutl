@@ -85,6 +85,16 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-18 — C3: el proveedor registra el despacho real de su orden, probado
+
+Probado con Docker: **452 unitarias y 370 e2e del backend, 70 de navegador en demo y 24 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas.
+
+- **Endpoint** `POST /api/portal/ordenes/:id/despachar` (solo `proveedor`, límite propio de 10 por minuto configurable con `DESPACHO_RATE_LIMIT`): modo, origen, destino, guía/BL/AWB opcional, fecha de salida, llegada estimada opcional, peso opcional y la cantidad de cada línea.
+- **Qué hace:** crea el embarque (el proveedor como remitente, la empresa como destinataria), asigna la carga con **las mismas reglas de cantidades del equipo** (nunca más de lo pedido, con la tolerancia de la empresa; admite varias salidas parciales) y deja la orden «despachada» con la **fecha real** informada, aun cuando la regla de la empresa «vincular un embarque despacha la orden» la haya despachado primero. Bitácora (`portal.orden_despachada`) y aviso por correo a los administradores.
+- **Seguridad:** una orden ajena (de otro proveedor o de otra empresa) o en borrador responde 404; solo se despacha una orden confirmada (o ya despachada o con recepción parcial); la fecha no puede ser futura ni de hace más de 30 días; la llegada no puede ser anterior a la salida; máximo 50 embarques por orden; un despacho que no se puede asignar **deshace el embarque** creado y no emite el webhook `envio.creado` (se emite solo cuando todo salió bien).
+- **Frontend:** tarjeta «Registrar un despacho» en el detalle de la orden del proveedor, con la cantidad que falta por despachar propuesta por línea; desaparece cuando todo está despachado. No existe en la demostración (la demo no tiene logins externos).
+- **Límite:** el proveedor no puede editar ni anular un despacho ya registrado; eso lo corrige el equipo desde el envío y la orden.
+
 ### 2026-11-18 — C2: segundo factor obligatorio con código QR, probado
 
 Probado con Docker: **442 unitarias y 362 e2e del backend, 70 de navegador en demo y 23 contra el backend real, todas en verde.** Sin migraciones. Una dependencia nueva en el frontend: `qrcode-generator` (MIT, sin dependencias propias; `npm audit` de producción sigue en 0).
