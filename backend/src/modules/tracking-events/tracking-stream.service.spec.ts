@@ -45,4 +45,42 @@ describe('TrackingStreamService', () => {
     const s = new TrackingStreamService();
     expect(s.hayCupo()).toBe(true);
   });
+
+  describe('difusión entre réplicas (mensajes de Redis)', () => {
+    it('reparte un mensaje válido, devolviendo la fecha como Date', async () => {
+      const s = new TrackingStreamService();
+      const recibido = firstValueFrom(s.suscribir(() => true, (e) => ({ ts: e.evento.timestamp instanceof Date }), 10_000).pipe(take(1)));
+      s.recibirDeRedis(JSON.stringify(ev('a')));
+      expect(await recibido).toEqual({ type: 'evento', data: { ts: true } });
+    });
+
+    it('ignora mensajes mal formados o incompletos sin romper', () => {
+      const s = new TrackingStreamService();
+      const vistos: unknown[] = [];
+      const sub = s.suscribir(() => true, (e) => ({ id: e.evento._id }), 10_000).subscribe((m) => vistos.push(m));
+      for (const malo of ['no es json', '{}', 'null', JSON.stringify({ tenantId: 't1' }), JSON.stringify({ tenantId: 't1', shipmentId: 's', codigoGuia: 'g' })]) s.recibirDeRedis(malo);
+      sub.unsubscribe();
+      expect(vistos).toEqual([]);
+    });
+
+    it('no entrega dos veces el mismo evento (en memoria y por Redis)', () => {
+      const s = new TrackingStreamService();
+      const vistos: unknown[] = [];
+      const sub = s.suscribir(() => true, (e) => ({ id: e.evento._id }), 10_000).subscribe((m) => vistos.push(m));
+      s.publicar(ev('a')); // sin Redis: memoria
+      s.recibirDeRedis(JSON.stringify(ev('a'))); // la misma, llegando por Redis
+      sub.unsubscribe();
+      expect(vistos).toHaveLength(1);
+    });
+
+    it('eventos distintos de un mismo envío sí se entregan todos', () => {
+      const s = new TrackingStreamService();
+      const vistos: unknown[] = [];
+      const sub = s.suscribir(() => true, (e) => ({ id: e.evento._id }), 10_000).subscribe((m) => vistos.push(m));
+      s.publicar({ ...ev('a'), evento: { ...ev('a').evento, _id: 'x1' } });
+      s.publicar({ ...ev('a'), evento: { ...ev('a').evento, _id: 'x2' } });
+      sub.unsubscribe();
+      expect(vistos).toHaveLength(2);
+    });
+  });
 });

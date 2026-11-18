@@ -85,6 +85,15 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-18 — C7: seguimiento en vivo entre varias réplicas (Redis), probado
+
+Probado con Docker: **461 unitarias y 383 e2e del backend, 71 de navegador en demo y 24 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas (`ioredis` ya estaba).
+
+- **Qué cambia:** los eventos de seguimiento se difunden por un canal de Redis (`sutl:tracking-en-vivo`; las pruebas usan un prefijo por worker). Una conexión SSE abierta en una réplica recibe los eventos registrados en cualquiera de las otras. Sin `REDIS_URL`, o mientras la conexión a Redis no esté lista, se entrega en memoria del proceso como antes; un fallo de Redis nunca tumba la API (solo queda en el log).
+- **Sin duplicados:** cada evento se entrega una sola vez por réplica (se recuerdan los últimos 2000 por empresa, envío e identificador). Los mensajes que llegan por Redis se validan en su forma antes de repartirse y la fecha se reconstruye.
+- **Aislamiento:** el filtro por empresa y por envío sigue aplicándose en cada réplica al repartir; una prueba con dos instancias de la aplicación comprueba que lo de otra empresa no llega a una conexión ajena.
+- **Para el staging:** ya se puede correr el backend con más de una réplica sin perder el «En vivo». El límite de 500 conexiones es por réplica.
+
 ### 2026-11-18 — C1b avisos de vencimiento, fuga de datos corregida y cobertura medida
 
 Probado con Docker: **457 unitarias y 380 e2e del backend, 71 de navegador en demo y 24 contra el backend real, todas en verde.** Una migración nueva (`20261118120000_avisos_vencimiento_documentos`: dos columnas en `documents`). Sin dependencias nuevas.
