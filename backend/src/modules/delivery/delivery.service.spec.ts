@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync, existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
@@ -70,6 +73,32 @@ describe('DeliveryService', () => {
       });
       expect(tracking.create).toHaveBeenCalledWith('t1', 'op@x.com', expect.objectContaining({ shipmentId: 's1', estado: 'entregado', ubicacion: 'Quito' }));
       expect(audit.registrar).toHaveBeenCalledWith(expect.objectContaining({ accion: 'pod.registrado', entidadId: 's1' }));
+    });
+
+    it('guarda la firma en pantalla cuando es un PNG real', async () => {
+      const { service, prisma } = montar();
+      const ruta = join(mkdtempSync(join(tmpdir(), 'firma-')), 'firma.png');
+      writeFileSync(ruta, Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from('datos')]));
+      await service.registrar(user(), 's1', dto, undefined, { filename: 'pod-9.png', path: ruta });
+      expect(prisma.proofOfDelivery.create.mock.calls[0][0].data).toMatchObject({ firmaUrl: '/uploads/t1/pod-9.png' });
+    });
+
+    it('rechaza una «firma» que no es un PNG (aunque se llame .png), la borra y no registra nada', async () => {
+      const { service, prisma, tracking } = montar();
+      const ruta = join(mkdtempSync(join(tmpdir(), 'firma-')), 'falsa.png');
+      writeFileSync(ruta, '<?php echo 1; ?>');
+      await expect(service.registrar(user(), 's1', dto, undefined, { filename: 'pod-9.png', path: ruta })).rejects.toBeInstanceOf(BadRequestException);
+      expect(existsSync(ruta)).toBe(false);
+      expect(prisma.proofOfDelivery.create).not.toHaveBeenCalled();
+      expect(tracking.create).not.toHaveBeenCalled();
+    });
+
+    it('la firma solo se sirve si existe', async () => {
+      const { service, prisma } = montar();
+      prisma.proofOfDelivery.findFirst.mockResolvedValue({ firmaUrl: null });
+      await expect(service.firma(user(), 's1')).rejects.toBeInstanceOf(NotFoundException);
+      prisma.proofOfDelivery.findFirst.mockResolvedValue({ firmaUrl: '/uploads/t1/f.png' });
+      await expect(service.firma(user(), 's1')).resolves.toEqual({ ruta: '/uploads/t1/f.png' });
     });
 
     it('una segunda prueba para el mismo envío da 409 y no registra otro evento', async () => {

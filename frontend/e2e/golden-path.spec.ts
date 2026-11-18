@@ -543,6 +543,25 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('Entregado a Ana Pérez')).toBeVisible();
   });
 
+  test('prueba de entrega: quien recibe firma en pantalla y la firma queda en la constancia', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/shipments/s1');
+    await page.getByLabel('Quién recibió').fill('Luis Firma');
+    const lienzo = page.getByRole('img', { name: /Firma de quien recibe/ });
+    await expect(lienzo).toBeVisible();
+    await lienzo.scrollIntoViewIfNeeded();
+    const caja = (await lienzo.boundingBox())!;
+    await page.mouse.move(caja.x + 30, caja.y + 40);
+    await page.mouse.down();
+    await page.mouse.move(caja.x + 120, caja.y + 90, { steps: 8 });
+    await page.mouse.move(caja.x + 200, caja.y + 50, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.getByRole('button', { name: 'Borrar firma' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Registrar entrega' }).click();
+    await expect(page.getByRole('img', { name: 'Firma de Luis Firma' })).toBeVisible();
+    await expect(page.getByText('Firma de quien recibió')).toBeVisible();
+  });
+
   test('recorrido en el mapa: el seguimiento público lo muestra y el equipo agrega coordenadas a un evento', async ({ page }) => {
     await page.goto('/tracking/SUTL-DEMO-0001');
     await expect(page.getByTestId('recorrido-mapa')).toBeVisible();

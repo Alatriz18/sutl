@@ -1297,6 +1297,7 @@ model ProofOfDelivery {
   observaciones      String?
   archivoUrl         String? // evidencia (foto o PDF), en el disco del servidor
   archivoNombre      String?
+  firmaUrl           String? // firma en pantalla de quien recibe (PNG), en el disco del servidor
   registradoPorId    String
   createdAt          DateTime @default(now())
 

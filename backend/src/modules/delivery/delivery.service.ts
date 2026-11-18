@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, RolUsuario } from '@prisma/client';
+import { closeSync, openSync, readSync, unlinkSync } from 'fs';
+import { join } from 'path';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -8,6 +10,23 @@ import { TrackingEventsService } from '../tracking-events/tracking-events.servic
 import { RegisterPodDto } from './dto/register-pod.dto';
 
 const EPS = 1e-9;
+const CABECERA_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+// Una firma debe ser de verdad un PNG: se comprueba el contenido, no solo la extensión.
+function esPng(ruta: string): boolean {
+  try {
+    const fd = openSync(ruta, 'r');
+    try {
+      const cab = Buffer.alloc(8);
+      readSync(fd, cab, 0, 8, 0);
+      return cab.equals(CABECERA_PNG);
+    } finally {
+      closeSync(fd);
+    }
+  } catch {
+    return false;
+  }
+}
 
 export interface ResultadoRecepcionOc {
   numero: string;
@@ -55,10 +74,10 @@ export class DeliveryService {
 
   async obtener(user: RequestUser, shipmentId: string) {
     await this.envioVisible(user, shipmentId);
-    const pod = await this.prisma.proofOfDelivery.findFirst({ where: { shipmentId, tenantId: user.tenantId }, select: { ...this.select, archivoUrl: true } });
+    const pod = await this.prisma.proofOfDelivery.findFirst({ where: { shipmentId, tenantId: user.tenantId }, select: { ...this.select, archivoUrl: true, firmaUrl: true } });
     if (!pod) return null;
-    const { archivoUrl, ...publico } = pod;
-    return { ...publico, tieneArchivo: !!archivoUrl };
+    const { archivoUrl, firmaUrl, ...publico } = pod;
+    return { ...publico, tieneArchivo: !!archivoUrl, tieneFirma: !!firmaUrl };
   }
 
   async archivo(user: RequestUser, shipmentId: string) {
@@ -68,8 +87,22 @@ export class DeliveryService {
     return { ruta: pod.archivoUrl, nombre: pod.archivoNombre ?? 'evidencia' };
   }
 
-  async registrar(user: RequestUser, shipmentId: string, dto: RegisterPodDto, archivo?: { filename: string; originalname: string }) {
-    const envio = await this.envioVisible(user, shipmentId);
+  async firma(user: RequestUser, shipmentId: string) {
+    await this.envioVisible(user, shipmentId);
+    const pod = await this.prisma.proofOfDelivery.findFirst({ where: { shipmentId, tenantId: user.tenantId }, select: { firmaUrl: true } });
+    if (!pod?.firmaUrl) throw new NotFoundException('Esta entrega no tiene firma');
+    return { ruta: pod.firmaUrl };
+  }
+
+  async registrar(user: RequestUser, shipmentId: string, dto: RegisterPodDto, archivo?: { filename: string; originalname: string }, firma?: { filename: string; path?: string }) {
+    const envio = await this.envioVisible(user, shipmentId).catch((e) => {
+      this.descartar(firma?.path);
+      throw e;
+    });
+    if (firma && firma.path && !esPng(firma.path)) {
+      this.descartar(firma.path);
+      throw new BadRequestException('La firma no es una imagen PNG válida');
+    }
     const entregadoAt = dto.entregadoAt ? new Date(dto.entregadoAt) : new Date();
     // Nadie recibe en el futuro: un día de margen por diferencias de reloj.
     if (entregadoAt.getTime() > Date.now() + 86_400_000) throw new BadRequestException('La fecha de entrega no puede estar en el futuro');
@@ -86,6 +119,7 @@ export class DeliveryService {
           observaciones: dto.observaciones?.trim() || null,
           archivoUrl: archivo ? `/uploads/${user.tenantId}/${archivo.filename}` : null,
           archivoNombre: archivo?.originalname ?? null,
+          firmaUrl: firma ? `/uploads/${user.tenantId}/${firma.filename}` : null,
           registradoPorId: user.userId,
         },
         select: { id: true },
@@ -115,11 +149,24 @@ export class DeliveryService {
       accion: 'pod.registrado',
       entidad: 'envio',
       entidadId: shipmentId,
-      metadata: { guia: envio.codigoGuia, receptor: dto.receptorNombre.trim(), conEvidencia: !!archivo, recibirOc: !!dto.recibirOc },
+      metadata: { guia: envio.codigoGuia, receptor: dto.receptorNombre.trim(), conEvidencia: !!archivo, conFirma: !!firma, recibirOc: !!dto.recibirOc },
     });
 
     const recepciones = dto.recibirOc ? await this.recibirOrdenes(user, shipmentId, dto) : [];
     return { pod: await this.obtener(user, shipmentId), recepciones };
+  }
+
+  private descartar(ruta?: string) {
+    if (!ruta) return;
+    try {
+      unlinkSync(join(process.cwd(), ruta));
+    } catch {
+      try {
+        unlinkSync(ruta);
+      } catch {
+        // ya no estaba
+      }
+    }
   }
 
   // Recibe en cada OC la carga que viajaba en este envío (lo que falta por recibir, nunca más).

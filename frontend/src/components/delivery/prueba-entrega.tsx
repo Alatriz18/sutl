@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Download } from 'lucide-react';
+import { FirmaPad, type FirmaPadHandle } from './firma-pad';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,8 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
   const toast = useToast();
   const { config } = useTenantConfig();
   const archivoRef = useRef<HTMLInputElement>(null);
+  const firmaRef = useRef<FirmaPadHandle>(null);
+  const [firmaUrl, setFirmaUrl] = useState<string | null>(null);
   const [pod, setPod] = useState<PruebaEntrega | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [bodegas, setBodegas] = useState<Warehouse[]>([]);
@@ -40,6 +43,26 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  // La firma se pide con la sesión (no es una dirección pública): se baja como imagen y se muestra desde memoria.
+  const tieneFirma = !!(pod && pod.tieneFirma);
+  useEffect(() => {
+    if (!tieneFirma) return;
+    let url: string | null = null;
+    let cancelado = false;
+    api
+      .get(`/shipments/${shipmentId}/pod/firma`, { responseType: 'blob' })
+      .then((r) => {
+        if (cancelado) return;
+        url = URL.createObjectURL(r.data);
+        setFirmaUrl(url);
+      })
+      .catch(() => setFirmaUrl(null));
+    return () => {
+      cancelado = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [tieneFirma, shipmentId]);
 
   const modoInventario = config.inventario.recepcionActualizaInventario;
   const mueveInventario = f.recibirOc && (modoInventario === 'automatico' || (modoInventario === 'a_eleccion' && f.actualizarInventario));
@@ -64,6 +87,8 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
       }
       const archivo = archivoRef.current?.files?.[0];
       if (archivo) body.append('evidencia', archivo);
+      const firma = await firmaRef.current?.aPng();
+      if (firma) body.append('firma', firma, 'firma.png');
       const r = await api.post<ResultadoRegistroPod>(`/shipments/${shipmentId}/pod`, body);
       setPod(r.data.pod);
       setResultado(r.data.recepciones);
@@ -116,6 +141,17 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
             ))}
           </dl>
           {pod.observaciones && <p className="mt-3 text-navy/80">{pod.observaciones}</p>}
+          {pod.tieneFirma && (
+            <figure className="mt-3">
+              {firmaUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={firmaUrl} alt={`Firma de ${pod.receptorNombre}`} className="h-24 rounded-md border border-navy/10 bg-white" />
+              ) : (
+                <Skeleton className="h-24 w-48" />
+              )}
+              <figcaption className="mt-1 text-xs text-navy/50">Firma de quien recibió</figcaption>
+            </figure>
+          )}
           {pod.tieneArchivo && (
             <Button variant="secondary" className="mt-3" onClick={descargar}>
               <Download size={14} aria-hidden /> Descargar evidencia
@@ -150,7 +186,11 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
           </div>
           <div>
             <label htmlFor={`${uid}-e`} className="mb-1 block text-sm font-medium text-navy">Evidencia (foto o PDF, opcional)</label>
-            <input id={`${uid}-e`} ref={archivoRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-navy/10 file:px-3 file:py-1.5 file:text-navy" />
+            <span className="mb-1 block text-xs text-navy/50">Desde el celular puedes tomar la foto en el momento.</span>
+            <input id={`${uid}-e`} ref={archivoRef} type="file" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png" className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-navy/10 file:px-3 file:py-1.5 file:text-navy" />
+          </div>
+          <div className="sm:col-span-2">
+            <FirmaPad ref={firmaRef} />
           </div>
           <div className="sm:col-span-2">
             <label htmlFor={`${uid}-o`} className="mb-1 block text-sm font-medium text-navy">Observaciones (opcional)</label>

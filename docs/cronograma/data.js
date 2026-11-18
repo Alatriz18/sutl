@@ -112,7 +112,7 @@ const PHASES = [
       { id: 'C5', name: 'Planes, suscripción y pasarela de pago', owner: 'Kevin', s: 16, e: 17, st: 'pendiente',
         what: 'Planes y límites reales por empresa y cobro recurrente; hoy la pantalla de plan es demo.', dep: 'Elegir pasarela' },
       { id: 'C6', name: 'POD y recepción nacional conectada a la OC', owner: 'Dev', s: 6, e: 6, st: 'hecho',
-        what: 'Hecho y probado el 14 nov: el equipo registra la prueba de entrega (quién recibió, documento, fecha, observaciones y evidencia en foto o PDF), el envío pasa a «Entregado» con su evento en el seguimiento, y si se pide, la carga que viajaba se recibe en cada orden de compra (sin pasar de lo que falta, con las reglas de inventario de la empresa y resultado por OC). Una sola prueba por envío; el cliente final ve la de SUS envíos y descarga la evidencia. Pendiente: firma en pantalla y fotos desde el celular.', dep: 'A1' },
+        what: 'Hecho y probado el 14 nov: el equipo registra la prueba de entrega (quién recibió, documento, fecha, observaciones y evidencia en foto o PDF), el envío pasa a «Entregado» con su evento en el seguimiento, y si se pide, la carga que viajaba se recibe en cada orden de compra (sin pasar de lo que falta, con las reglas de inventario de la empresa y resultado por OC). Una sola prueba por envío; el cliente final ve la de SUS envíos y descarga la evidencia. Actualización 18 nov: quien recibe puede firmar con el dedo, el lápiz o el mouse; la firma queda guardada como PNG (validado por su contenido, no solo por el nombre) y la ven el equipo y el cliente dueño del envío. Desde el celular, el selector de evidencia ofrece la cámara.', dep: 'A1' },
       { id: 'C7', name: 'Tiempo real y mapa del recorrido en el seguimiento', owner: 'Ambos', s: 16, e: 17, st: 'hecho',
         what: 'Hecho y probado el 17 nov, sin dependencias nuevas: la página pública, el detalle del envío y el portal del cliente se actualizan solos cuando la empresa registra un movimiento (Server-Sent Events, con reconexión automática e indicador «En vivo»), y dibujan el recorrido en un mapa propio en SVG a partir de las coordenadas del evento (que el equipo puede capturar). La conexión pública solo abre para códigos que existen y no lleva datos internos; el equipo y el cliente final solo siguen lo suyo. No se usó Google Maps: cuando se quiera un mapa con calles hará falta una cuenta con el proveedor. Actualización 18 nov: la difusión pasa por Redis (pub/sub) para que una conexión abierta en una réplica reciba los eventos registrados en otra, con respaldo en memoria si Redis no está.', dep: 'A7' },
       { id: 'C8', name: 'Tracking público con la marca de cada empresa', owner: 'Dev', s: 6, e: 6, st: 'hecho',
@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '461 unitarias y 383 de punta a punta del backend, 71 de navegador en demo y 24 contra el backend real, todas en verde.',
+    '464 unitarias y 387 de punta a punta del backend, 72 de navegador en demo y 25 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -286,12 +286,13 @@ const LOGROS_SEMANA = [
   ['Seguimiento en vivo y mapa del recorrido, sin dependencias nuevas', 'C7'],
   ['Documentos compartidos con el cliente final y los proveedores (suben y ven lo suyo)', 'C3'],
   ['Metas de OTIF por empresa y exportación de la analítica a Excel', 'C4'],
+  ['Firma en pantalla en la prueba de entrega, guardada como PNG validado', 'C6'],
   ['Seguimiento en vivo entre varias réplicas del backend, difundido por Redis', 'C7'],
   ['Avisos por correo de documentos por vencer o vencidos (una vez por documento, apagables por empresa)', 'C1'],
   ['Cobertura medida: 93,9% de líneas con las pruebas unitarias y de punta a punta; corregida una fuga de datos de usuario en documentos y red de seguridad que revisa todos los listados', 'A9'],
   ['El proveedor registra el despacho real de su orden desde su portal (crea el embarque y asigna la carga)', 'C3'],
   ['Segundo factor obligatorio: por empresa para sus administradores y siempre para el personal de SUTL en producción, con código QR', 'C2'],
-  ['Todo lo anterior probado con el stack completo: 11 migraciones, 383 e2e, 71 + 24 de navegador y 461 unitarias en verde', 'A13'],
+  ['Todo lo anterior probado con el stack completo: 11 migraciones, 387 e2e, 72 + 25 de navegador y 464 unitarias en verde', 'A13'],
   ['Corregido: una base vacía no podía migrar (faltaban las tablas base); ahora sí, con una migración puente', 'defecto'],
 ];
 
@@ -306,7 +307,7 @@ const CAMBIOS = [
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'C6b', titulo: 'Firma en pantalla y fotos desde el celular en la prueba de entrega', resp: 'Dev', hecho: 'Quien entrega firma con el dedo y toma la foto desde el celular; ambas quedan como evidencia de la entrega.', nota: 'Siguiente módulo tras el tiempo real entre réplicas.' },
+  { id: 'B4b', titulo: 'Responsable por regla en el centro de excepciones', resp: 'Dev', hecho: 'Cada tipo de excepción puede tener un responsable por empresa y la tarea nace asignada a esa persona.', nota: 'Siguiente módulo tras la firma en pantalla.' },
   { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
   { id: 'E1', titulo: 'Entrevistas con el cliente ideal (sigue)', resp: 'Kevin', hecho: 'Avance confirmado y lista de candidatos a design partner.', nota: 'No tengo datos de cuántas llevas.' },
@@ -315,7 +316,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '939', t: 'pruebas en verde: 461 unitarias y 383 de punta a punta del backend, 71 de navegador en demo y 24 contra el backend real' },
+  { n: '948', t: 'pruebas en verde: 464 unitarias y 387 de punta a punta del backend, 72 de navegador en demo y 25 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

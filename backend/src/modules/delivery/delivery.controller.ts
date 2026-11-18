@@ -1,5 +1,5 @@
-import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Post, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -36,10 +36,18 @@ export class DeliveryController {
     res.download(join(process.cwd(), ruta), nombre);
   }
 
+  // Firma en pantalla de quien recibió (imagen PNG).
+  @Get('firma')
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin, RolUsuario.cliente_final)
+  async firma(@CurrentUser() user: RequestUser, @Param('shipmentId', ParseUUIDPipe) shipmentId: string, @Res() res: Response) {
+    const { ruta } = await this.delivery.firma(user, shipmentId);
+    res.type('image/png').sendFile(join(process.cwd(), ruta));
+  }
+
   @Post()
   @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin)
   @UseInterceptors(
-    FileInterceptor('evidencia', {
+    FileFieldsInterceptor([{ name: 'evidencia', maxCount: 1 }, { name: 'firma', maxCount: 1 }], {
       storage: diskStorage({
         destination: (req, _file, cb) => {
           const tenantId = (req as { user?: { tenantId?: string } }).user?.tenantId ?? 'sin-tenant';
@@ -51,6 +59,11 @@ export class DeliveryController {
       }),
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
+        // La firma es solo un PNG (el servidor además comprueba su contenido).
+        if (file.fieldname === 'firma' && extname(file.originalname).toLowerCase() !== '.png') {
+          cb(new BadRequestException('La firma debe ser una imagen PNG'), false);
+          return;
+        }
         if (!TIPOS_EVIDENCIA.includes(extname(file.originalname).toLowerCase())) {
           cb(new BadRequestException('La evidencia debe ser una foto (JPG o PNG) o un PDF'), false);
           return;
@@ -63,8 +76,8 @@ export class DeliveryController {
     @CurrentUser() user: RequestUser,
     @Param('shipmentId', ParseUUIDPipe) shipmentId: string,
     @Body() dto: RegisterPodDto,
-    @UploadedFile() evidencia?: Express.Multer.File,
+    @UploadedFiles() archivos?: { evidencia?: Express.Multer.File[]; firma?: Express.Multer.File[] },
   ) {
-    return this.delivery.registrar(user, shipmentId, dto, evidencia);
+    return this.delivery.registrar(user, shipmentId, dto, archivos?.evidencia?.[0], archivos?.firma?.[0]);
   }
 }

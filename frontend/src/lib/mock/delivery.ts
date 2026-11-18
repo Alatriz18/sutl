@@ -33,6 +33,7 @@ export function registrarPod(user: User, shipmentId: string, form: FormData): Re
     observaciones: String(form.get('observaciones') ?? '').trim() || null,
     archivoNombre: archivo?.name ?? null,
     tieneArchivo: !!archivo,
+    tieneFirma: !!(form.get('firma') as File | null),
     createdAt: new Date().toISOString(),
     registradoPor: { nombre: user.nombre },
   };

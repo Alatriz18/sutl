@@ -53,6 +53,49 @@ describe('Prueba de entrega (e2e)', () => {
     await app.close();
   });
 
+  const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from('firma de prueba')]);
+
+  describe('firma en pantalla', () => {
+    it('se guarda con la prueba y la ven el equipo y el cliente dueño, pero no otro cliente ni otra empresa', async () => {
+      const id = await crearEnvio(a.token, emailCliente);
+      const r = await http().post(`/api/shipments/${id}/pod`).set(auth(a.token)).field('receptorNombre', 'Ana Firma').attach('firma', PNG, 'firma.png');
+      expect(r.status).toBe(201);
+      expect(r.body.pod.tieneFirma).toBe(true);
+      // Nunca se expone la ruta del disco.
+      expect(JSON.stringify(r.body)).not.toContain('uploads');
+      const propia = await http().get(`/api/shipments/${id}/pod/firma`).set(auth(tokenCliente));
+      expect(propia.status).toBe(200);
+      expect(propia.headers['content-type']).toContain('image/png');
+      expect((await http().get(`/api/shipments/${id}/pod/firma`).set(auth(a.token))).status).toBe(200);
+      expect((await http().get(`/api/shipments/${id}/pod/firma`).set(auth(tokenOtroCliente))).status).toBe(404);
+      expect((await http().get(`/api/shipments/${id}/pod/firma`).set(auth(b.token))).status).toBe(404);
+      expect((await http().get(`/api/shipments/${id}/pod/firma`)).status).toBe(401);
+    });
+
+    it('una firma que no es PNG se rechaza y el envío no queda entregado', async () => {
+      const id = await crearEnvio(a.token);
+      const jpg = await http().post(`/api/shipments/${id}/pod`).set(auth(a.token)).field('receptorNombre', 'X').attach('firma', PNG, 'firma.jpg');
+      expect(jpg.status).toBe(400);
+      const falsa = await http().post(`/api/shipments/${id}/pod`).set(auth(a.token)).field('receptorNombre', 'X').attach('firma', Buffer.from('no soy una imagen'), 'firma.png');
+      expect(falsa.status).toBe(400);
+      expect((await pod(a.token, id)).body).toEqual({});
+      expect((await http().get(`/api/shipments/${id}`).set(auth(a.token))).body.estado).not.toBe('entregado');
+    });
+
+    it('sin firma todo sigue igual y pedirla responde 404', async () => {
+      const id = await crearEnvio(a.token);
+      const r = await http().post(`/api/shipments/${id}/pod`).set(auth(a.token)).field('receptorNombre', 'Sin firma');
+      expect(r.status).toBe(201);
+      expect(r.body.pod.tieneFirma).toBe(false);
+      expect((await http().get(`/api/shipments/${id}/pod/firma`).set(auth(a.token))).status).toBe(404);
+    });
+
+    it('el cliente final no puede registrar una prueba con firma', async () => {
+      const id = await crearEnvio(a.token, emailCliente);
+      expect((await http().post(`/api/shipments/${id}/pod`).set(auth(tokenCliente)).field('receptorNombre', 'X').attach('firma', PNG, 'firma.png')).status).toBe(403);
+    });
+  });
+
   it('exige sesión', async () => {
     const id = await crearEnvio(a.token);
     expect((await http().get(`/api/shipments/${id}/pod`)).status).toBe(401);

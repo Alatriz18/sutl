@@ -1076,6 +1076,16 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       if (method === 'post') return delay(ok(config, registrarPod(usuario, m[1], config.data as FormData), 201), 300);
     }
 
+    m = match(path, /^\/shipments\/([^/]+)\/pod\/firma$/);
+    if (m && method === 'get') {
+      const usuario = currentUser();
+      if (!usuario) throw new MockApiError(401, 'No autorizado');
+      if (!(obtenerPod(m[1]) as { tieneFirma?: boolean }).tieneFirma) throw new MockApiError(404, 'Esta entrega no tiene firma');
+      // PNG de 1x1 píxel: en la demostración no se guarda el dibujo real.
+      const bytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
+      return delay(ok(config, new Blob([bytes], { type: 'image/png' })));
+    }
+
     // --- ANALÍTICA ---
     if (method === 'get' && path === '/analytics/resumen') {
       const usuario = currentUser();

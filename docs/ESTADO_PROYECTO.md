@@ -85,6 +85,15 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-18 — C6: firma en pantalla en la prueba de entrega, probado
+
+Probado con Docker: **464 unitarias y 387 e2e del backend, 72 de navegador en demo y 25 contra el backend real, todas en verde.** Una migración nueva (`20261118180000_firma_prueba_entrega`: columna `firmaUrl`). Sin dependencias nuevas.
+
+- **Qué hace:** al registrar la entrega, quien recibe firma en un lienzo con el dedo, el lápiz o el mouse (eventos de puntero, sirve igual en celular y escritorio; el lienzo no desplaza la página). La firma se guarda como PNG y se muestra en la constancia al equipo y al cliente final dueño del envío. «Borrar firma» permite rehacerla. El selector de evidencia ofrece la cámara en el celular.
+- **Seguridad:** la firma solo acepta PNG y el servidor **comprueba el contenido** (los 8 bytes de cabecera PNG), no solo la extensión: un archivo que se llama `.png` pero no lo es se rechaza, se borra del disco y no se registra la entrega. Se sirve por `GET /shipments/:id/pod/firma` con sesión y las mismas reglas que la evidencia (otra empresa u otro cliente: 404); nunca se expone la ruta del disco; el cliente final no puede registrar pruebas.
+- **Límite:** una sola firma por entrega, sin edición posterior; el selector de fotos acepta JPG, PNG o PDF (no HEIC de iPhone).
+- **Prueba intermitente observada:** en una corrida completa, dos suites e2e (`documents-fuga`, `sin-secretos`) fallaron por tiempo con la máquina cargada; solas y en la siguiente corrida completa pasaron (387/387).
+
 ### 2026-11-18 — C7: seguimiento en vivo entre varias réplicas (Redis), probado
 
 Probado con Docker: **461 unitarias y 383 e2e del backend, 71 de navegador en demo y 24 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas (`ioredis` ya estaba).

@@ -8,6 +8,7 @@ export interface PruebaEntrega {
   observaciones: string | null;
   archivoNombre: string | null;
   tieneArchivo: boolean;
+  tieneFirma: boolean;
   createdAt: string;
   registradoPor: { nombre: string };
 }
