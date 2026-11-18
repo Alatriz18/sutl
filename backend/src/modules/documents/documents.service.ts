@@ -30,7 +30,7 @@ export class DocumentsService {
   findAll(tenantId: string) {
     return this.prisma.document.findMany({
       where: { tenantId },
-      include: { shipment: true, subidoPor: true },
+      include: { shipment: true, subidoPor: { select: { id: true, nombre: true, email: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -74,7 +74,7 @@ export class DocumentsService {
         subidoPorId: userId,
         fechaVencimiento: dto.fechaVencimiento ? new Date(dto.fechaVencimiento) : null,
       },
-      include: { shipment: true, subidoPor: true },
+      include: { shipment: true, subidoPor: { select: { id: true, nombre: true, email: true } } },
     });
     await this.audit.registrar({
       tenantId,

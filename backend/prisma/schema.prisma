@@ -383,6 +383,9 @@ model Document {
   // Compartir (C3b): por defecto un documento es interno; el equipo decide quién más lo ve.
   visibleCliente   Boolean @default(false)
   visibleProveedor Boolean @default(false)
+  // Avisos por correo (C1b): cada documento se avisa una sola vez como «por vencer» y una vez como «vencido».
+  avisoPorVencerAt DateTime?
+  avisoVencidoAt   DateTime?
   createdAt     DateTime      @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id])

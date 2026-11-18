@@ -3,6 +3,9 @@ import { ConfigOperacion } from '../tenant-config/tenant-config.defaults';
 
 const DIA_MS = 86_400_000;
 
+// Las reglas que el checklist necesita (sin lo que solo sirve para avisar por correo).
+export type ReglasDocumentos = Omit<ConfigOperacion['documentos'], 'avisarVencimientos'>;
+
 export type EstadoItem = 'faltante' | 'pendiente' | 'aprobado' | 'rechazado' | 'vencido' | 'por_vencer';
 
 export interface DocumentoVersion {
@@ -28,7 +31,7 @@ export interface ItemChecklist {
 // de transporte y lo que la empresa configuró. Es una función pura, sin base de datos.
 export function tiposRequeridos(
   envio: { tipo: TipoEnvio; modo: ModoTransporte },
-  cfg: ConfigOperacion['documentos'],
+  cfg: ReglasDocumentos,
 ): TipoDocumento[] {
   const out: TipoDocumento[] = [];
   if (cfg.exigirFactura) out.push('factura');
@@ -68,7 +71,7 @@ const CUMPLE: EstadoItem[] = ['aprobado', 'por_vencer'];
 export function evaluarChecklist(
   envio: { tipo: TipoEnvio; modo: ModoTransporte },
   documentos: DocumentoVersion[],
-  cfg: ConfigOperacion['documentos'],
+  cfg: ReglasDocumentos,
   hoy: Date,
 ) {
   const ultimas = ultimasVersiones(documentos);

@@ -85,6 +85,15 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-18 — C1b avisos de vencimiento, fuga de datos corregida y cobertura medida
+
+Probado con Docker: **457 unitarias y 380 e2e del backend, 71 de navegador en demo y 24 contra el backend real, todas en verde.** Una migración nueva (`20261118120000_avisos_vencimiento_documentos`: dos columnas en `documents`). Sin dependencias nuevas.
+
+- **Defecto de seguridad corregido (importante):** `GET /api/documents` y la respuesta de `POST /api/documents` devolvían la fila COMPLETA de quien subió el documento, es decir, su **hash de contraseña, el secreto del segundo factor (cifrado) y el hash de su sesión**, a cualquier usuario interno de la empresa. Ahora solo devuelven `id`, `nombre` y `email`; el listado exige rol interno. Dos pruebas nuevas lo cubren: una regresión puntual y una **red de seguridad que recorre 28 listados** de la API (como administrador de empresa y como super administrador) y falla si cualquier respuesta contiene `password`, `mfaSecret`, `refreshTokenHash`, hashes de claves o un hash bcrypt. Recomendación: si algún día se expuso un entorno real con esta ruta, rotar contraseñas de quienes subieron documentos.
+- **Avisos de vencimiento (C1):** cada 6 horas (`DOC_AVISOS_CADA_MIN`) se revisa cada empresa y se manda **un solo correo por administrador** con los documentos por vencer y los vencidos. Cada documento se avisa una sola vez como «por vencer» y una vez como «vencido» (reclamo atómico en la base, sin duplicar aunque corran dos rondas); si nadie recibió el correo, se libera para reintentar. Configurable por empresa (`documentos.avisarVencimientos`, encendido por defecto) con casilla en Configuración. La bitácora ahora filtra también por documentos, órdenes y envíos.
+- **Cobertura medida (A9):** unitarias + punta a punta juntas dan **93,9 % de líneas, 93,5 % de sentencias, 92,0 % de funciones y 82,7 % de ramas** (solo las unitarias, 36 %). La meta era 70 %. Bajo la medición, con la máquina cargada, una suite e2e puede agotar su tiempo; sola y sin cobertura pasa completa.
+- **Frontend:** lint sin errores (37 avisos conocidos, la mayoría `set-state-in-effect` por migrar).
+
 ### 2026-11-18 — C3: el proveedor registra el despacho real de su orden, probado
 
 Probado con Docker: **452 unitarias y 370 e2e del backend, 70 de navegador en demo y 24 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas.

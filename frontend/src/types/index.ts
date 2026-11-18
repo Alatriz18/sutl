@@ -623,6 +623,7 @@ export interface ConfigOperacion {
     exigirPedimento: boolean;
     diasAvisoVencimiento: number;
     diasAntesEtaFaltante: number;
+    avisarVencimientos: boolean;
   };
   analitica: {
     metaOtifPct: number;

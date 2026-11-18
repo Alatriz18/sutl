@@ -64,7 +64,9 @@ export class DocumentsController {
     private readonly shared: SharedDocumentsService,
   ) {}
 
+  // Listado interno de la empresa (el cliente final y el proveedor usan el de cada envío).
   @Get()
+  @Roles(RolUsuario.admin_tenant, RolUsuario.operador, RolUsuario.super_admin)
   findAll(@CurrentUser('tenantId') tenantId: string) {
     return this.documentsService.findAll(tenantId);
   }

@@ -100,6 +100,10 @@ export class DocumentosConfigDto {
   @Min(0)
   @Max(90)
   diasAntesEtaFaltante?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  avisarVencimientos?: boolean;
 }
 
 export class AnaliticaConfigDto {

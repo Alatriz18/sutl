@@ -624,6 +624,27 @@ export default function ConfiguracionPage() {
               </div>
             </Campo>
           </div>
+          <div className="mt-5 max-w-2xl">
+            <Campo
+              label="Aviso por correo"
+              sugerido={sugerido.documentos.avisarVencimientos ? 'avisa' : 'no avisa'}
+              ajustado={ajustado('documentos', 'avisarVencimientos')}
+            >
+              <label className="flex items-start gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky"
+                  disabled={!puedeEditar}
+                  checked={form.documentos.avisarVencimientos}
+                  onChange={(e) => set('documentos', { avisarVencimientos: e.target.checked })}
+                />
+                <span>
+                  Avisar a los administradores de los documentos por vencer o vencidos
+                  <span className="block text-xs text-navy/50">Un solo correo con la lista, y cada documento se avisa una sola vez (por vencer y, si llega el día, vencido).</span>
+                </span>
+              </label>
+            </Campo>
+          </div>
         </Card>
 
         <Card className="mt-6">

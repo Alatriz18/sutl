@@ -54,6 +54,8 @@ export interface ConfigOperacion {
     diasAvisoVencimiento: number;
     // Cuántos días antes de la llegada estimada un documento faltante abre una excepción.
     diasAntesEtaFaltante: number;
+    // Si SUTL escribe a los administradores cuando un documento está por vencer o ya venció (una sola vez por documento).
+    avisarVencimientos: boolean;
   };
   // Metas con las que la analítica colorea el OTIF (verde / ámbar / rojo). Cada empresa exige distinto a sus proveedores.
   analitica: {
@@ -97,7 +99,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
-      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
@@ -111,7 +113,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
-      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
@@ -125,7 +127,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
-      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
@@ -139,7 +141,7 @@ export const PERFILES = {
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
-      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },

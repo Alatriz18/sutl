@@ -22,6 +22,9 @@ const ENTIDADES = [
   { valor: 'usuario', etiqueta: 'Usuarios, ingresos y segundo factor' },
   { valor: 'tarea', etiqueta: 'Tareas' },
   { valor: 'excepcion', etiqueta: 'Excepciones' },
+  { valor: 'documento', etiqueta: 'Documentos' },
+  { valor: 'orden_compra', etiqueta: 'Órdenes de compra (portal del proveedor)' },
+  { valor: 'envio', etiqueta: 'Envíos' },
 ];
 
 const LIMITE = 200;

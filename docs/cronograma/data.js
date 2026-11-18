@@ -74,7 +74,7 @@ const PHASES = [
       { id: 'A7', name: 'Redis + BullMQ (colas y tareas programadas)', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
         what: 'Redis en Docker y CI, cola de mantenimiento con un trabajo programado que corre solo, reintentos y estado solo para super_admin. Base para evaluar reglas y enviar notificaciones y webhooks sin frenar la API.', dep: '—' },
       { id: 'A9', name: 'Deuda técnica: npm audit y cobertura ≥ 70%', owner: 'Dev', s: 8, e: 9, st: 'hecho',
-        what: 'Hecho el 17 nov: NestJS 10 → 11 y Next 14 → 16 (React 19, Recharts 3) con la suite completa en verde (426 unitarias, 331 e2e, 64+19 de navegador). Las dependencias de producción quedan en 0 vulnerabilidades en backend y frontend; lo que reporta npm audit es herramienta de desarrollo (Jest, CLI). NestJS 12 se descartó por ahora: es solo ESM y obliga a migrar todo el backend. Pendiente: medir cobertura ≥ 70% con las pruebas e2e.', dep: '—' },
+        what: 'Hecho el 17 nov: NestJS 10 → 11 y Next 14 → 16 (React 19, Recharts 3) con la suite completa en verde (426 unitarias, 331 e2e, 64+19 de navegador). Las dependencias de producción quedan en 0 vulnerabilidades en backend y frontend; lo que reporta npm audit es herramienta de desarrollo (Jest, CLI). NestJS 12 se descartó por ahora: es solo ESM y obliga a migrar todo el backend. Actualización 18 nov: cobertura medida con las pruebas unitarias y de punta a punta juntas: 93,9% de líneas, 93,5% de sentencias, 92,0% de funciones y 82,7% de ramas (solo las unitarias: 36%; las e2e son las que ejercitan el sistema real).', dep: '—' },
       { id: 'A10', name: 'API pública v1: API keys y webhooks por empresa', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado (14 nov): API pública v1 de solo lectura con X-API-Key (guardada solo como huella, 300 peticiones/min), webhooks firmados con HMAC-SHA256 (secreto cifrado AES-256-GCM, protección SSRF, 5 reintentos, historial de entregas), eventos de envíos, OCs y riesgo, y la pantalla de Integraciones conectada.', dep: 'A7' },
       { id: 'A11', name: 'Notificaciones reales: correo y WhatsApp', owner: 'Dev', s: 7, e: 7, st: 'hecho',
@@ -95,16 +95,16 @@ const PHASES = [
       { id: 'B4', name: 'Centro de excepciones: reglas, severidad, SLA y escalamiento', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: SKU en rojo y OC atrasada abren una excepción con plazo (SLA) configurable por empresa y una tarea; se resuelve sola cuando el problema desaparece y, si el plazo vence, escala a crítica y avisa por correo a los administradores. Pantalla Excepciones. Regla de documento faltante hecha con C1 (14 nov). Pendiente: responsable por regla y aviso por WhatsApp.', dep: 'B1, B3' },
       { id: 'B5', name: 'Roles analista_sutl y proveedor', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
-        what: 'Hecho y probado el 14 nov: el analista de SUTL trabaja en empresas cliente solo con un permiso explícito que otorga el super_admin (solo lectura por defecto, revocable al instante, con el ingreso anotado en la bitácora de la empresa) y elige la empresa en la barra superior; el proveedor externo queda ligado a un proveedor, solo ve sus OC ya emitidas sin datos internos y todo lo demás le está vedado por defecto. Pendiente: exigir segundo factor a analistas y avisos a proveedores.', dep: 'B3' },
+        what: 'Hecho y probado el 14 nov: el analista de SUTL trabaja en empresas cliente solo con un permiso explícito que otorga el super_admin (solo lectura por defecto, revocable al instante, con el ingreso anotado en la bitácora de la empresa) y elige la empresa en la barra superior; el proveedor externo queda ligado a un proveedor, solo ve sus OC ya emitidas sin datos internos y todo lo demás le está vedado por defecto. Actualización 18 nov: el segundo factor es obligatorio para analistas y super administradores en producción.', dep: 'B3' },
     ],
   },
   {
     key: 'C', name: 'Fase C · Portal colaborativo, analítica y panel SaaS', range: 'Sem 14–22 · 4 ene – 5 mar', note: 'Hito H4 · 19 feb (con colchón)',
     tasks: [
       { id: 'C1', name: 'Checklist de documentos por operación y vencimientos', owner: 'Dev', s: 6, e: 6, st: 'hecho',
-        what: 'Hecho y probado el 14 nov: cada envío exige los documentos que la empresa configure (factura, lista de empaque, BL o AWB según el modo, pedimento en importaciones); cada documento se aprueba o rechaza con motivo, tiene versión vigente y fecha de vencimiento (vencido / por vencer); checklist en el detalle del envío; un envío por llegar sin su documentación abre una excepción (regla pendiente de B4) y los documentos por vencer salen en la torre de control.', dep: 'B4' },
+        what: 'Hecho y probado el 14 nov: cada envío exige los documentos que la empresa configure (factura, lista de empaque, BL o AWB según el modo, pedimento en importaciones); cada documento se aprueba o rechaza con motivo, tiene versión vigente y fecha de vencimiento (vencido / por vencer); checklist en el detalle del envío; un envío por llegar sin su documentación abre una excepción (regla pendiente de B4) y los documentos por vencer salen en la torre de control. Actualización 18 nov: la empresa recibe por correo un solo aviso con los documentos por vencer o vencidos (una vez por documento y estado, apagable en Configuración), revisado cada 6 horas.', dep: 'B4' },
       { id: 'C2', name: 'MFA (TOTP) y bitácora de auditoría completa', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
-        what: 'Hecho y probado el 14 nov: segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Actualización 18 nov: cada empresa puede exigir el segundo factor a sus administradores (el servidor bloquea todo salvo activarlo) y el personal de SUTL lo necesita siempre en producción; la activación muestra el código QR. Pendiente: visor de bitácora.', dep: '—' },
+        what: 'Hecho y probado el 14 nov: segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Actualización 18 nov: cada empresa puede exigir el segundo factor a sus administradores (el servidor bloquea todo salvo activarlo) y el personal de SUTL lo necesita siempre en producción; la activación muestra el código QR.', dep: '—' },
       { id: 'C3', name: 'Portal colaborativo para proveedor y cliente', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: el proveedor confirma sus órdenes con su fecha de despacho y conversa con la empresa; el cliente final entra a un portal de solo lectura con SUS envíos (seguimiento sin datos internos) y conversa sobre ellos; la empresa ve y responde desde el detalle de la OC y del envío, con aviso por correo a cada lado y bitácora. Corrige un hueco: antes un cliente final podía ver todos los envíos de la empresa y crear envíos y eventos. Actualización 17 nov: documentos compartidos (el equipo decide con quién; el cliente y el proveedor ven lo suyo y suben los suyos, con aviso). Actualización 18 nov: el proveedor registra el despacho real de su orden desde su portal (crea el embarque con su guía, asigna la carga con las mismas reglas de cantidades del equipo, en una o varias salidas, y la orden queda despachada con la fecha real).', dep: 'B3, B5' },
       { id: 'C4', name: 'Analítica: OTIF, lead time, aging y cumplimiento', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '452 unitarias y 370 de punta a punta del backend, 70 de navegador en demo y 24 contra el backend real, todas en verde.',
+    '457 unitarias y 380 de punta a punta del backend, 71 de navegador en demo y 24 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -227,7 +227,6 @@ const FALTA = [
     'Dirección de contacto real y credenciales de WhatsApp Cloud (A4, A11).',
   ]],
   ['Deuda técnica', [
-    'Medir la cobertura ≥ 70% con las pruebas e2e (resto de A9).',
     'Protección de ramas en GitHub (A2).',
   ]],
 ];
@@ -287,9 +286,11 @@ const LOGROS_SEMANA = [
   ['Seguimiento en vivo y mapa del recorrido, sin dependencias nuevas', 'C7'],
   ['Documentos compartidos con el cliente final y los proveedores (suben y ven lo suyo)', 'C3'],
   ['Metas de OTIF por empresa y exportación de la analítica a Excel', 'C4'],
+  ['Avisos por correo de documentos por vencer o vencidos (una vez por documento, apagables por empresa)', 'C1'],
+  ['Cobertura medida: 93,9% de líneas con las pruebas unitarias y de punta a punta; corregida una fuga de datos de usuario en documentos y red de seguridad que revisa todos los listados', 'A9'],
   ['El proveedor registra el despacho real de su orden desde su portal (crea el embarque y asigna la carga)', 'C3'],
   ['Segundo factor obligatorio: por empresa para sus administradores y siempre para el personal de SUTL en producción, con código QR', 'C2'],
-  ['Todo lo anterior probado con el stack completo: 11 migraciones, 370 e2e, 70 + 24 de navegador y 452 unitarias en verde', 'A13'],
+  ['Todo lo anterior probado con el stack completo: 11 migraciones, 380 e2e, 71 + 24 de navegador y 457 unitarias en verde', 'A13'],
   ['Corregido: una base vacía no podía migrar (faltaban las tablas base); ahora sí, con una migración puente', 'defecto'],
 ];
 
@@ -304,8 +305,7 @@ const CAMBIOS = [
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'C1b', titulo: 'Avisos por correo de documentos por vencer', resp: 'Dev', hecho: 'Cada día se avisa por correo a los administradores de los documentos vencidos o por vencer, una sola vez por documento.', nota: 'Siguiente módulo tras el despacho del proveedor.' },
-  { id: 'A9', titulo: 'Deuda técnica: cobertura y subida de versiones', resp: 'Dev', hecho: 'Cobertura medida (meta ≥ 70%) y plan de la subida de NestJS y Next listo para tu aprobación.', nota: 'La subida en sí necesita tu aprobación.' },
+  { id: 'C7b', titulo: 'Tiempo real con varias réplicas (Redis)', resp: 'Dev', hecho: 'El seguimiento en vivo funciona aunque el backend corra en varias réplicas, difundiendo los eventos por Redis.', nota: 'Siguiente módulo; hace falta para staging con más de una réplica.' },
   { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
   { id: 'E1', titulo: 'Entrevistas con el cliente ideal (sigue)', resp: 'Kevin', hecho: 'Avance confirmado y lista de candidatos a design partner.', nota: 'No tengo datos de cuántas llevas.' },
@@ -314,7 +314,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '916', t: 'pruebas en verde: 452 unitarias y 370 de punta a punta del backend, 70 de navegador en demo y 24 contra el backend real' },
+  { n: '932', t: 'pruebas en verde: 457 unitarias y 380 de punta a punta del backend, 71 de navegador en demo y 24 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];
@@ -323,7 +323,6 @@ const URGENTE = {
   titulo: 'Lo urgente de la próxima semana (16–20 nov):',
   items: [
     '<b>Decidir dónde vive el staging</b> (D1): es la ruta crítica para hacer un piloto con un cliente real.',
-    '<b>Aprobar o no</b> la subida de NestJS 10→12 y Next 14→16 (A9), ahora con la suite completa como red de seguridad.',
     '<b>Dar la dirección real</b> del formulario de contacto (A4) y activar la protección de ramas en GitHub (A2, 15 min).',
   ],
 };

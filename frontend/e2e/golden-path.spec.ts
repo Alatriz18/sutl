@@ -497,6 +497,17 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(casilla).toBeChecked();
   });
 
+  test('documentos: la empresa puede apagar el aviso por correo de vencimientos', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/configuracion');
+    const casilla = page.getByLabel('Avisar a los administradores de los documentos por vencer o vencidos');
+    await expect(casilla).toBeChecked();
+    await casilla.uncheck();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Configuración guardada.')).toBeVisible();
+    await expect(casilla).not.toBeChecked();
+  });
+
   test('marca del seguimiento: la vista previa refleja nombre, color y pie de página', async ({ page }) => {
     await entrar(page);
     await page.goto('/dashboard/configuracion');

@@ -5,6 +5,7 @@ export const COLA_NOTIFICACIONES = 'notificaciones';
 export const COLA_WEBHOOKS = 'webhooks';
 export const COLA_RIESGO = 'riesgo';
 export const COLA_EXCEPCIONES = 'excepciones';
+export const COLA_DOCUMENTOS = 'documentos';
 
 export const TRABAJO_LATIDO = 'latido';
 
