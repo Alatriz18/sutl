@@ -62,6 +62,10 @@ export interface ConfigOperacion {
     // % de OTIF desde el cual se considera «en atención» (ámbar); por debajo es crítico (rojo). Nunca mayor que la meta.
     umbralAtencionOtifPct: number;
   };
+  seguridad: {
+    // Si todos los administradores de la empresa deben activar el segundo factor (app de autenticación) para usar el sistema.
+    exigirMfaAdministradores: boolean;
+  };
   // Cómo se ve la página pública de seguimiento que recibe el destinatario (cada campo vacío = por defecto).
   marca: {
     nombreComercial: string;
@@ -95,6 +99,7 @@ export const PERFILES = {
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -108,6 +113,7 @@ export const PERFILES = {
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -121,6 +127,7 @@ export const PERFILES = {
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -134,6 +141,7 @@ export const PERFILES = {
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -200,6 +208,7 @@ export function resolverConfig(perfil: string, ajustes: unknown): ConfigOperacio
     excepciones: { ...base.excepciones, ...limpio.excepciones },
     documentos: { ...base.documentos, ...limpio.documentos },
     analitica: { ...base.analitica, ...limpio.analitica },
+    seguridad: { ...base.seguridad, ...limpio.seguridad },
     marca: { ...base.marca, ...limpio.marca },
   };
 }
@@ -213,6 +222,7 @@ export function combinarAjustes(actuales: AjustesOperacion, nuevos: AjustesOpera
     excepciones: { ...actuales.excepciones, ...nuevos.excepciones },
     documentos: { ...actuales.documentos, ...nuevos.documentos },
     analitica: { ...actuales.analitica, ...nuevos.analitica },
+    seguridad: { ...actuales.seguridad, ...nuevos.seguridad },
     marca: { ...actuales.marca, ...nuevos.marca },
   });
 }

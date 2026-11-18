@@ -104,7 +104,7 @@ const PHASES = [
       { id: 'C1', name: 'Checklist de documentos por operación y vencimientos', owner: 'Dev', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: cada envío exige los documentos que la empresa configure (factura, lista de empaque, BL o AWB según el modo, pedimento en importaciones); cada documento se aprueba o rechaza con motivo, tiene versión vigente y fecha de vencimiento (vencido / por vencer); checklist en el detalle del envío; un envío por llegar sin su documentación abre una excepción (regla pendiente de B4) y los documentos por vencer salen en la torre de control.', dep: 'B4' },
       { id: 'C2', name: 'MFA (TOTP) y bitácora de auditoría completa', owner: 'Kevin', s: 6, e: 6, st: 'hecho',
-        what: 'Hecho y probado el 14 nov: segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Pendiente: exigirlo a administradores por política, código QR en pantalla y visor de bitácora.', dep: '—' },
+        what: 'Hecho y probado el 14 nov: segundo factor TOTP (Google/Microsoft Authenticator, Authy) con códigos de recuperación, bloqueo por fallos y restablecimiento por el administrador; bitácora de ingresos, fallos, cambios de segundo factor y altas, roles y desactivaciones de usuarios. Actualización 18 nov: cada empresa puede exigir el segundo factor a sus administradores (el servidor bloquea todo salvo activarlo) y el personal de SUTL lo necesita siempre en producción; la activación muestra el código QR. Pendiente: visor de bitácora.', dep: '—' },
       { id: 'C3', name: 'Portal colaborativo para proveedor y cliente', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
         what: 'Hecho y probado el 14 nov: el proveedor confirma sus órdenes con su fecha de despacho y conversa con la empresa; el cliente final entra a un portal de solo lectura con SUS envíos (seguimiento sin datos internos) y conversa sobre ellos; la empresa ve y responde desde el detalle de la OC y del envío, con aviso por correo a cada lado y bitácora. Corrige un hueco: antes un cliente final podía ver todos los envíos de la empresa y crear envíos y eventos. Actualización 17 nov: documentos compartidos (el equipo decide con quién; el cliente y el proveedor ven lo suyo y suben los suyos, con aviso). Pendiente: que el proveedor registre el despacho real.', dep: 'B3, B5' },
       { id: 'C4', name: 'Analítica: OTIF, lead time, aging y cumplimiento', owner: 'Ambos', s: 6, e: 6, st: 'hecho',
@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '434 unitarias y 351 de punta a punta del backend, 69 de navegador en demo y 22 contra el backend real, todas en verde.',
+    '442 unitarias y 362 de punta a punta del backend, 70 de navegador en demo y 23 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -287,7 +287,8 @@ const LOGROS_SEMANA = [
   ['Seguimiento en vivo y mapa del recorrido, sin dependencias nuevas', 'C7'],
   ['Documentos compartidos con el cliente final y los proveedores (suben y ven lo suyo)', 'C3'],
   ['Metas de OTIF por empresa y exportación de la analítica a Excel', 'C4'],
-  ['Todo lo anterior probado con el stack completo: 11 migraciones, 351 e2e, 69 + 22 de navegador y 434 unitarias en verde', 'A13'],
+  ['Segundo factor obligatorio: por empresa para sus administradores y siempre para el personal de SUTL en producción, con código QR', 'C2'],
+  ['Todo lo anterior probado con el stack completo: 11 migraciones, 362 e2e, 70 + 23 de navegador y 442 unitarias en verde', 'A13'],
   ['Corregido: una base vacía no podía migrar (faltaban las tablas base); ahora sí, con una migración puente', 'defecto'],
 ];
 
@@ -302,7 +303,7 @@ const CAMBIOS = [
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'C2b', titulo: 'MFA obligatorio para administradores y analistas', resp: 'Dev', hecho: 'Un administrador o analista sin segundo factor activado debe activarlo para seguir, con código QR en pantalla.', nota: 'Siguiente módulo tras las metas de OTIF y el Excel.' },
+  { id: 'C3b', titulo: 'El proveedor registra el despacho real', resp: 'Dev', hecho: 'El proveedor crea el embarque de su orden desde su portal, con guía y fecha, sin pasar por la empresa.', nota: 'Siguiente módulo tras el segundo factor obligatorio.' },
   { id: 'A9', titulo: 'Deuda técnica: cobertura y subida de versiones', resp: 'Dev', hecho: 'Cobertura medida (meta ≥ 70%) y plan de la subida de NestJS y Next listo para tu aprobación.', nota: 'La subida en sí necesita tu aprobación.' },
   { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
@@ -312,7 +313,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '876', t: 'pruebas en verde: 434 unitarias y 351 de punta a punta del backend, 69 de navegador en demo y 22 contra el backend real' },
+  { n: '897', t: 'pruebas en verde: 442 unitarias y 362 de punta a punta del backend, 70 de navegador en demo y 23 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

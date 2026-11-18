@@ -116,6 +116,12 @@ export class AnaliticaConfigDto {
   umbralAtencionOtifPct?: number;
 }
 
+export class SeguridadConfigDto {
+  @IsOptional()
+  @IsBoolean()
+  exigirMfaAdministradores?: boolean;
+}
+
 export class MarcaConfigDto {
   @IsOptional()
   @IsString()
@@ -172,6 +178,11 @@ export class ConfiguracionDto {
   @ValidateNested()
   @Type(() => AnaliticaConfigDto)
   analitica?: AnaliticaConfigDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SeguridadConfigDto)
+  seguridad?: SeguridadConfigDto;
 
   @IsOptional()
   @ValidateNested()

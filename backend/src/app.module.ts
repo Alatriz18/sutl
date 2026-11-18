@@ -38,6 +38,7 @@ import { AnalystAccessModule } from './modules/analyst-access/analyst-access.mod
 import { PortalModule } from './modules/portal/portal.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
+import { MfaRequeridoGuard } from './modules/auth/mfa-requerido.guard';
 import { AnalystAccessGuard } from './modules/analyst-access/analyst-access.guard';
 import { QueuesModule } from './modules/queues/queues.module';
 import { limiteGlobal } from './common/rate-limit';
@@ -117,6 +118,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // Después de autenticar y antes de los roles: valida el permiso vigente del analista de SUTL.
     { provide: APP_GUARD, useClass: AnalystAccessGuard },
+    // Quien debe tener segundo factor y no lo activó solo puede ir a activarlo.
+    { provide: APP_GUARD, useClass: MfaRequeridoGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],

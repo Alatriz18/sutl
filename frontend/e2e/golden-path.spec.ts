@@ -486,6 +486,17 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(page.getByText('A tiempo y completas · meta 95 %')).toBeVisible();
   });
 
+  test('seguridad: la empresa puede exigir el segundo factor a sus administradores', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/configuracion');
+    const casilla = page.getByLabel('Exigir la app de autenticación a todos los administradores');
+    await expect(casilla).not.toBeChecked();
+    await casilla.check();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Configuración guardada.')).toBeVisible();
+    await expect(casilla).toBeChecked();
+  });
+
   test('marca del seguimiento: la vista previa refleja nombre, color y pie de página', async ({ page }) => {
     await entrar(page);
     await page.goto('/dashboard/configuracion');

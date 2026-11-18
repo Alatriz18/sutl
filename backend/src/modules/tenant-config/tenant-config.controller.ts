@@ -22,7 +22,7 @@ export class TenantConfigController {
 
   @Patch()
   @Roles(RolUsuario.admin_tenant, RolUsuario.super_admin)
-  update(@CurrentUser('tenantId') tenantId: string, @Body() dto: UpdateTenantConfigDto) {
-    return this.tenantConfigService.update(tenantId, dto);
+  update(@CurrentUser('tenantId') tenantId: string, @CurrentUser('userId') userId: string, @Body() dto: UpdateTenantConfigDto) {
+    return this.tenantConfigService.update(tenantId, dto, userId);
   }
 }

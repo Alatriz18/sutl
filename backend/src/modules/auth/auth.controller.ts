@@ -19,10 +19,12 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Externo } from '../../common/decorators/externo.decorator';
+import { SinMfa } from '../../common/decorators/sin-mfa.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { AuthService } from './auth.service';
+import { MfaPoliticaService } from './mfa-politica.service';
 import { MfaService } from './mfa.service';
 import { CodigoMfaDto, DesactivarMfaDto } from './dto/mfa.dto';
 import { LoginDto } from './dto/login.dto';
@@ -41,6 +43,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly mfa: MfaService,
+    private readonly politica: MfaPoliticaService,
     private readonly config: ConfigService,
   ) {}
 
@@ -73,17 +76,22 @@ export class AuthController {
 
   // ---- Segundo factor (TOTP) de la propia cuenta ----
 
+  // `obligatorio`: la política exige el segundo factor a esta cuenta (si aún no lo activó, solo puede usar estas rutas).
+  @SinMfa()
   @Get('mfa')
-  mfaEstado(@CurrentUser('userId') userId: string) {
-    return this.mfa.estado(userId);
+  async mfaEstado(@CurrentUser() user: RequestUser) {
+    const [estado, obligatorio] = await Promise.all([this.mfa.estado(user.userId), this.politica.exigido(user)]);
+    return { ...estado, obligatorio };
   }
 
+  @SinMfa()
   @Throttle({ default: { limit: limiteLogin, ttl: 60000 } })
   @Post('mfa/iniciar')
   mfaIniciar(@CurrentUser() user: RequestUser) {
     return this.mfa.iniciar(user);
   }
 
+  @SinMfa()
   @Throttle({ default: { limit: limiteLogin, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('mfa/activar')
@@ -143,6 +151,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  @SinMfa()
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   async logout(

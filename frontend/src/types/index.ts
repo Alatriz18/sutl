@@ -628,6 +628,9 @@ export interface ConfigOperacion {
     metaOtifPct: number;
     umbralAtencionOtifPct: number;
   };
+  seguridad: {
+    exigirMfaAdministradores: boolean;
+  };
   marca: {
     nombreComercial: string;
     colorPrimario: string;

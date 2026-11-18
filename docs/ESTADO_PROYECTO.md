@@ -85,6 +85,16 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-18 — C2: segundo factor obligatorio con código QR, probado
+
+Probado con Docker: **442 unitarias y 362 e2e del backend, 70 de navegador en demo y 23 contra el backend real, todas en verde.** Sin migraciones. Una dependencia nueva en el frontend: `qrcode-generator` (MIT, sin dependencias propias; `npm audit` de producción sigue en 0).
+
+- **Política:** (1) cada empresa decide si exige el segundo factor a sus administradores (`seguridad.exigirMfaAdministradores` en Configuración, apagado por defecto); (2) el personal de SUTL (analistas y super administradores) lo necesita siempre en producción — fuera de ella solo con `MFA_OBLIGATORIO_PERSONAL_SUTL=true`, para no estorbar el desarrollo local.
+- **Cumplimiento en el servidor:** guard global `MfaRequeridoGuard` (después de autenticar, antes de roles). Quien debe tenerlo y no lo activó recibe 403 con `code: MFA_REQUERIDO` en TODA ruta salvo las marcadas `@SinMfa()`: ver su estado, iniciar y activar el segundo factor, y cerrar sesión. Quien ya lo tiene paga una sola consulta; operadores, clientes y proveedores no se tocan. El super administrador sin segundo factor tampoco puede aprovisionar empresas.
+- **Sin dejar a la empresa afuera:** el servidor rechaza exigirlo si quien lo pide no lo tiene activo él mismo; un administrador sin segundo factor no puede quitar la exigencia (queda bloqueado como el resto). Restablecer el segundo factor de alguien lo vuelve a bloquear hasta que lo active otra vez.
+- **Frontend:** `GET /auth/mfa` ahora devuelve `obligatorio`; al recibir `MFA_REQUERIDO` el navegador lleva a Seguridad de la cuenta, que muestra el aviso y, al activar, un **código QR** dibujado en el propio navegador (SVG; la clave nunca sale a un servicio externo) además de la clave escrita. Tarjeta «Seguridad de los accesos» en Configuración.
+- **Límite:** el administrador de empresa paga una consulta extra por solicitud solo mientras no tenga el segundo factor. En modo demo el segundo factor no está disponible (solo se ve la opción de configuración).
+
 ### 2026-11-18 — C4: metas de OTIF por empresa y exportación de la analítica a Excel, probado
 
 Probado con Docker: **434 unitarias y 351 e2e del backend, 69 de navegador en demo y 22 contra el backend real, todas en verde.** Sin migraciones (las metas viven en la configuración JSON de la empresa) y sin dependencias nuevas.

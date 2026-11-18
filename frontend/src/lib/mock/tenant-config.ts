@@ -14,6 +14,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -28,6 +29,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -42,6 +44,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -56,6 +59,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
+      seguridad: { exigirMfaAdministradores: false },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -72,6 +76,7 @@ function efectiva(): ConfigOperacion {
     excepciones: { ...base.excepciones, ...estado.ajustes.excepciones },
     documentos: { ...base.documentos, ...estado.ajustes.documentos },
     analitica: { ...base.analitica, ...estado.ajustes.analitica },
+    seguridad: { ...base.seguridad, ...estado.ajustes.seguridad },
     marca: { ...base.marca, ...estado.ajustes.marca },
   };
 }
@@ -130,6 +135,8 @@ export function actualizarConfigDemo(body: {
   if (Object.keys(excepciones).length) ajustes.excepciones = excepciones;
   const documentos = { ...base.documentos, ...body.configuracion?.documentos };
   if (Object.keys(documentos).length) ajustes.documentos = documentos;
+  const seguridad = { ...base.seguridad, ...body.configuracion?.seguridad };
+  if (Object.keys(seguridad).length) ajustes.seguridad = seguridad;
   const analitica = { ...base.analitica, ...body.configuracion?.analitica };
   if (Object.keys(analitica).length) ajustes.analitica = analitica;
   const marca = { ...base.marca, ...body.configuracion?.marca };

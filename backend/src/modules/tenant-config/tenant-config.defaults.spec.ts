@@ -56,6 +56,17 @@ describe('tenant-config.defaults', () => {
     });
   });
 
+  describe('seguridad', () => {
+    it('por defecto no se exige el segundo factor a los administradores, en ningún perfil', () => {
+      for (const p of Object.values(PERFILES)) expect(p.config.seguridad).toEqual({ exigirMfaAdministradores: false });
+    });
+
+    it('acepta la exigencia y descarta valores que no son booleanos', () => {
+      expect(resolverConfig('general', { seguridad: { exigirMfaAdministradores: true } }).seguridad.exigirMfaAdministradores).toBe(true);
+      expect(sanitizarAjustes({ seguridad: { exigirMfaAdministradores: 'true' } })).toEqual({});
+    });
+  });
+
   describe('marca de la página pública', () => {
     it('por defecto no cambia nada y muestra «Con tecnología de SUTL»', () => {
       expect(resolverConfig('general', {}).marca).toEqual({ nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true });

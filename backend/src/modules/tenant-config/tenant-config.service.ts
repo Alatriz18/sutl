@@ -29,7 +29,7 @@ export class TenantConfigService {
     return resolverConfig(tenant.perfilOperacion, tenant.configuracion);
   }
 
-  async update(tenantId: string, dto: UpdateTenantConfigDto) {
+  async update(tenantId: string, dto: UpdateTenantConfigDto, actorUserId?: string) {
     const tenant = await this.leer(tenantId);
     const cambiaPerfil = dto.perfil !== undefined && dto.perfil !== tenant.perfilOperacion;
     const base: AjustesOperacion =
@@ -41,6 +41,16 @@ export class TenantConfigService {
     const { analitica } = resolverConfig(perfil, ajustes);
     if (analitica.umbralAtencionOtifPct > analitica.metaOtifPct) {
       throw new BadRequestException('El umbral de atención del OTIF no puede ser mayor que la meta');
+    }
+
+    // Para no dejar a la empresa sin acceso: quien exige el segundo factor debe tenerlo activo él mismo antes.
+    const exigeAhora = resolverConfig(perfil, ajustes).seguridad.exigirMfaAdministradores;
+    const exigiaAntes = resolverConfig(tenant.perfilOperacion, tenant.configuracion).seguridad.exigirMfaAdministradores;
+    if (exigeAhora && !exigiaAntes && actorUserId) {
+      const actor = await this.prisma.user.findUnique({ where: { id: actorUserId }, select: { mfaEnabledAt: true } });
+      if (!actor?.mfaEnabledAt) {
+        throw new BadRequestException('Activa primero tu propio segundo factor (en Seguridad de la cuenta) antes de exigirlo a los administradores');
+      }
     }
 
     await this.prisma.tenant.update({

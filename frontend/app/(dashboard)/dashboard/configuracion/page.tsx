@@ -521,6 +521,36 @@ export default function ConfiguracionPage() {
         </Card>
 
         <Card className="mt-6">
+          <CardTitle>Seguridad de los accesos</CardTitle>
+          <p className="mt-1 text-sm text-navy/60">
+            Un administrador tiene acceso a los datos de toda la empresa: protegerlo con un segundo factor evita que una contraseña filtrada baste para entrar.
+          </p>
+          <div className="mt-4 max-w-2xl">
+            <Campo
+              label="Segundo factor de los administradores"
+              sugerido={sugerido.seguridad.exigirMfaAdministradores ? 'se exige' : 'no se exige'}
+              ajustado={ajustado('seguridad', 'exigirMfaAdministradores')}
+            >
+              <label className="flex items-start gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-navy/30 text-sky focus:ring-sky"
+                  disabled={!puedeEditar}
+                  checked={form.seguridad.exigirMfaAdministradores}
+                  onChange={(e) => set('seguridad', { exigirMfaAdministradores: e.target.checked })}
+                />
+                <span>
+                  Exigir la app de autenticación a todos los administradores
+                  <span className="block text-xs text-navy/50">
+                    Quien no la tenga activada solo podrá ir a activarla (Seguridad de la cuenta) hasta que lo haga. Antes de exigirla tú mismo debes tenerla activa; si alguien pierde su teléfono, otro administrador puede restablecérsela.
+                  </span>
+                </span>
+              </label>
+            </Campo>
+          </div>
+        </Card>
+
+        <Card className="mt-6">
           <CardTitle>Documentos exigidos</CardTitle>
           <p className="mt-1 text-sm text-navy/60">
             Qué documentos debe tener cada envío. Si un envío está por llegar sin ellos aprobados, se abre una excepción.

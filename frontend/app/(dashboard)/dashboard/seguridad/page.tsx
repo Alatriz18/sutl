@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useId, useState } from 'react';
 import { CheckCircle2, Copy, ShieldCheck } from 'lucide-react';
 import { api, DEMO_MODE } from '@/lib/api';
+import { QrCode } from '@/components/security/qr-code';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,8 @@ interface EstadoMfa {
   activo: boolean;
   activadoEn: string | null;
   codigosDeRecuperacionRestantes: number;
+  // La política exige el segundo factor a esta cuenta.
+  obligatorio: boolean;
 }
 
 interface Configuracion {
@@ -104,6 +107,12 @@ export default function SeguridadPage() {
         El segundo factor pide, además de tu contraseña, un código que cambia cada 30 segundos en una app de autenticación (Google Authenticator, Microsoft Authenticator, Authy o 1Password). Así, aunque alguien conozca tu contraseña, no puede entrar.
       </p>
 
+      {estado?.obligatorio && !estado.activo && (
+        <p role="alert" className="mt-4 rounded-lg border border-[#B3362B]/30 bg-[#B3362B]/5 px-4 py-3 text-sm text-navy">
+          <strong>Tu empresa exige el segundo factor.</strong> Actívalo para seguir usando SUTL: hasta entonces no podrás abrir otras pantallas.
+        </p>
+      )}
+
       {DEMO_MODE ? (
         <p className="mt-6 rounded-lg border border-sky/20 bg-sky/5 px-4 py-3 text-sm text-navy/70">
           El segundo factor funciona con la cuenta real y no está disponible en la demostración.
@@ -164,9 +173,14 @@ export default function SeguridadPage() {
         <Card className="mt-6">
           <CardTitle>Configura tu app de autenticación</CardTitle>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-navy/80">
-            <li>Abre tu app de autenticación y agrega una cuenta nueva con «ingresar clave de configuración».</li>
             <li>
-              Escribe esta clave (no distingue mayúsculas):
+              Abre tu app de autenticación y escanea este código QR (o, si no puedes, usa «ingresar clave de configuración» con la clave de abajo).
+              <span className="mt-2 block">
+                <QrCode texto={config.otpauthUrl} etiqueta="Código QR para agregar la cuenta a tu app de autenticación" />
+              </span>
+            </li>
+            <li>
+              Si no puedes escanear, escribe esta clave (no distingue mayúsculas):
               <span className="mt-1 flex items-center gap-2">
                 <code className="rounded bg-navy/5 px-2 py-1 font-mono text-base tracking-wider text-navy">{agrupar(config.secreto)}</code>
                 <button type="button" onClick={() => copiar(config.secreto)} aria-label="Copiar la clave" className="rounded p-1 text-navy/60 hover:bg-navy/5">

@@ -3,14 +3,16 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TenantConfigModule } from '../tenant-config/tenant-config.module';
+import { MfaPoliticaService } from './mfa-politica.service';
 import { MfaService } from './mfa.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 
 @Module({
-  imports: [PassportModule, JwtModule.register({})],
+  imports: [PassportModule, JwtModule.register({}), TenantConfigModule],
   controllers: [AuthController],
-  providers: [AuthService, MfaService, JwtStrategy, JwtRefreshStrategy],
-  exports: [AuthService, MfaService],
+  providers: [AuthService, MfaService, MfaPoliticaService, JwtStrategy, JwtRefreshStrategy],
+  exports: [AuthService, MfaService, MfaPoliticaService],
 })
 export class AuthModule {}

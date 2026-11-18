@@ -62,6 +62,11 @@ api.interceptors.response.use(
       }
     }
 
+    // La empresa exige el segundo factor y esta cuenta aún no lo activó: solo puede ir a activarlo.
+    if (error.response?.status === 403 && error.response?.data?.code === 'MFA_REQUERIDO' && typeof window !== 'undefined' && !window.location.pathname.startsWith('/dashboard/seguridad')) {
+      window.location.href = '/dashboard/seguridad';
+    }
+
     return Promise.reject(error);
   },
 );
