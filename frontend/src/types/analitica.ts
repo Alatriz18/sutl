@@ -23,6 +23,8 @@ export interface FilaProveedorAnalitica extends ResumenOtif {
 export interface AnaliticaResumen {
   periodo: { desde: string; hasta: string };
   generadoAt: string;
+  // Metas de la empresa para colorear el OTIF (verde ≥ otifPct, ámbar ≥ atencionOtifPct, rojo por debajo).
+  metas: { otifPct: number; atencionOtifPct: number };
   otif: ResumenOtif;
   leadTime: { muestra: number; promedioDias: number | null; medianaDias: number | null; p90Dias: number | null };
   cumplimiento: { ocs: number; pctConfirmadas: number | null; conPromesaEvaluada: number; pctCumplePromesa: number | null };

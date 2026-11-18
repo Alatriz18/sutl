@@ -624,6 +624,10 @@ export interface ConfigOperacion {
     diasAvisoVencimiento: number;
     diasAntesEtaFaltante: number;
   };
+  analitica: {
+    metaOtifPct: number;
+    umbralAtencionOtifPct: number;
+  };
   marca: {
     nombreComercial: string;
     colorPrimario: string;

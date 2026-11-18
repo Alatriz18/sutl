@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateTenantConfigDto } from './dto/update-tenant-config.dto';
@@ -36,6 +36,12 @@ export class TenantConfigService {
       cambiaPerfil || dto.restablecer ? {} : sanitizarAjustes(tenant.configuracion);
     const ajustes = combinarAjustes(base, (dto.configuracion ?? {}) as AjustesOperacion);
     const perfil = dto.perfil ?? tenant.perfilOperacion;
+
+    // El umbral de atención no puede quedar por encima de la meta (se compara ya con los valores efectivos).
+    const { analitica } = resolverConfig(perfil, ajustes);
+    if (analitica.umbralAtencionOtifPct > analitica.metaOtifPct) {
+      throw new BadRequestException('El umbral de atención del OTIF no puede ser mayor que la meta');
+    }
 
     await this.prisma.tenant.update({
       where: { id: tenantId },

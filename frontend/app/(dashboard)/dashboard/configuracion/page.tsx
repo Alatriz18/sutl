@@ -111,6 +111,7 @@ export default function ConfiguracionPage() {
   }
 
   const sugerido = perfilActual.config;
+  const metasInvalidas = form.analitica.umbralAtencionOtifPct > form.analitica.metaOtifPct;
   const ajustado = (seccion: keyof ConfigOperacion, clave: string) =>
     (form[seccion] as Record<string, unknown>)[clave] !== (sugerido[seccion] as Record<string, unknown>)[clave];
   const set = <S extends keyof ConfigOperacion>(seccion: S, valores: Partial<ConfigOperacion[S]>) =>
@@ -462,6 +463,64 @@ export default function ConfiguracionPage() {
         </Card>
 
         <Card className="mt-6">
+          <CardTitle>Metas de la analítica</CardTitle>
+          <p className="mt-1 text-sm text-navy/60">
+            Con qué porcentaje de OTIF (entregas a tiempo y completas) se considera bueno el resultado de un proveedor. La analítica lo muestra en verde desde la meta, en ámbar desde el umbral de atención y en rojo por debajo.
+          </p>
+          <div className="mt-4 grid max-w-2xl grid-cols-1 gap-5 sm:grid-cols-2">
+            <Campo
+              htmlFor={`${id}-meta-otif`}
+              label="Meta de OTIF"
+              ayuda="Desde aquí el resultado se muestra en verde."
+              sugerido={`${sugerido.analitica.metaOtifPct} %`}
+              ajustado={ajustado('analitica', 'metaOtifPct')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-meta-otif`}
+                  type="number"
+                  min={1}
+                  max={100}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.analitica.metaOtifPct) ? '' : form.analitica.metaOtifPct}
+                  onChange={(e) => set('analitica', { metaOtifPct: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">%</span>
+              </div>
+            </Campo>
+            <Campo
+              htmlFor={`${id}-atencion-otif`}
+              label="Umbral de atención"
+              ayuda="Desde aquí y hasta la meta, en ámbar; por debajo, en rojo."
+              sugerido={`${sugerido.analitica.umbralAtencionOtifPct} %`}
+              ajustado={ajustado('analitica', 'umbralAtencionOtifPct')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-atencion-otif`}
+                  type="number"
+                  min={1}
+                  max={100}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.analitica.umbralAtencionOtifPct) ? '' : form.analitica.umbralAtencionOtifPct}
+                  onChange={(e) => set('analitica', { umbralAtencionOtifPct: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">%</span>
+              </div>
+            </Campo>
+          </div>
+          {metasInvalidas && (
+            <p role="alert" className="mt-3 text-sm text-[#B3362B]">El umbral de atención no puede ser mayor que la meta.</p>
+          )}
+        </Card>
+
+        <Card className="mt-6">
           <CardTitle>Documentos exigidos</CardTitle>
           <p className="mt-1 text-sm text-navy/60">
             Qué documentos debe tener cada envío. Si un envío está por llegar sin ellos aprobados, se abre una excepción.
@@ -604,7 +663,7 @@ export default function ConfiguracionPage() {
             >
               Volver a los valores del perfil
             </Button>
-            <Button type="submit" disabled={busy || !sinGuardar}>
+            <Button type="submit" disabled={busy || !sinGuardar || metasInvalidas}>
               Guardar cambios
             </Button>
           </div>

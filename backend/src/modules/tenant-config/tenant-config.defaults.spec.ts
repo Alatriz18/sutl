@@ -40,6 +40,22 @@ describe('tenant-config.defaults', () => {
     });
   });
 
+  describe('metas de OTIF de la analítica', () => {
+    it('todos los perfiles traen meta 90 % y atención 70 %', () => {
+      for (const p of Object.values(PERFILES)) expect(p.config.analitica).toEqual({ metaOtifPct: 90, umbralAtencionOtifPct: 70 });
+    });
+
+    it('los ajustes de la empresa ganan sobre el perfil', () => {
+      expect(resolverConfig('general', { analitica: { metaOtifPct: 95 } }).analitica).toEqual({ metaOtifPct: 95, umbralAtencionOtifPct: 70 });
+    });
+
+    it('descarta del JSON guardado valores fuera de 1 a 100 o con tipo incorrecto', () => {
+      expect(sanitizarAjustes({ analitica: { metaOtifPct: 0, umbralAtencionOtifPct: 101 } })).toEqual({});
+      expect(sanitizarAjustes({ analitica: { metaOtifPct: '95', umbralAtencionOtifPct: Infinity } })).toEqual({});
+      expect(sanitizarAjustes({ analitica: { metaOtifPct: 85.5 } })).toEqual({ analitica: { metaOtifPct: 85.5 } });
+    });
+  });
+
   describe('marca de la página pública', () => {
     it('por defecto no cambia nada y muestra «Con tecnología de SUTL»', () => {
       expect(resolverConfig('general', {}).marca).toEqual({ nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true });

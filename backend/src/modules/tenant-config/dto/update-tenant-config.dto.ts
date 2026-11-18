@@ -102,6 +102,20 @@ export class DocumentosConfigDto {
   diasAntesEtaFaltante?: number;
 }
 
+export class AnaliticaConfigDto {
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 1 })
+  @Min(1)
+  @Max(100)
+  metaOtifPct?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 1 })
+  @Min(1)
+  @Max(100)
+  umbralAtencionOtifPct?: number;
+}
+
 export class MarcaConfigDto {
   @IsOptional()
   @IsString()
@@ -153,6 +167,11 @@ export class ConfiguracionDto {
   @ValidateNested()
   @Type(() => DocumentosConfigDto)
   documentos?: DocumentosConfigDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AnaliticaConfigDto)
+  analitica?: AnaliticaConfigDto;
 
   @IsOptional()
   @ValidateNested()

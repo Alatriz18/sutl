@@ -13,6 +13,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -26,6 +27,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -39,6 +41,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -52,6 +55,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -67,6 +71,7 @@ function efectiva(): ConfigOperacion {
     riesgo: { ...base.riesgo, ...estado.ajustes.riesgo },
     excepciones: { ...base.excepciones, ...estado.ajustes.excepciones },
     documentos: { ...base.documentos, ...estado.ajustes.documentos },
+    analitica: { ...base.analitica, ...estado.ajustes.analitica },
     marca: { ...base.marca, ...estado.ajustes.marca },
   };
 }
@@ -99,6 +104,18 @@ export function actualizarConfigDemo(body: {
   if (inv?.diasCoberturaAlerta !== undefined && (!Number.isInteger(inv.diasCoberturaAlerta) || inv.diasCoberturaAlerta < 1 || inv.diasCoberturaAlerta > 365)) {
     return 'Los días de cobertura deben ser un entero entre 1 y 365';
   }
+  const an = body.configuracion?.analitica;
+  for (const v of [an?.metaOtifPct, an?.umbralAtencionOtifPct]) {
+    if (v !== undefined && (typeof v !== 'number' || !Number.isFinite(v) || v < 1 || v > 100)) return 'Las metas de OTIF deben estar entre 1 y 100';
+  }
+  {
+    const prev = estado.ajustes.analitica;
+    const base0 = (PERFILES_DEMO.find((p) => p.id === (body.perfil ?? estado.perfil)) ?? PERFILES_DEMO[0]).config.analitica;
+    const parte = body.perfil !== undefined && body.perfil !== estado.perfil || body.restablecer ? {} : prev;
+    const meta = an?.metaOtifPct ?? parte?.metaOtifPct ?? base0.metaOtifPct;
+    const umbral = an?.umbralAtencionOtifPct ?? parte?.umbralAtencionOtifPct ?? base0.umbralAtencionOtifPct;
+    if (umbral > meta) return 'El umbral de atención del OTIF no puede ser mayor que la meta';
+  }
   const cambiaPerfil = body.perfil !== undefined && body.perfil !== estado.perfil;
   const base = cambiaPerfil || body.restablecer ? {} : estado.ajustes;
   estado.perfil = body.perfil ?? estado.perfil;
@@ -113,6 +130,8 @@ export function actualizarConfigDemo(body: {
   if (Object.keys(excepciones).length) ajustes.excepciones = excepciones;
   const documentos = { ...base.documentos, ...body.configuracion?.documentos };
   if (Object.keys(documentos).length) ajustes.documentos = documentos;
+  const analitica = { ...base.analitica, ...body.configuracion?.analitica };
+  if (Object.keys(analitica).length) ajustes.analitica = analitica;
   const marca = { ...base.marca, ...body.configuracion?.marca };
   if (Object.keys(marca).length) ajustes.marca = marca;
   estado.ajustes = ajustes;

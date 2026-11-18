@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantConfigService } from '../tenant-config/tenant-config.service';
 import { TrackingEvent, TrackingEventDocument } from '../tracking-events/schemas/tracking-event.schema';
 import { ESTADOS_ABIERTOS, OcAnalitica, aging, puntualidadEnvios, resumenAnalitica, tendenciaMensual } from './analytics-engine';
 
@@ -58,6 +59,7 @@ export class AnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectModel(TrackingEvent.name) private readonly eventos: Model<TrackingEventDocument>,
+    private readonly config: TenantConfigService,
   ) {}
 
   // `hoy` se inyecta para poder probar con fechas fijas.
@@ -69,7 +71,7 @@ export class AnalyticsService {
     if (hasta.getTime() - desde.getTime() > MAX_DIAS * DIA_MS) throw new BadRequestException(`El periodo no puede pasar de ${MAX_DIAS} días`);
 
     const inicioTendencia = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() - 5, 1));
-    const [delPeriodo, abiertas, paraTendencia, entregados] = await Promise.all([
+    const [delPeriodo, abiertas, paraTendencia, entregados, cfg] = await Promise.all([
       // OC que vencían (fecha requerida) dentro del periodo.
       this.prisma.purchaseOrder.findMany({
         where: { tenantId, estado: { in: [...ESTADOS_EVALUABLES] }, fechaRequerida: { gte: desde, lte: hasta } },
@@ -87,11 +89,14 @@ export class AnalyticsService {
         select: { id: true, fechaEstimadaLlegada: true },
         take: MAX_OC,
       }),
+      this.config.getEfectiva(tenantId),
     ]);
 
     return {
       periodo: { desde, hasta },
       generadoAt: hoy,
+      // Metas de la empresa para colorear el OTIF (las define cada empresa en su configuración).
+      metas: { otifPct: cfg.analitica.metaOtifPct, atencionOtifPct: cfg.analitica.umbralAtencionOtifPct },
       ...resumenAnalitica((delPeriodo as FilaOc[]).map(aOc), hoy),
       aging: aging((abiertas as FilaOc[]).map(aOc), hoy),
       tendencia: tendenciaMensual((paraTendencia as FilaOc[]).map(aOc), hoy),

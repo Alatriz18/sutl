@@ -55,6 +55,13 @@ export interface ConfigOperacion {
     // Cuántos días antes de la llegada estimada un documento faltante abre una excepción.
     diasAntesEtaFaltante: number;
   };
+  // Metas con las que la analítica colorea el OTIF (verde / ámbar / rojo). Cada empresa exige distinto a sus proveedores.
+  analitica: {
+    // % de OTIF desde el cual el resultado se considera bueno (verde).
+    metaOtifPct: number;
+    // % de OTIF desde el cual se considera «en atención» (ámbar); por debajo es crítico (rojo). Nunca mayor que la meta.
+    umbralAtencionOtifPct: number;
+  };
   // Cómo se ve la página pública de seguimiento que recibe el destinatario (cada campo vacío = por defecto).
   marca: {
     nombreComercial: string;
@@ -87,6 +94,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -99,6 +107,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -111,6 +120,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -123,6 +133,7 @@ export const PERFILES = {
       riesgo: { avisarAlPasarARojo: true },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+      analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
     },
   },
@@ -158,6 +169,7 @@ export function sanitizarAjustes(raw: unknown): AjustesOperacion {
       if (clave === 'recepcionActualizaInventario' && !MODOS_RECEPCION_INVENTARIO.includes(valor as ModoRecepcionInventario)) {
         continue;
       }
+      if (seccion === 'analitica' && (!Number.isFinite(valor) || (valor as number) < 1 || (valor as number) > 100)) continue;
       // La marca se muestra a terceros: un color o logo mal formado se descarta al leer.
       if (seccion === 'marca') {
         if (clave === 'colorPrimario' && valor !== '' && !COLOR_MARCA.test(valor as string)) continue;
@@ -187,6 +199,7 @@ export function resolverConfig(perfil: string, ajustes: unknown): ConfigOperacio
     riesgo: { ...base.riesgo, ...limpio.riesgo },
     excepciones: { ...base.excepciones, ...limpio.excepciones },
     documentos: { ...base.documentos, ...limpio.documentos },
+    analitica: { ...base.analitica, ...limpio.analitica },
     marca: { ...base.marca, ...limpio.marca },
   };
 }
@@ -199,6 +212,7 @@ export function combinarAjustes(actuales: AjustesOperacion, nuevos: AjustesOpera
     riesgo: { ...actuales.riesgo, ...nuevos.riesgo },
     excepciones: { ...actuales.excepciones, ...nuevos.excepciones },
     documentos: { ...actuales.documentos, ...nuevos.documentos },
+    analitica: { ...actuales.analitica, ...nuevos.analitica },
     marca: { ...actuales.marca, ...nuevos.marca },
   });
 }

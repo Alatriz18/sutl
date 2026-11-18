@@ -2,6 +2,7 @@ import type { PurchaseOrder } from '@/types';
 import type { AnaliticaResumen } from '@/types/analitica';
 import * as db from './data';
 import { MockApiError } from './errors';
+import { configEfectivaDemo } from './tenant-config';
 import { ESTADOS_ABIERTOS, OcAnalitica, aging, puntualidadEnvios, resumenAnalitica, tendenciaMensual } from './analytics-engine';
 
 // Analítica del modo demo: misma lógica que el backend (copia del motor) sobre las OC de muestra.
@@ -38,6 +39,7 @@ export function analiticaDemo(tenantId: string, desde?: string | null, hasta?: s
   if (d > h) throw new MockApiError(400, 'La fecha inicial no puede ser posterior a la final');
   if (h.getTime() - d.getTime() > 366 * DIA) throw new MockApiError(400, 'El periodo no puede pasar de 366 días');
 
+  const metas = configEfectivaDemo().analitica;
   const propias = db.purchaseOrders.filter((o) => o.tenantId === tenantId).map(aOc);
   const delPeriodo = propias.filter((o) => EVALUABLES.includes(o.estado) && o.fechaRequerida && o.fechaRequerida >= d && o.fechaRequerida <= h);
   const entregados = db.shipments
@@ -48,7 +50,8 @@ export function analiticaDemo(tenantId: string, desde?: string | null, hasta?: s
   return {
     periodo: { desde: d.toISOString(), hasta: h.toISOString() },
     generadoAt: hoy.toISOString(),
-    ...(JSON.parse(JSON.stringify(resumenAnalitica(delPeriodo, hoy))) as Omit<AnaliticaResumen, 'periodo' | 'generadoAt' | 'aging' | 'tendencia' | 'envios'>),
+    metas: { otifPct: metas.metaOtifPct, atencionOtifPct: metas.umbralAtencionOtifPct },
+    ...(JSON.parse(JSON.stringify(resumenAnalitica(delPeriodo, hoy))) as Omit<AnaliticaResumen, 'periodo' | 'generadoAt' | 'metas' | 'aging' | 'tendencia' | 'envios'>),
     aging: aging(propias.filter((o) => (ESTADOS_ABIERTOS as readonly string[]).includes(o.estado)), hoy),
     tendencia: tendenciaMensual(propias.filter((o) => EVALUABLES.includes(o.estado)), hoy),
     envios: puntualidadEnvios(entregados),

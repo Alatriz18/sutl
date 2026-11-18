@@ -27,6 +27,7 @@ export const CONFIG_POR_DEFECTO: ConfigOperacion = {
   riesgo: { avisarAlPasarARojo: true },
   excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
   documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5 },
+  analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
   marca: { nombreComercial: '', colorPrimario: '', logoUrl: '', mensaje: '', mostrarSutl: true },
 };
 

@@ -122,6 +122,41 @@ describe('Analítica (e2e)', () => {
     expect(r.body.aging.totalAbiertas).toBe(0);
   });
 
+  it('trae las metas de OTIF de la empresa y cada empresa tiene las suyas', async () => {
+    const porDefecto = await resumen(a.token);
+    expect(porDefecto.body.metas).toEqual({ otifPct: 90, atencionOtifPct: 70 });
+
+    const cambio = await http().patch('/api/tenant-config').set(auth(a.token)).send({ configuracion: { analitica: { metaOtifPct: 95, umbralAtencionOtifPct: 80 } } });
+    expect(cambio.status).toBe(200);
+    expect((await resumen(a.token)).body.metas).toEqual({ otifPct: 95, atencionOtifPct: 80 });
+    // La otra empresa no se entera.
+    expect((await resumen(b.token)).body.metas).toEqual({ otifPct: 90, atencionOtifPct: 70 });
+  });
+
+  it('rechaza metas fuera de rango o con el umbral por encima de la meta', async () => {
+    const patch = (analitica: Record<string, unknown>) => http().patch('/api/tenant-config').set(auth(a.token)).send({ configuracion: { analitica } });
+    expect((await patch({ metaOtifPct: 0 })).status).toBe(400);
+    expect((await patch({ metaOtifPct: 101 })).status).toBe(400);
+    expect((await patch({ umbralAtencionOtifPct: 'alto' })).status).toBe(400);
+    // Con la meta en 95, un umbral de 96 queda por encima.
+    const encima = await patch({ umbralAtencionOtifPct: 96 });
+    expect(encima.status).toBe(400);
+    expect(JSON.stringify(encima.body)).toContain('umbral');
+    // Lo rechazado no cambió nada.
+    expect((await resumen(a.token)).body.metas).toEqual({ otifPct: 95, atencionOtifPct: 80 });
+    // Bajar la meta por debajo del umbral vigente también se rechaza.
+    expect((await patch({ metaOtifPct: 75 })).status).toBe(400);
+  });
+
+  it('un operador no puede cambiar las metas', async () => {
+    const email = `an-op-${suffix}@an-test.com`;
+    await http().post('/api/users').set(auth(a.token)).send({ email, password: PASSWORD, nombre: 'Op', rol: 'operador' });
+    const token = await loginAs(app, email);
+    const r = await http().patch('/api/tenant-config').set(auth(token)).send({ configuracion: { analitica: { metaOtifPct: 50 } } });
+    expect(r.status).toBe(403);
+    expect((await resumen(token)).body.metas.otifPct).toBe(95);
+  });
+
   it('el proveedor y el cliente final no tienen acceso', async () => {
     const p = await http().post('/api/partners').set(auth(a.token)).send({ tipo: 'proveedor', nombre: `P ${suffix}` });
     const emailP = `an-prov-${suffix}@an-test.com`;

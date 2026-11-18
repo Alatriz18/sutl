@@ -85,6 +85,16 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-18 — C4: metas de OTIF por empresa y exportación de la analítica a Excel, probado
+
+Probado con Docker: **434 unitarias y 351 e2e del backend, 69 de navegador en demo y 22 contra el backend real, todas en verde.** Sin migraciones (las metas viven en la configuración JSON de la empresa) y sin dependencias nuevas.
+
+- **Metas por empresa:** nueva sección `analitica` en `tenant-config` (`metaOtifPct` 90 y `umbralAtencionOtifPct` 70 en todos los perfiles; rango 1–100, un decimal). El servidor rechaza con 400 valores fuera de rango, tipos incorrectos o un umbral mayor que la meta (comparando con los valores efectivos, también cuando solo se cambia uno). Solo el administrador las cambia; el operador recibe 403. Lo guardado con valores inválidos se descarta al leer.
+- **Analítica:** `GET /api/analytics/resumen` ahora devuelve `metas` de la empresa del JWT; la pantalla pinta verde / ámbar / rojo con ellas (antes 90 y 70 fijos) y muestra la meta en la tarjeta de OTIF. Otra empresa conserva las suyas.
+- **Configuración:** tarjeta «Metas de la analítica» con aviso y guardado bloqueado si el umbral supera la meta.
+- **Excel:** botón «Exportar a Excel» genera un `.xlsx` real de cuatro hojas (Resumen, Proveedores, Tendencia, Atraso de OC abiertas) con números como números. Sin librerías: ZIP sin comprimir escrito a mano (`frontend/src/lib/xlsx.ts`); los textos van como cadenas en línea, así que un valor que empiece con «=» no se ejecuta como fórmula. Se verificó el ZIP con `zipfile` de Python (CRC correcto, acentos intactos, hojas con nombre repetido renombradas).
+- **Límite:** el archivo se arma en el navegador con lo que ya se ve en pantalla (mismo periodo); no hay endpoint de descarga en el servidor.
+
 ### 2026-11-17 — C3: documentos compartidos con el cliente final y los proveedores, probado
 
 Probado con Docker: **431 unitarias y 348 e2e del backend, 67 de navegador en demo y 21 contra el backend real, todas en verde.** Migración nueva `20261117120000_documentos_compartidos` (`visibleCliente` y `visibleProveedor` en `documents`, falsos por defecto).

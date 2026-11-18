@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { CheckCircle2, Clock, PackageCheck, Timer } from 'lucide-react';
+import { CheckCircle2, Clock, FileSpreadsheet, PackageCheck, Timer } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatTile } from '@/components/ui/stat-tile';
 import { CATEGORICAL, CHART_INK, STATUS } from '@/lib/chart-colors';
 import { extractApiError, formatDate } from '@/lib/format';
+import { hojasAnalitica } from '@/lib/analitica-excel';
+import { descargarXlsx } from '@/lib/xlsx';
+import { useToast } from '@/lib/toast-context';
 import type { AnaliticaResumen } from '@/types/analitica';
 
 const PERIODOS = [
@@ -21,11 +24,17 @@ const PERIODOS = [
 
 const dec = (n: number | null, sufijo = '') => (n === null ? '—' : `${n.toLocaleString('es-EC')}${sufijo}`);
 const mesCorto = (m: string) => new Date(`${m}-01T12:00:00`).toLocaleDateString('es-EC', { month: 'short' });
-// Verde si cumple la meta, ámbar si anda cerca, rojo si queda lejos (el valor siempre va también en texto).
-const colorOtif = (v: number | null) => (v === null ? CHART_INK.muted : v >= 90 ? STATUS.good : v >= 70 ? STATUS.warning : STATUS.critical);
+type Metas = AnaliticaResumen['metas'];
+// Verde si cumple la meta de la empresa, ámbar si pasa su umbral de atención, rojo por debajo (el valor siempre va también en texto).
+const nivelOtif = (v: number | null, m: Metas) => (v === null ? 'navy' : v >= m.otifPct ? 'good' : v >= m.atencionOtifPct ? 'warning' : 'critical');
+const colorOtif = (v: number | null, m: Metas) => {
+  const n = nivelOtif(v, m);
+  return n === 'navy' ? CHART_INK.muted : STATUS[n];
+};
 
 export default function AnaliticaPage() {
   const id = useId();
+  const toast = useToast();
   const [dias, setDias] = useState(90);
   const [datos, setDatos] = useState<AnaliticaResumen | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +54,15 @@ export default function AnaliticaPage() {
     cargar();
   }, [cargar]);
 
+  function exportar() {
+    if (!datos) return;
+    try {
+      descargarXlsx(`analitica-abastecimiento-${new Date().toISOString().slice(0, 10)}.xlsx`, hojasAnalitica(datos));
+    } catch {
+      toast.error('No se pudo generar el archivo de Excel.');
+    }
+  }
+
   const proveedores = useMemo(() => datos?.proveedores.filter((p) => p.pctOtif !== null) ?? [], [datos]);
 
   return (
@@ -54,11 +72,17 @@ export default function AnaliticaPage() {
           <h1 className="text-2xl font-bold text-navy">Analítica de abastecimiento</h1>
           <p className="mt-1 text-navy/60">Cómo cumplen tus proveedores: entregas a tiempo y completas, plazos y atrasos.</p>
         </div>
-        <div>
-          <label htmlFor={`${id}-p`} className="mb-1 block text-sm font-medium text-navy">Periodo</label>
-          <select id={`${id}-p`} value={dias} onChange={(e) => setDias(Number(e.target.value))} className="h-10 rounded-md border border-navy/15 bg-white px-3 text-sm text-navy">
-            {PERIODOS.map((p) => <option key={p.dias} value={p.dias}>{p.etiqueta}</option>)}
-          </select>
+        <div className="flex items-end gap-3">
+          <div>
+            <label htmlFor={`${id}-p`} className="mb-1 block text-sm font-medium text-navy">Periodo</label>
+            <select id={`${id}-p`} value={dias} onChange={(e) => setDias(Number(e.target.value))} className="h-10 rounded-md border border-navy/15 bg-white px-3 text-sm text-navy">
+              {PERIODOS.map((p) => <option key={p.dias} value={p.dias}>{p.etiqueta}</option>)}
+            </select>
+          </div>
+          <Button variant="ghost" onClick={exportar} disabled={!datos}>
+            <FileSpreadsheet size={16} className="mr-1.5" aria-hidden />
+            Exportar a Excel
+          </Button>
         </div>
       </div>
 
@@ -76,7 +100,7 @@ export default function AnaliticaPage() {
           </p>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatTile label="OTIF" value={dec(datos.otif.pctOtif, ' %')} icon={CheckCircle2} accent={datos.otif.pctOtif === null ? 'navy' : datos.otif.pctOtif >= 90 ? 'good' : datos.otif.pctOtif >= 70 ? 'warning' : 'critical'} hint="A tiempo y completas" />
+            <StatTile label="OTIF" value={dec(datos.otif.pctOtif, ' %')} icon={CheckCircle2} accent={nivelOtif(datos.otif.pctOtif, datos.metas)} hint={`A tiempo y completas · meta ${datos.metas.otifPct} %`} />
             <StatTile label="A tiempo" value={dec(datos.otif.pctATiempo, ' %')} icon={Clock} accent="sky" hint={datos.otif.atrasoPromedioDias !== null ? `Atraso promedio: ${datos.otif.atrasoPromedioDias} días` : 'Sin atrasos'} />
             <StatTile label="Completas" value={dec(datos.otif.pctCompleto, ' %')} icon={PackageCheck} accent="sky" hint={datos.otif.fillRatePromedio !== null ? `Se recibió el ${datos.otif.fillRatePromedio} % de lo pedido` : undefined} />
             <StatTile label="Lead time" value={dec(datos.leadTime.promedioDias, ' d')} icon={Timer} accent="navy" hint={datos.leadTime.muestra ? `Mediana ${dec(datos.leadTime.medianaDias)} · P90 ${dec(datos.leadTime.p90Dias)} (${datos.leadTime.muestra} OC)` : 'Sin OC completadas'} />
@@ -98,7 +122,7 @@ export default function AnaliticaPage() {
                         <YAxis type="category" dataKey="nombre" width={130} tick={{ fill: CHART_INK.secondary, fontSize: 12 }} axisLine={false} tickLine={false} />
                         <Tooltip formatter={(v) => `${v} %`} contentStyle={{ borderRadius: 8, borderColor: CHART_INK.gridline, fontSize: 13 }} />
                         <Bar dataKey="pctOtif" name="OTIF" radius={[0, 4, 4, 0]} barSize={20}>
-                          {proveedores.map((p) => <Cell key={p.proveedorId} fill={colorOtif(p.pctOtif)} />)}
+                          {proveedores.map((p) => <Cell key={p.proveedorId} fill={colorOtif(p.pctOtif, datos.metas)} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>

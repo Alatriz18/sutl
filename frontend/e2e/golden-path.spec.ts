@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 // Flujo principal del modo demo: landing → login → dashboard poblado →
@@ -453,6 +454,36 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(tabla.getByText('Empaques del Litoral S.A.')).toBeVisible();
     await page.getByLabel('Periodo').selectOption('30');
     await expect(page.getByText(/evaluadas/)).toBeVisible();
+  });
+
+  test('analítica: se exporta a Excel un archivo válido con las hojas y los proveedores', async ({ page }) => {
+    await entrar(page);
+    await page.getByRole('link', { name: 'Analítica de abastecimiento' }).first().click();
+    await expect(page.getByRole('table').getByText('Empaques del Litoral S.A.')).toBeVisible();
+    const [descarga] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Exportar a Excel' }).click()]);
+    expect(descarga.suggestedFilename()).toMatch(/^analitica-abastecimiento-\d{4}-\d{2}-\d{2}\.xlsx$/);
+    const bytes = readFileSync((await descarga.path()) as string);
+    // Un .xlsx es un ZIP: empieza con «PK» y trae las cuatro hojas (el ZIP va sin comprimir, así que el texto se lee).
+    expect(bytes.subarray(0, 2).toString('latin1')).toBe('PK');
+    const texto = bytes.toString('utf8');
+    for (const parte of ['xl/workbook.xml', 'xl/worksheets/sheet4.xml', 'Resumen', 'Proveedores', 'Tendencia', 'Atraso de OC abiertas', 'Empaques del Litoral S.A.']) {
+      expect(texto).toContain(parte);
+    }
+  });
+
+  test('metas de OTIF: se cambian en la configuración y la analítica las usa; el umbral no puede superar la meta', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/configuracion');
+    await page.getByLabel('Meta de OTIF').fill('95');
+    await page.getByLabel('Umbral de atención').fill('98');
+    await expect(page.getByRole('alert').filter({ hasText: 'no puede ser mayor que la meta' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
+    await page.getByLabel('Umbral de atención').fill('80');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Configuración guardada.')).toBeVisible();
+    // Se navega sin recargar para conservar el estado de la demo.
+    await page.getByRole('link', { name: 'Analítica de abastecimiento' }).first().click();
+    await expect(page.getByText('A tiempo y completas · meta 95 %')).toBeVisible();
   });
 
   test('marca del seguimiento: la vista previa refleja nombre, color y pie de página', async ({ page }) => {
