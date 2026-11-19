@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '464 unitarias y 393 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real, todas en verde.',
+    '464 unitarias y 397 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -273,6 +273,7 @@ const HORIZONTE = [
 
 // Lo avanzado en la semana 6 (9–14 nov).
 const LOGROS_SEMANA = [
+  ['Avisos de documentos por vencer también al responsable definido por la empresa', 'C1c'],
   ['Redis + BullMQ, pruebas contra el backend real y de accesibilidad, e importación desde Excel', 'A7, A8, A12'],
   ['Motor de riesgo de abastecimiento con semáforo y acción recomendada', 'B1'],
   ['Notificaciones reales por correo y WhatsApp con cola y reintentos', 'A11'],
@@ -309,7 +310,6 @@ const CAMBIOS = [
 // Plan de la semana 7 (16–20 nov): qué, quién y cuándo se da por hecho.
 const PLAN_SEMANA = [
   { id: 'D1', titulo: 'Decidir la nube y crear las cuentas', resp: 'Kevin', hecho: 'Decisión tomada (staging liviano o AWS) y cuentas creadas.', nota: 'Ruta crítica: sin staging no hay piloto con un cliente real. Sigue sin decidirse.', decision: true },
-  { id: 'C1c', titulo: 'Alertas de vencimiento también a los responsables', resp: 'Dev', hecho: 'Los avisos de documentos por vencer llegan además al responsable definido, no solo a los administradores.', nota: 'Siguiente módulo; aprovecha el responsable por tipo de excepción.' },
   { id: 'A4', titulo: 'Dirección real del formulario de contacto', resp: 'Kevin', hecho: 'CONTACT_INBOX_EMAIL definido y decidido si va botón de WhatsApp.', nota: 'El formulario ya funciona.', decision: true },
   { id: 'A2', titulo: 'Activar la protección de ramas en GitHub', resp: 'Kevin', hecho: 'main y develop protegidas (PR con CI en verde y 1 aprobación) y develop creada.', nota: '15 min en Settings → Branches; pasos en docs/CONTRIBUTING.md.' },
   { id: 'E1', titulo: 'Entrevistas con el cliente ideal (sigue)', resp: 'Kevin', hecho: 'Avance confirmado y lista de candidatos a design partner.', nota: 'No tengo datos de cuántas llevas.' },
@@ -318,7 +318,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '955', t: 'pruebas en verde: 464 unitarias y 393 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real' },
+  { n: '959', t: 'pruebas en verde: 464 unitarias y 397 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

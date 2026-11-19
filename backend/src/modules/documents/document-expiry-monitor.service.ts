@@ -100,6 +100,13 @@ export class DocumentExpiryMonitorService implements OnApplicationBootstrap {
   // Un solo correo por administrador con todo lo que hay que atender (no uno por documento).
   private async enviar(tenantId: string, items: { codigoGuia: string; tipo: keyof typeof ETIQUETA_TIPO; fechaVencimiento: Date; vencido: boolean }[]): Promise<number> {
     const admins = await this.prisma.user.findMany({ where: { tenantId, rol: 'admin_tenant', activo: true }, select: { id: true, email: true } });
+    // Además de los administradores, le llega al responsable de «documento faltante» de la empresa (si sigue siendo
+    // un usuario interno activo de ella); sin duplicar si ya es administrador.
+    const responsableId = (await this.tenantConfig.getEfectiva(tenantId)).excepciones.responsableDocumentoFaltanteId;
+    if (responsableId && !admins.some((a) => a.id === responsableId)) {
+      const r = await this.prisma.user.findFirst({ where: { id: responsableId, tenantId, activo: true, rol: { in: ['operador', 'analista_sutl'] } }, select: { id: true, email: true } });
+      if (r) admins.push(r);
+    }
     if (admins.length === 0 || !this.notifications) return 0;
     const vencidos = items.filter((i) => i.vencido);
     const porVencer = items.filter((i) => !i.vencido);

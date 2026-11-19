@@ -85,6 +85,10 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-19 — C1c: los avisos de vencimiento también llegan al responsable
+
+El correo de documentos por vencer o vencidos ya no va solo a los administradores: también le llega al **responsable de «documento faltante»** que definió la empresa en Configuración (si sigue siendo un usuario interno y activo; si es administrador no recibe el correo duplicado; si se desactivó, se ignora). Archivo: `documents/document-expiry-monitor.service.ts`. Prueba nueva: `test/document-expiry-responsable.e2e-spec.ts` (4 casos). Probado con Docker: 11 e2e de vencimientos en verde. Sin migraciones ni dependencias nuevas.
+
 ### 2026-11-19 — B4: responsable por tipo de excepción, y todo listo para presentar
 
 Probado con Docker: **464 unitarias y 393 e2e del backend, 73 de navegador en demo y 25 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas.
