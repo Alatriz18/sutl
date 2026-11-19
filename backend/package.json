@@ -16,7 +16,10 @@
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "seed": "ts-node prisma/seed.ts",
+    "demo:preparar": "node scripts/preparar-demo.mjs",
+    "demo:rondas": "ts-node scripts/ejecutar-rondas.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

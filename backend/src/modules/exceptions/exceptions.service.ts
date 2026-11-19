@@ -208,10 +208,12 @@ export class ExceptionsService implements OnApplicationBootstrap {
   private async abrirTarea(tenantId: string, casoId: string, c: Candidata, venceSlaAt: Date): Promise<string | null> {
     const admin = await this.prisma.user.findFirst({ where: { tenantId, rol: 'admin_tenant', activo: true }, orderBy: { createdAt: 'asc' }, select: { id: true } });
     if (!admin) return null;
+    const asignadoAId = await this.responsableDe(tenantId, c.tipo);
     const tarea = await this.prisma.task.create({
       data: {
         tenantId,
         creadoPorId: admin.id,
+        asignadoAId,
         titulo: c.titulo,
         descripcion: c.detalle,
         prioridad: c.severidad === 'media' ? 'media' : 'alta',
@@ -223,6 +225,16 @@ export class ExceptionsService implements OnApplicationBootstrap {
     });
     await this.audit.registrar({ tenantId, accion: 'tarea.creada', entidad: 'tarea', entidadId: tarea.id, metadata: { titulo: c.titulo, origen: 'excepcion', excepcionId: casoId } });
     return tarea.id;
+  }
+
+  // El responsable que la empresa definió para este tipo de excepción, si sigue siendo un usuario interno activo
+  // de la empresa (si se desactivó o cambió de rol, la tarea queda sin responsable para que un administrador la asigne).
+  private async responsableDe(tenantId: string, tipo: Candidata['tipo']): Promise<string | null> {
+    const cfg = (await this.tenantConfig.getEfectiva(tenantId)).excepciones;
+    const id = tipo === 'sku_en_rojo' ? cfg.responsableSkuRojoId : tipo === 'oc_atrasada' ? cfg.responsableOcAtrasadaId : cfg.responsableDocumentoFaltanteId;
+    if (!id) return null;
+    const u = await this.prisma.user.findFirst({ where: { id, tenantId, activo: true, rol: { in: ['admin_tenant', 'operador', 'analista_sutl'] } }, select: { id: true } });
+    return u?.id ?? null;
   }
 
   private async avisarEscaladas(tenantId: string, escaladas: { titulo: string; detalle: string }[]) {

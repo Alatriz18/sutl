@@ -85,6 +85,18 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-19 — B4: responsable por tipo de excepción, y todo listo para presentar
+
+Probado con Docker: **464 unitarias y 393 e2e del backend, 73 de navegador en demo y 25 contra el backend real, todas en verde.** Sin migraciones ni dependencias nuevas.
+
+- **Responsable por tipo de excepción:** en Configuración, tres selectores (SKU en rojo, OC atrasada, documentos faltantes). La tarea que abre cada excepción nace asignada a esa persona. El servidor rechaza a quien no sea usuario **interno, activo y de la misma empresa** (externos, de otra empresa, inexistentes, o con formato inválido) y, si el responsable se desactiva después, la tarea queda sin responsable en vez de fallar.
+- **Presentación (nuevo):**
+  - `scripts/levantar-demo.ps1` levanta Docker (lo abre si hace falta), bases de datos, correo de prueba, migraciones, datos de ejemplo, backend, frontend compilado y el escenario de la presentación. `scripts/detener-demo.ps1` lo apaga (con `-BorrarDatos` deja todo en blanco).
+  - `backend/scripts/preparar-demo.mjs` (`npm run demo:preparar`) crea por la API real, de forma idempotente, los usuarios proveedor, cliente final y analista de SUTL, dos órdenes para el flujo del proveedor, un envío con recorrido en el mapa, documentos por vencer y vencido (uno compartido con el cliente) y un envío listo para registrar la entrega con firma.
+  - `backend/scripts/ejecutar-rondas.ts` (`npm run demo:rondas`) corre ahora las rondas automáticas (riesgo, excepciones, avisos de vencimiento) para mostrarlas en vivo.
+  - `docs/DEMO_PRESENTACION.md`: cuentas, 9 flujos paso a paso con los valores a escribir, ejemplos por la API y solución de problemas.
+- **Pruebas:** el tiempo máximo de cada prueba e2e sube a 60 s (las rondas de «todas las empresas» crecen con los datos acumulados de muchas corridas y rozaban los 30 s).
+
 ### 2026-11-18 — C6: firma en pantalla en la prueba de entrega, probado
 
 Probado con Docker: **464 unitarias y 387 e2e del backend, 72 de navegador en demo y 25 contra el backend real, todas en verde.** Una migración nueva (`20261118180000_firma_prueba_entrega`: columna `firmaUrl`). Sin dependencias nuevas.

@@ -508,6 +508,19 @@ test.describe('Flujo principal (modo demo)', () => {
     await expect(casilla).not.toBeChecked();
   });
 
+  test('excepciones: la empresa define quién es el responsable de cada tipo', async ({ page }) => {
+    await entrar(page);
+    await page.goto('/dashboard/configuracion');
+    const selector = page.getByLabel('OC atrasada', { exact: true });
+    await expect(selector).toHaveValue('');
+    const opciones = await selector.locator('option').allInnerTexts();
+    expect(opciones.length).toBeGreaterThan(1);
+    await selector.selectOption({ index: 1 });
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('Configuración guardada.')).toBeVisible();
+    await expect(selector).not.toHaveValue('');
+  });
+
   test('marca del seguimiento: la vista previa refleja nombre, color y pie de página', async ({ page }) => {
     await entrar(page);
     await page.goto('/dashboard/configuracion');

@@ -615,6 +615,9 @@ export interface ConfigOperacion {
     slaAltaHoras: number;
     slaMediaHoras: number;
     crearTareas: boolean;
+    responsableSkuRojoId: string;
+    responsableOcAtrasadaId: string;
+    responsableDocumentoFaltanteId: string;
   };
   documentos: {
     exigirFactura: boolean;

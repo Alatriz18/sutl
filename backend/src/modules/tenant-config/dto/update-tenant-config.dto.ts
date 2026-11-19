@@ -70,6 +70,19 @@ export class ExcepcionesConfigDto {
   @IsOptional()
   @IsBoolean()
   crearTareas?: boolean;
+
+  // Id de un usuario interno de la empresa, o vacío para dejarla sin responsable.
+  @IsOptional()
+  @Matches(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})?$/, { message: 'responsableSkuRojoId debe ser un identificador de usuario' })
+  responsableSkuRojoId?: string;
+
+  @IsOptional()
+  @Matches(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})?$/, { message: 'responsableOcAtrasadaId debe ser un identificador de usuario' })
+  responsableOcAtrasadaId?: string;
+
+  @IsOptional()
+  @Matches(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})?$/, { message: 'responsableDocumentoFaltanteId debe ser un identificador de usuario' })
+  responsableDocumentoFaltanteId?: string;
 }
 
 export class DocumentosConfigDto {

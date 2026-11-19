@@ -7,6 +7,10 @@ Plataforma SaaS B2B de tracking logístico multi-tenant para Ecuador/LATAM.
 Desarrollado por **SVK Solutions** — Kevin Santana
 > "Si lo puedes imaginar, yo lo puedo programar"
 
+## Presentar el avance
+
+Para levantar todo (bases de datos, backend, frontend y datos de ejemplo) con un comando y recorrer los flujos paso a paso: `.\scripts\levantar-demo.ps1` y la guía [docs/DEMO_PRESENTACION.md](docs/DEMO_PRESENTACION.md). Para apagar: `.\scripts\detener-demo.ps1`.
+
 ## Stack Tecnológico
 
 | Capa | Tecnología |

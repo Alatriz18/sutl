@@ -48,10 +48,20 @@ export default function ConfiguracionPage() {
   const [perfilPendiente, setPerfilPendiente] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const puedeEditar = user?.rol === 'admin_tenant' || user?.rol === 'super_admin';
+  const [internos, setInternos] = useState<{ id: string; nombre: string }[]>([]);
 
   useEffect(() => {
     if (data) setForm(structuredClone(data.configuracion));
   }, [data]);
+
+  // Quiénes pueden ser responsables de una excepción: el personal interno activo de la empresa.
+  useEffect(() => {
+    if (!puedeEditar) return;
+    api
+      .get<{ id: string; nombre: string; rol: string; activo: boolean }[]>('/users')
+      .then((r) => setInternos(r.data.filter((u) => u.activo && ['admin_tenant', 'operador', 'analista_sutl'].includes(u.rol)).map((u) => ({ id: u.id, nombre: u.nombre }))))
+      .catch(() => setInternos([]));
+  }, [puedeEditar]);
 
   const perfilActual = data?.perfiles.find((p) => p.id === data.perfil);
   const sinGuardar = useMemo(
@@ -459,6 +469,28 @@ export default function ConfiguracionPage() {
                 </span>
               </label>
             </Campo>
+          </div>
+          <p className="mt-5 text-sm font-medium text-navy">Responsable de la tarea según el tipo de excepción</p>
+          <p className="text-xs text-navy/50">La tarea nace asignada a esta persona. Si lo dejas vacío, queda sin responsable para que un administrador la asigne.</p>
+          <div className="mt-3 grid max-w-3xl grid-cols-1 gap-5 sm:grid-cols-3">
+            {([
+              ['responsableSkuRojoId', 'SKU en rojo'],
+              ['responsableOcAtrasadaId', 'OC atrasada'],
+              ['responsableDocumentoFaltanteId', 'Documentos faltantes'],
+            ] as const).map(([clave, texto]) => (
+              <Campo key={clave} htmlFor={`${id}-${clave}`} label={texto} sugerido="sin responsable" ajustado={ajustado('excepciones', clave)}>
+                <select
+                  id={`${id}-${clave}`}
+                  disabled={!puedeEditar}
+                  value={form.excepciones[clave]}
+                  onChange={(e) => set('excepciones', { [clave]: e.target.value })}
+                  className="h-10 w-full rounded-md border border-navy/20 bg-white px-2 text-sm text-navy"
+                >
+                  <option value="">Sin responsable</option>
+                  {internos.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+                </select>
+              </Campo>
+            ))}
           </div>
         </Card>
 

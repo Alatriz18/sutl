@@ -43,6 +43,14 @@ export class TenantConfigService {
       throw new BadRequestException('El umbral de atención del OTIF no puede ser mayor que la meta');
     }
 
+    // Cada responsable de excepciones debe ser un usuario INTERNO, activo y de esta empresa (nunca de otra ni externo).
+    const ex = resolverConfig(perfil, ajustes).excepciones;
+    const ids = [ex.responsableSkuRojoId, ex.responsableOcAtrasadaId, ex.responsableDocumentoFaltanteId].filter(Boolean);
+    if (ids.length > 0) {
+      const validos = await this.prisma.user.count({ where: { id: { in: [...new Set(ids)] }, tenantId, activo: true, rol: { in: ['admin_tenant', 'operador', 'analista_sutl'] } } });
+      if (validos !== new Set(ids).size) throw new BadRequestException('El responsable de excepciones debe ser un usuario interno y activo de tu empresa');
+    }
+
     // Para no dejar a la empresa sin acceso: quien exige el segundo factor debe tenerlo activo él mismo antes.
     const exigeAhora = resolverConfig(perfil, ajustes).seguridad.exigirMfaAdministradores;
     const exigiaAntes = resolverConfig(tenant.perfilOperacion, tenant.configuracion).seguridad.exigirMfaAdministradores;

@@ -41,6 +41,10 @@ export interface ConfigOperacion {
     slaMediaHoras: number;
     // Si cada excepción nueva abre una tarea automáticamente.
     crearTareas: boolean;
+    // A quién se le asigna la tarea según el tipo de excepción (id de un usuario interno; vacío = sin responsable).
+    responsableSkuRojoId: string;
+    responsableOcAtrasadaId: string;
+    responsableDocumentoFaltanteId: string;
   };
   documentos: {
     // Documentos que cada envío debe tener antes de llegar (los sube y aprueba el equipo).
@@ -81,6 +85,7 @@ export interface ConfigOperacion {
   };
 }
 
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const COLOR_MARCA = /^#[0-9a-fA-F]{6}$/;
 export const LOGO_MARCA = /^https:\/\/[^\s"'<>]{1,280}$/;
 
@@ -98,7 +103,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
-      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
@@ -112,7 +117,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
       riesgo: { avisarAlPasarARojo: true },
-      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
@@ -126,7 +131,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
       riesgo: { avisarAlPasarARojo: true },
-      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
@@ -140,7 +145,7 @@ export const PERFILES = {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
       riesgo: { avisarAlPasarARojo: true },
-      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true },
+      excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
       seguridad: { exigirMfaAdministradores: false },
@@ -179,6 +184,8 @@ export function sanitizarAjustes(raw: unknown): AjustesOperacion {
       if (clave === 'recepcionActualizaInventario' && !MODOS_RECEPCION_INVENTARIO.includes(valor as ModoRecepcionInventario)) {
         continue;
       }
+      // Un responsable es el identificador de un usuario (UUID) o vacío; el servidor además comprueba que sea de la empresa.
+      if (seccion === 'excepciones' && clave.startsWith('responsable') && valor !== '' && !UUID.test(valor as string)) continue;
       if (seccion === 'analitica' && (!Number.isFinite(valor) || (valor as number) < 1 || (valor as number) > 100)) continue;
       // La marca se muestra a terceros: un color o logo mal formado se descarta al leer.
       if (seccion === 'marca') {
