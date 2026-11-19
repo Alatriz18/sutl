@@ -393,6 +393,12 @@ test.describe('Flujo principal (modo demo)', () => {
     await page.getByRole('button', { name: 'Enviar' }).click();
     await expect(page.getByText('Ya les escribí por correo')).toBeVisible();
 
+    // Evidencia adjunta.
+    await page.getByLabel('Archivo de evidencia').setInputFiles({ name: 'foto-factura.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 demo') });
+    await page.getByRole('button', { name: 'Adjuntar evidencia' }).click();
+    await expect(page.getByRole('button', { name: 'foto-factura.pdf' })).toBeVisible();
+    await expect(page.getByText(/adjuntó evidencia/)).toBeVisible();
+
     await page.getByLabel('Estado').selectOption('hecha');
     await expect(page.getByText(/la marcó como hecha/)).toBeVisible();
     await expect(page.getByText(/creó la tarea/)).toBeVisible();

@@ -85,6 +85,10 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-19 — B3c: evidencia adjunta en las tareas
+
+Cada tarea admite hasta 10 archivos de evidencia (PDF, imagen, Excel o Word, 10 MB c/u). Los sube el administrador, quien creó la tarea o su responsable; los ve y descarga el personal de la empresa. Nunca se expone la ruta del disco, la descarga valida empresa y tarea (404 uniforme entre empresas) y cada archivo queda en la bitácora de la tarea. Migración `20261119120000_evidencia_tareas` (tabla `task_attachments`). Backend: `tasks.service.ts`/`tasks.controller.ts`; pantalla: sección «Evidencia» en el detalle de Tareas (y en la demo). Pruebas: `test/tasks-evidencia.e2e-spec.ts` (7), paso nuevo en la prueba de demo y `e2e-real/evidencia.spec.ts`. También corregí 2 pruebas unitarias del monitor de vencimientos que mi cambio C1c había dejado desactualizadas. Para no saturar el equipo, las pruebas ahora usan como máximo 2 procesos en paralelo (`maxWorkers: 2`). Probado con Docker: **464 unitarias, 407 e2e, 73 de navegador en demo y 26 contra el backend real, todas en verde.**
+
 ### 2026-11-19 — B3b: aviso por correo al asignar una tarea
 
 Cuando alguien crea una tarea asignada a otra persona, o reasigna una existente, el nuevo responsable recibe un correo (no se avisa a quien se la asigna a sí mismo, ni cuando el cambio no toca al responsable; un fallo del correo no tumba la operación). Archivo: `tasks/tasks.service.ts`. Pruebas: `test/tasks-aviso.e2e-spec.ts` (3 casos). Probado con Docker: 400 e2e y 21 unitarias de tareas en verde. **Pendiente de B3:** evidencia adjunta en tareas.

@@ -11,6 +11,9 @@ const esAdmin = (rol: RolUsuario) => rol === RolUsuario.admin_tenant || rol === 
 
 const PERSONA = { select: { id: true, nombre: true, email: true } } as const;
 const INCLUIR = { asignadoA: PERSONA, creadoPor: PERSONA } as const;
+// Nunca se expone la ruta del archivo en disco: se descarga por su identificador.
+const ADJUNTO = { select: { id: true, nombreArchivo: true, tamano: true, createdAt: true, subidoPor: PERSONA }, orderBy: { createdAt: 'asc' } } as const;
+const MAX_ADJUNTOS = 10;
 
 @Injectable()
 export class TasksService {
@@ -68,6 +71,7 @@ Entra a SUTL → Tareas para verla y marcarla como hecha.`,
       include: {
         ...INCLUIR,
         comentarios: { include: { autor: PERSONA }, orderBy: { createdAt: 'asc' } },
+        adjuntos: ADJUNTO,
       },
     });
     if (!tarea) throw new NotFoundException('Tarea no encontrada');
@@ -177,6 +181,30 @@ Entra a SUTL → Tareas para verla y marcarla como hecha.`,
       metadata: { comentarioId: comentario.id },
     });
     return comentario;
+  }
+
+  // Evidencia: la puede adjuntar el administrador, quien creó la tarea o su responsable (igual que modificarla).
+  async adjuntar(user: RequestUser, id: string, file: Express.Multer.File) {
+    const tarea = await this.prisma.task.findFirst({ where: { id, tenantId: user.tenantId }, select: { creadoPorId: true, asignadoAId: true } });
+    if (!tarea) throw new NotFoundException('Tarea no encontrada');
+    if (!esAdmin(user.rol) && tarea.creadoPorId !== user.userId && tarea.asignadoAId !== user.userId) {
+      throw new ForbiddenException('Solo quien creó la tarea, su responsable o un administrador pueden adjuntar evidencia');
+    }
+    if ((await this.prisma.taskAttachment.count({ where: { taskId: id, tenantId: user.tenantId } })) >= MAX_ADJUNTOS) {
+      throw new ConflictException(`Una tarea admite hasta ${MAX_ADJUNTOS} archivos de evidencia`);
+    }
+    const adjunto = await this.prisma.taskAttachment.create({
+      data: { tenantId: user.tenantId, taskId: id, subidoPorId: user.userId, nombreArchivo: file.originalname, urlArchivo: `/uploads/${user.tenantId}/${file.filename}`, tamano: file.size },
+      select: ADJUNTO.select,
+    });
+    await this.audit.registrar({ tenantId: user.tenantId, userId: user.userId, accion: 'tarea.evidencia_adjuntada', entidad: ENTIDAD_BITACORA, entidadId: id, metadata: { adjuntoId: adjunto.id, nombreArchivo: adjunto.nombreArchivo } });
+    return adjunto;
+  }
+
+  async adjuntoParaDescarga(tenantId: string, id: string, adjuntoId: string) {
+    const a = await this.prisma.taskAttachment.findFirst({ where: { id: adjuntoId, taskId: id, tenantId }, select: { urlArchivo: true, nombreArchivo: true } });
+    if (!a) throw new NotFoundException('Archivo no encontrado');
+    return a;
   }
 
   // El responsable debe ser personal activo de la misma empresa (no un cliente final ni un proveedor externo).

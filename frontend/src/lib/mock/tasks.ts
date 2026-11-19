@@ -1,4 +1,4 @@
-import { ComentarioTarea, EventoBitacora, PersonaResumen, Tarea, TareaDetalle, User } from '@/types';
+import { AdjuntoTarea, ComentarioTarea, EventoBitacora, PersonaResumen, Tarea, TareaDetalle, User } from '@/types';
 import { MockApiError } from './errors';
 
 // Tareas del modo demo (en memoria): replican las reglas del backend para que
@@ -9,6 +9,7 @@ interface Registro {
   tarea: Tarea;
   tenantId: string;
   comentarios: ComentarioTarea[];
+  adjuntos: AdjuntoTarea[];
   bitacora: EventoBitacora[];
 }
 
@@ -36,14 +37,14 @@ function sembrar(usuarios: User[]) {
       creadoPorId: admin.id, creadoPor: persona(admin), fechaLimite: new Date(Date.now() + diasLimite * dia).toISOString(), completadaAt: null,
       entidadTipo, entidadId, createdAt: ahora(), updatedAt: ahora(), _count: { comentarios: 0 },
     };
-    registros.push({ tarea: t, tenantId: admin.tenantId, comentarios: [], bitacora: [evento('tarea.creada', admin, { titulo })] });
+    registros.push({ tarea: t, tenantId: admin.tenantId, comentarios: [], adjuntos: [], bitacora: [evento('tarea.creada', admin, { titulo })] });
   };
   crear('Confirmar fecha de llegada con el proveedor', 'alta', 2, 'sku', 'RES-PET-001');
   crear('Revisar documentos de la OC antes del embarque', 'media', 5, null, null);
 }
 
 function detalle(r: Registro): TareaDetalle {
-  return { ...r.tarea, _count: { comentarios: r.comentarios.length }, comentarios: r.comentarios, bitacora: r.bitacora };
+  return { ...r.tarea, _count: { comentarios: r.comentarios.length }, comentarios: r.comentarios, adjuntos: r.adjuntos, bitacora: r.bitacora };
 }
 
 // Devuelve undefined si la ruta no es de tareas.
@@ -88,7 +89,7 @@ export function manejarTareas(
       entidadTipo: (body.entidadTipo as Tarea['entidadTipo']) ?? null, entidadId: body.entidadTipo ? String(body.entidadId ?? '') || null : null,
       createdAt: ahora(), updatedAt: ahora(), _count: { comentarios: 0 },
     };
-    registros.push({ tarea, tenantId: user.tenantId, comentarios: [], bitacora: [evento('tarea.creada', user, { titulo })] });
+    registros.push({ tarea, tenantId: user.tenantId, comentarios: [], adjuntos: [], bitacora: [evento('tarea.creada', user, { titulo })] });
     return { data: tarea, status: 201 };
   }
 
@@ -149,4 +150,32 @@ export function manejarTareas(
   }
 
   return undefined;
+}
+
+// Evidencia adjunta (demo): se guarda el archivo en memoria, con las mismas reglas que el backend.
+const TIPOS_EVIDENCIA = ['.pdf', '.jpg', '.jpeg', '.png', '.xlsx', '.doc', '.docx'];
+const archivos = new Map<string, File>();
+
+export function adjuntarEvidenciaDemo(user: User, tareaId: string, file: File | null): AdjuntoTarea {
+  const reg = registros.find((r) => r.tenantId === user.tenantId && r.tarea.id === tareaId);
+  if (!reg) throw new MockApiError(404, 'Tarea no encontrada');
+  const t = reg.tarea;
+  if (!(user.rol === 'admin_tenant' || user.rol === 'super_admin') && t.creadoPorId !== user.id && t.asignadoAId !== user.id) {
+    throw new MockApiError(403, 'Solo quien creó la tarea, su responsable o un administrador pueden adjuntar evidencia');
+  }
+  if (!file) throw new MockApiError(400, 'Debes adjuntar un archivo');
+  if (!TIPOS_EVIDENCIA.some((e) => file.name.toLowerCase().endsWith(e))) throw new MockApiError(400, 'Tipo de archivo no permitido');
+  if (reg.adjuntos.length >= 10) throw new MockApiError(409, 'Una tarea admite hasta 10 archivos de evidencia');
+  const a: AdjuntoTarea = { id: id('a'), nombreArchivo: file.name, tamano: file.size, createdAt: ahora(), subidoPor: persona(user) };
+  reg.adjuntos.push(a);
+  archivos.set(a.id, file);
+  reg.bitacora.push(evento('tarea.evidencia_adjuntada', user, { adjuntoId: a.id, nombreArchivo: a.nombreArchivo }));
+  return a;
+}
+
+export function descargarEvidenciaDemo(user: User, tareaId: string, adjuntoId: string): Blob {
+  const reg = registros.find((r) => r.tenantId === user.tenantId && r.tarea.id === tareaId);
+  const f = reg?.adjuntos.some((a) => a.id === adjuntoId) ? archivos.get(adjuntoId) : undefined;
+  if (!f) throw new MockApiError(404, 'Archivo no encontrado');
+  return f;
 }

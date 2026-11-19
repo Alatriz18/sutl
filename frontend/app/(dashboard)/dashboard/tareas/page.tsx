@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useId, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -35,6 +35,7 @@ const ACCION_LABEL: Record<string, string> = {
   'tarea.creada': 'creó la tarea',
   'tarea.modificada': 'modificó la tarea',
   'tarea.comentada': 'comentó',
+  'tarea.evidencia_adjuntada': 'adjuntó evidencia',
   'tarea.abierta': 'la dejó abierta',
   'tarea.en_curso': 'la puso en curso',
   'tarea.hecha': 'la marcó como hecha',
@@ -139,6 +140,8 @@ function Detalle({ id, usuarios, onCambio, onCerrar }: { id: string; usuarios: U
   const toast = useToast();
   const [t, setT] = useState<TareaDetalle | null>(null);
   const [comentario, setComentario] = useState('');
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const inputArchivo = useRef<HTMLInputElement>(null);
   const [ocupado, setOcupado] = useState(false);
   const idc = useId();
 
@@ -183,6 +186,38 @@ function Detalle({ id, usuarios, onCambio, onCerrar }: { id: string; usuarios: U
       toast.error(extractApiError(err, 'No se pudo enviar el comentario.'));
     } finally {
       setOcupado(false);
+    }
+  }
+
+  async function adjuntar(e: FormEvent) {
+    e.preventDefault();
+    if (!archivo) return;
+    setOcupado(true);
+    try {
+      const form = new FormData();
+      form.append('file', archivo);
+      await api.post(`/tasks/${id}/adjuntos`, form);
+      setArchivo(null);
+      if (inputArchivo.current) inputArchivo.current.value = '';
+      cargar();
+    } catch (err) {
+      toast.error(extractApiError(err, 'No se pudo adjuntar el archivo.'));
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function descargar(adjuntoId: string, nombre: string) {
+    try {
+      const res = await api.get(`/tasks/${id}/adjuntos/${adjuntoId}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombre;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(extractApiError(err, 'No se pudo descargar el archivo.'));
     }
   }
 
@@ -241,6 +276,27 @@ function Detalle({ id, usuarios, onCambio, onCerrar }: { id: string; usuarios: U
         </div>
       </div>
       {cancelada && <p className="mt-2 text-xs text-navy/60">Está cancelada: cambia el estado para reabrirla.</p>}
+
+      <div className="mt-6">
+        <h3 className="text-sm font-semibold text-navy">Evidencia</h3>
+        {t.adjuntos.length === 0 ? (
+          <p className="mt-2 text-sm text-navy/50">Aún no hay archivos adjuntos.</p>
+        ) : (
+          <ul className="mt-2 space-y-1.5">
+            {t.adjuntos.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center gap-2 text-sm text-navy">
+                <button type="button" className="font-medium underline" onClick={() => descargar(a.id, a.nombreArchivo)}>{a.nombreArchivo}</button>
+                <span className="text-xs text-navy/50">{Math.max(1, Math.round(a.tamano / 1024))} KB · {a.subidoPor.nombre} · {formatDateTime(a.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form onSubmit={adjuntar} className="mt-3 flex flex-wrap items-center gap-2">
+          <input ref={inputArchivo} type="file" aria-label="Archivo de evidencia" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.doc,.docx" className="text-sm text-navy" onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
+          <Button type="submit" disabled={ocupado || !archivo}>Adjuntar evidencia</Button>
+          <span className="text-xs text-navy/50">PDF, imagen, Excel o Word, hasta 10 MB y 10 archivos.</span>
+        </form>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>

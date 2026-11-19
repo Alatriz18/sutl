@@ -7,11 +7,11 @@ const item = (id: string, estado: string, dias: number) => ({ id, codigoGuia: `S
 function montar(opciones: { items?: unknown[]; admins?: unknown[]; avisar?: boolean; falla?: boolean; claim?: number } = {}) {
   const prisma = {
     document: { updateMany: jest.fn().mockResolvedValue({ count: opciones.claim ?? 1 }) },
-    user: { findMany: jest.fn().mockResolvedValue(opciones.admins ?? [{ id: 'a1', email: 'a@x.com' }]) },
+    user: { findMany: jest.fn().mockResolvedValue(opciones.admins ?? [{ id: 'a1', email: 'a@x.com' }]), findFirst: jest.fn().mockResolvedValue(null) },
     tenant: { findMany: jest.fn().mockResolvedValue([{ id: 't1' }]) },
   };
   const documents = { proximosVencimientos: jest.fn().mockResolvedValue(opciones.items ?? [item('d1', 'por_vencer', 5), item('d2', 'vencido', -2)]) };
-  const tenantConfig = { getEfectiva: jest.fn().mockResolvedValue({ documentos: { diasAvisoVencimiento: 15, avisarVencimientos: opciones.avisar ?? true } }) };
+  const tenantConfig = { getEfectiva: jest.fn().mockResolvedValue({ documentos: { diasAvisoVencimiento: 15, avisarVencimientos: opciones.avisar ?? true }, excepciones: { responsableDocumentoFaltanteId: '' } }) };
   const notifications = { create: opciones.falla ? jest.fn().mockRejectedValue(new Error('smtp')) : jest.fn().mockResolvedValue({}) };
   const service = new DocumentExpiryMonitorService(prisma as never, documents as never, tenantConfig as never, notifications as never);
   return { service, prisma, notifications, documents };

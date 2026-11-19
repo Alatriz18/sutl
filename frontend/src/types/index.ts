@@ -826,8 +826,17 @@ export interface EventoBitacora {
   user: PersonaResumen | null;
 }
 
+export interface AdjuntoTarea {
+  id: string;
+  nombreArchivo: string;
+  tamano: number;
+  createdAt: string;
+  subidoPor: PersonaResumen;
+}
+
 export interface TareaDetalle extends Tarea {
   comentarios: ComentarioTarea[];
+  adjuntos: AdjuntoTarea[];
   bitacora: EventoBitacora[];
 }
 

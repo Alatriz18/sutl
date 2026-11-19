@@ -24,7 +24,7 @@ import {
 import * as db from './data';
 import { MockApiError } from './errors';
 import * as supply from './supply';
-import { manejarTareas } from './tasks';
+import { adjuntarEvidenciaDemo, descargarEvidenciaDemo, manejarTareas } from './tasks';
 import { evaluarExcepciones, listarExcepciones } from './exceptions';
 import { resumenTorre } from './control-tower';
 import { listarMensajes, publicarMensaje } from './portal';
@@ -1108,6 +1108,17 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     if (method === 'post' && path === '/exceptions/evaluar') return delay(ok(config, evaluarExcepciones(), 201), 400);
 
     // --- TAREAS y BITÁCORA ---
+    {
+      const usuarioEv = currentUser();
+      const ev = path.match(/^\/tasks\/([^/]+)\/adjuntos(?:\/([^/]+)\/download)?$/);
+      if (usuarioEv && ev) {
+        if (method === 'post' && !ev[2]) {
+          const archivo = (config.data as FormData | undefined)?.get?.('file') as File | null;
+          return delay(ok(config, adjuntarEvidenciaDemo(usuarioEv, ev[1], archivo ?? null), 201), 300);
+        }
+        if (method === 'get' && ev[2]) return delay(ok(config, descargarEvidenciaDemo(usuarioEv, ev[1], ev[2])), 200);
+      }
+    }
     {
       const usuario = currentUser();
       if (usuario) {

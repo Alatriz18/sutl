@@ -163,7 +163,7 @@ const COVERAGE = [
   ['Inventario y cobertura', 'hecho', 'Alimenta el motor de riesgo', 'A6 · Sem 5'],
   ['Motor de riesgo de abastecimiento', 'hecho', 'Semáforo, acción recomendada y evaluación periódica con aviso', 'B1, B1b · Sem 6'],
   ['Control Tower (vista de riesgo)', 'hecho', 'Resumen con riesgo, OC atrasadas, tareas y vencimientos', 'B2 · Sem 6'],
-  ['Workflow humano (tareas)', 'hecho', 'Tareas, comentarios y bitácora; falta evidencia adjunta', 'B3 · Sem 6'],
+  ['Workflow humano (tareas)', 'hecho', 'Tareas, comentarios, bitácora, avisos de asignación y evidencia adjunta', 'B3 · Sem 6'],
   ['Motor de excepciones', 'hecho', 'Plazo, escalamiento y documentos faltantes', 'B4 · Sem 6'],
   ['Roles analista y proveedor', 'hecho', 'Acceso explícito y revocable; falta exigirles segundo factor', 'B5 · Sem 6'],
   ['Portal colaborativo', 'hecho', 'Proveedor y cliente final con su portal, conversación y confirmación', 'C3 · Sem 6'],
@@ -217,7 +217,7 @@ const FALTA = [
   ]],
   ['Producto', [
     'Metas de OTIF por empresa, exportación de la analítica y MFA obligatorio para administradores.',
-    'Fechas de llegada para OC que todavía no viajan (B1b) y evidencia adjunta en tareas (B3).',
+    'Fechas de llegada para OC que todavía no viajan (B1b).',
     'Exigir el segundo factor por política y mostrar el QR (C2).',
     'Firma en pantalla y fotos desde el celular (C6) y metas de OTIF por empresa.',
   ]],
@@ -273,6 +273,7 @@ const HORIZONTE = [
 
 // Lo avanzado en la semana 6 (9–14 nov).
 const LOGROS_SEMANA = [
+  ['Evidencia adjunta en las tareas (hasta 10 archivos, descarga protegida)', 'B3c'],
   ['Aviso por correo a quien recibe una tarea asignada', 'B3b'],
   ['Avisos de documentos por vencer también al responsable definido por la empresa', 'C1c'],
   ['Redis + BullMQ, pruebas contra el backend real y de accesibilidad, e importación desde Excel', 'A7, A8, A12'],
@@ -319,7 +320,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '983', t: 'pruebas en verde: 464 unitarias y 400 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real' },
+  { n: '970', t: 'pruebas en verde: 464 unitarias y 407 de punta a punta del backend, 73 de navegador en demo y 26 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

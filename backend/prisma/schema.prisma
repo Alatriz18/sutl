@@ -225,6 +225,7 @@ model Tenant {
   portalMessages             PortalMessage[]
   proofsOfDelivery           ProofOfDelivery[]
   taskComments               TaskComment[]
+  taskAttachments            TaskAttachment[]
 
   @@map("tenants")
 }
@@ -266,6 +267,7 @@ model User {
   tareasAsignadas      Task[]                 @relation("TareaAsignada")
   tareasCreadas        Task[]                 @relation("TareaCreadaPor")
   comentariosTarea     TaskComment[]          @relation("ComentarioAutor")
+  adjuntosTarea        TaskAttachment[]       @relation("AdjuntoSubidoPor")
   mfaRecoveryCodes     MfaRecoveryCode[]
   mensajesPortal       PortalMessage[]       @relation("MensajeAutor")
   entregasRegistradas  ProofOfDelivery[]     @relation("PodRegistradoPor")
@@ -1198,6 +1200,7 @@ model Task {
   asignadoA   User?         @relation("TareaAsignada", fields: [asignadoAId], references: [id])
   creadoPor   User          @relation("TareaCreadaPor", fields: [creadoPorId], references: [id])
   comentarios TaskComment[]
+  adjuntos    TaskAttachment[]
 
   @@index([tenantId, estado])
   @@index([tenantId, asignadoAId])
@@ -1343,4 +1346,25 @@ model MfaRecoveryCode {
 
   @@unique([userId, codeHash])
   @@map("mfa_recovery_codes")
+}
+
+// Evidencia adjunta a una tarea (B3c): archivos que respaldan lo hecho (foto, PDF, planilla). Se guardan en disco
+// bajo la carpeta de la empresa y solo se descargan con sesión del personal de esa empresa.
+model TaskAttachment {
+  id            String   @id @default(uuid())
+  tenantId      String
+  taskId        String
+  subidoPorId   String
+  nombreArchivo String
+  urlArchivo    String
+  tamano        Int
+  createdAt     DateTime @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  subidoPor User   @relation("AdjuntoSubidoPor", fields: [subidoPorId], references: [id])
+
+  @@index([taskId, createdAt])
+  @@index([tenantId])
+  @@map("task_attachments")
 }
