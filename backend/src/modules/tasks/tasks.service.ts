@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { EstadoTarea, Prisma, RolUsuario } from '@prisma/client';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateCommentDto, CreateTaskDto, ListTasksQueryDto, UpdateTaskDto } from './dto/task.dto';
 
 const ENTIDAD_BITACORA = 'tarea';
@@ -13,10 +14,37 @@ const INCLUIR = { asignadoA: PERSONA, creadoPor: PERSONA } as const;
 
 @Injectable()
 export class TasksService {
+  private readonly logger = new Logger(TasksService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    @Optional() private readonly notifications?: NotificationsService,
   ) {}
+
+  // Avisa por correo a quien recibe una tarea (no a quien se la asignó a sí mismo). Un fallo del correo nunca
+  // tumba la operación: la tarea ya quedó guardada.
+  private async avisarAsignacion(user: RequestUser, tarea: { id: string; titulo: string; prioridad: string; fechaLimite: Date | null; asignadoAId: string | null }) {
+    if (!this.notifications || !tarea.asignadoAId || tarea.asignadoAId === user.userId) return;
+    try {
+      const u = await this.prisma.user.findFirst({ where: { id: tarea.asignadoAId, tenantId: user.tenantId, activo: true }, select: { id: true, email: true } });
+      if (!u) return;
+      const limite = tarea.fechaLimite ? `
+Fecha límite: ${tarea.fechaLimite.toISOString().slice(0, 10)}` : '';
+      await this.notifications.create(user.tenantId, {
+        canal: 'email',
+        tipo: 'tarea_asignada',
+        asunto: `SUTL: te asignaron una tarea — ${tarea.titulo}`,
+        mensaje: `Te asignaron la tarea «${tarea.titulo}» (prioridad ${tarea.prioridad}).${limite}
+
+Entra a SUTL → Tareas para verla y marcarla como hecha.`,
+        destino: u.email,
+        userId: u.id,
+      });
+    } catch (e) {
+      this.logger.warn(`No se pudo avisar la asignación de la tarea ${tarea.id}: ${(e as Error).message}`);
+    }
+  }
 
   findAll(user: RequestUser, q: ListTasksQueryDto) {
     const where: Prisma.TaskWhereInput = {
@@ -76,6 +104,7 @@ export class TasksService {
       entidadId: tarea.id,
       metadata: { titulo: tarea.titulo, asignadoAId: tarea.asignadoAId, entidadTipo: tarea.entidadTipo, entidadId: tarea.entidadId },
     });
+    await this.avisarAsignacion(user, tarea);
     return tarea;
   }
 
@@ -127,7 +156,9 @@ export class TasksService {
       entidadId: id,
       metadata: { cambios },
     });
-    return this.prisma.task.findFirstOrThrow({ where: { id, tenantId: user.tenantId }, include: INCLUIR });
+    const resultado = await this.prisma.task.findFirstOrThrow({ where: { id, tenantId: user.tenantId }, include: INCLUIR });
+    if (cambios.asignadoAId) await this.avisarAsignacion(user, resultado);
+    return resultado;
   }
 
   async comentar(user: RequestUser, id: string, dto: CreateCommentDto) {

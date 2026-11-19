@@ -198,7 +198,7 @@ const YA_FUNCIONA = [
     'Analista de SUTL con acceso explícito y revocable por empresa; proveedor y cliente final externos que solo ven lo suyo.',
   ]],
   ['Calidad', [
-    '464 unitarias y 397 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real, todas en verde.',
+    '464 unitarias y 400 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real, todas en verde.',
     'CI, ADRs, documento de estado vivo, lint, tsc y build limpios; una base vacía migra completa.',
   ]],
 ];
@@ -273,6 +273,7 @@ const HORIZONTE = [
 
 // Lo avanzado en la semana 6 (9–14 nov).
 const LOGROS_SEMANA = [
+  ['Aviso por correo a quien recibe una tarea asignada', 'B3b'],
   ['Avisos de documentos por vencer también al responsable definido por la empresa', 'C1c'],
   ['Redis + BullMQ, pruebas contra el backend real y de accesibilidad, e importación desde Excel', 'A7, A8, A12'],
   ['Motor de riesgo de abastecimiento con semáforo y acción recomendada', 'B1'],
@@ -318,7 +319,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '959', t: 'pruebas en verde: 464 unitarias y 397 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real' },
+  { n: '983', t: 'pruebas en verde: 464 unitarias y 400 de punta a punta del backend, 73 de navegador en demo y 25 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

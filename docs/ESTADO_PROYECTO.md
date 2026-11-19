@@ -85,6 +85,10 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-19 — B3b: aviso por correo al asignar una tarea
+
+Cuando alguien crea una tarea asignada a otra persona, o reasigna una existente, el nuevo responsable recibe un correo (no se avisa a quien se la asigna a sí mismo, ni cuando el cambio no toca al responsable; un fallo del correo no tumba la operación). Archivo: `tasks/tasks.service.ts`. Pruebas: `test/tasks-aviso.e2e-spec.ts` (3 casos). Probado con Docker: 400 e2e y 21 unitarias de tareas en verde. **Pendiente de B3:** evidencia adjunta en tareas.
+
 ### 2026-11-19 — C1c: los avisos de vencimiento también llegan al responsable
 
 El correo de documentos por vencer o vencidos ya no va solo a los administradores: también le llega al **responsable de «documento faltante»** que definió la empresa en Configuración (si sigue siendo un usuario interno y activo; si es administrador no recibe el correo duplicado; si se desactivó, se ignora). Archivo: `documents/document-expiry-monitor.service.ts`. Prueba nueva: `test/document-expiry-responsable.e2e-spec.ts` (4 casos). Probado con Docker: 11 e2e de vencimientos en verde. Sin migraciones ni dependencias nuevas.
