@@ -30,6 +30,9 @@ describe('Responsable de excepciones (e2e)', () => {
 
   beforeAll(async () => {
     process.env.LOGIN_RATE_LIMIT = '1000';
+    process.env.SMTP_HOST ??= 'localhost';
+    process.env.SMTP_PORT ??= '1025';
+    process.env.SMTP_FROM ??= 'SUTL <notificaciones@sutl.local>';
     app = await createTestApp();
     a = await crearTenantConAdmin(app, `Resp A ${suffix}`);
     b = await crearTenantConAdmin(app, `Resp B ${suffix}`);
@@ -64,6 +67,15 @@ describe('Responsable de excepciones (e2e)', () => {
     expect(tarea.asignadoAId).toBe(operadorId);
     // La tarea aparece entre las del operador.
     expect((await http().get('/api/tasks').set(auth(a.token))).body.some((t: { id: string }) => t.id === tarea.id)).toBe(true);
+    // Y el responsable recibe el aviso por correo.
+    const limite = Date.now() + 8000;
+    let asuntos: string[] = [];
+    while (Date.now() < limite && asuntos.length === 0) {
+      const res = await fetch(`${process.env.MAILPIT_URL ?? 'http://localhost:8025'}/api/v1/search?query=${encodeURIComponent(`to:"resp-op-${suffix}@e2e-test.com"`)}`);
+      asuntos = (((await res.json()) as { messages?: { Subject: string }[] }).messages ?? []).map((m) => m.Subject);
+      if (asuntos.length === 0) await new Promise((r) => setTimeout(r, 200));
+    }
+    expect(asuntos[0]).toContain('te asignaron una tarea');
   });
 
   it('rechaza responsables que no son usuarios internos y activos de la empresa', async () => {

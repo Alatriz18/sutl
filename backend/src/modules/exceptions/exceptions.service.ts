@@ -224,7 +224,30 @@ export class ExceptionsService implements OnApplicationBootstrap {
       select: { id: true },
     });
     await this.audit.registrar({ tenantId, accion: 'tarea.creada', entidad: 'tarea', entidadId: tarea.id, metadata: { titulo: c.titulo, origen: 'excepcion', excepcionId: casoId } });
+    await this.avisarResponsable(tenantId, asignadoAId, c.titulo, venceSlaAt);
     return tarea.id;
+  }
+
+  // El responsable definido se entera por correo de la tarea que le cayó (un fallo del correo no frena la ronda).
+  private async avisarResponsable(tenantId: string, userId: string | null, titulo: string, limite: Date) {
+    if (!userId || !this.notifications) return;
+    try {
+      const u = await this.prisma.user.findFirst({ where: { id: userId, tenantId, activo: true }, select: { id: true, email: true } });
+      if (!u) return;
+      await this.notifications.create(tenantId, {
+        canal: 'email',
+        tipo: 'tarea_asignada',
+        asunto: `SUTL: te asignaron una tarea — ${titulo}`,
+        mensaje: `Se abrió una excepción y la tarea «${titulo}» quedó a tu cargo.
+Plazo de atención: ${limite.toISOString().slice(0, 10)}
+
+Entra a SUTL → Tareas para atenderla.`,
+        destino: u.email,
+        userId: u.id,
+      });
+    } catch {
+      /* el aviso es de cortesía: la tarea ya quedó creada */
+    }
   }
 
   // El responsable que la empresa definió para este tipo de excepción, si sigue siendo un usuario interno activo
