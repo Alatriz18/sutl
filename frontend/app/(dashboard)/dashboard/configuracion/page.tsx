@@ -394,6 +394,31 @@ export default function ConfiguracionPage() {
               </label>
             </Campo>
           </div>
+          <div className="mt-5 max-w-sm">
+            <Campo
+              htmlFor={`${id}-transito`}
+              label="Días de tránsito estimados"
+              ayuda="Para una orden que el proveedor ya despachó o confirmó pero aún no tiene embarque, se estima la llegada sumando estos días a su fecha de despacho. 0 = no estimar."
+              sugerido={`${sugerido.riesgo.diasTransitoEstimado} días`}
+              ajustado={ajustado('riesgo', 'diasTransitoEstimado')}
+            >
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${id}-transito`}
+                  type="number"
+                  min={0}
+                  max={365}
+                  step={1}
+                  required
+                  disabled={!puedeEditar}
+                  className="w-28"
+                  value={Number.isNaN(form.riesgo.diasTransitoEstimado) ? '' : form.riesgo.diasTransitoEstimado}
+                  onChange={(e) => set('riesgo', { diasTransitoEstimado: e.target.valueAsNumber })}
+                />
+                <span className="text-sm text-navy/60">días</span>
+              </div>
+            </Campo>
+          </div>
         </Card>
 
         <Card className="mt-6">

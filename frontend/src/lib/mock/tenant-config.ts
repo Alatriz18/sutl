@@ -10,7 +10,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -25,7 +25,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -40,7 +40,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -55,7 +55,7 @@ export const PERFILES_DEMO: PerfilOperacion[] = [
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -109,6 +109,8 @@ export function actualizarConfigDemo(body: {
   if (inv?.diasCoberturaAlerta !== undefined && (!Number.isInteger(inv.diasCoberturaAlerta) || inv.diasCoberturaAlerta < 1 || inv.diasCoberturaAlerta > 365)) {
     return 'Los días de cobertura deben ser un entero entre 1 y 365';
   }
+  const dt = body.configuracion?.riesgo?.diasTransitoEstimado;
+  if (dt !== undefined && (!Number.isInteger(dt) || dt < 0 || dt > 365)) return 'Los días de tránsito deben ser un entero entre 0 y 365';
   const an = body.configuracion?.analitica;
   for (const v of [an?.metaOtifPct, an?.umbralAtencionOtifPct]) {
     if (v !== undefined && (typeof v !== 'number' || !Number.isFinite(v) || v < 1 || v > 100)) return 'Las metas de OTIF deben estar entre 1 y 100';

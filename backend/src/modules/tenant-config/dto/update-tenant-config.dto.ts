@@ -52,6 +52,12 @@ export class RiesgoConfigDto {
   @IsOptional()
   @IsBoolean()
   avisarAlPasarARojo?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(365)
+  diasTransitoEstimado?: number;
 }
 
 export class ExcepcionesConfigDto {

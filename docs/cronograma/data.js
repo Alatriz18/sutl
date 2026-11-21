@@ -216,10 +216,8 @@ const FALTA = [
     'Observabilidad, backups con simulacro de restauración y pentest (D3, D5, D6).',
   ]],
   ['Producto', [
-    'Metas de OTIF por empresa, exportación de la analítica y MFA obligatorio para administradores.',
-    'Fechas de llegada para OC que todavía no viajan (B1b).',
-    'Exigir el segundo factor por política y mostrar el QR (C2).',
-    'Firma en pantalla y fotos desde el celular (C6) y metas de OTIF por empresa.',
+    'Fotos de la entrega tomadas desde el celular (C6).',
+    'Dominio propio para el seguimiento público (C8).',
   ]],
   ['Negocio', [
     'Planes con pasarela de pago y facturación electrónica SRI (C5, C9).',
@@ -273,6 +271,7 @@ const HORIZONTE = [
 
 // Lo avanzado en la semana 6 (9–14 nov).
 const LOGROS_SEMANA = [
+  ['Llegada estimada de las órdenes que todavía no viajan, con días de tránsito por empresa', 'B1c'],
   ['Evidencia adjunta en las tareas (hasta 10 archivos, descarga protegida)', 'B3c'],
   ['Aviso por correo a quien recibe una tarea asignada', 'B3b'],
   ['Avisos de documentos por vencer también al responsable definido por la empresa', 'C1c'],
@@ -320,7 +319,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '970', t: 'pruebas en verde: 464 unitarias y 407 de punta a punta del backend, 73 de navegador en demo y 26 contra el backend real' },
+  { n: '976', t: 'pruebas en verde: 464 unitarias y 412 de punta a punta del backend, 73 de navegador en demo y 27 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];

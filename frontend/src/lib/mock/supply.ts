@@ -173,6 +173,7 @@ const ORDEN_SEMAFORO = { rojo: 0, amarillo: 1, verde: 2, sin_datos: 3 } as const
 export function riesgo(): RiesgoResponse {
   const cob = cobertura();
   const hoy = new Date();
+  const diasTransito = configEfectivaDemo().riesgo.diasTransitoEstimado;
   const porSku = new Map<string, Reposicion[]>();
   const agregar = (sku: string, r: Reposicion) => porSku.set(sku, [...(porSku.get(sku) ?? []), r]);
   for (const oc of db.purchaseOrders.filter((o) => ESTADOS_VINCULO.includes(o.estado))) {
@@ -186,7 +187,12 @@ export function riesgo(): RiesgoResponse {
         pendiente -= cantidad;
         agregar(l.sku, { fecha: s.fechaEstimadaLlegada ? new Date(s.fechaEstimadaLlegada) : null, cantidad, origen: 'embarque', referencia: s.codigoGuia });
       }
-      if (pendiente > 0) agregar(l.sku, { fecha: null, cantidad: pendiente, origen: 'oc', referencia: oc.numero });
+      if (pendiente > 0) {
+        // Igual que el backend: con días de tránsito definidos, despacho (o fecha comprometida) + tránsito.
+        const salida = oc.fechaDespacho ?? oc.fechaConfirmadaProveedor;
+        const fecha = diasTransito > 0 && salida ? new Date(new Date(salida).getTime() + diasTransito * 86_400_000) : null;
+        agregar(l.sku, { fecha, cantidad: pendiente, origen: 'oc', referencia: oc.numero, ...(fecha ? { estimada: true } : {}) });
+      }
     }
   }
   const filas: FilaRiesgo[] = cob.filas.map((f) => {

@@ -24,7 +24,7 @@ export const MODO_RECEPCION_LABELS: Record<ModoRecepcionInventario, { titulo: st
 export const CONFIG_POR_DEFECTO: ConfigOperacion = {
   compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
   inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
-  riesgo: { avisarAlPasarARojo: true },
+  riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
   excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
   documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
   analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },

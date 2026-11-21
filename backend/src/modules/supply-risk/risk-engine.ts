@@ -21,6 +21,8 @@ export interface Reposicion {
   cantidad: number;
   origen: 'embarque' | 'oc';
   referencia: string;
+  // true = la fecha no es de un embarque real: se estimó con la fecha de despacho de la OC más los días de tránsito.
+  estimada?: boolean;
 }
 
 export interface EntradaRiesgo {

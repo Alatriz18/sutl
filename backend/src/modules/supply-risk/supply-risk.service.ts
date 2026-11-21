@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EstadoOrdenCompra } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantConfigService } from '../tenant-config/tenant-config.service';
 import { InventoryCoverageService } from '../inventory-coverage/inventory-coverage.service';
 import { AccionRecomendada, Reposicion, ResultadoRiesgo, Semaforo, evaluarRiesgo } from './risk-engine';
 
@@ -25,18 +26,20 @@ export class SupplyRiskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly coverage: InventoryCoverageService,
+    private readonly tenantConfig: TenantConfigService,
   ) {}
 
   // `hoy` se inyecta para poder probar con fechas fijas.
   async evaluar(tenantId: string, hoy = new Date()) {
     const cobertura = await this.coverage.cobertura(tenantId);
+    const diasTransito = (await this.tenantConfig.getEfectiva(tenantId)).riesgo.diasTransitoEstimado;
     const lineas = await this.prisma.purchaseOrderLine.findMany({
       where: { tenantId, purchaseOrder: { estado: { in: OC_ACTIVAS } } },
       select: {
         sku: true,
         cantidad: true,
         cantidadRecibida: true,
-        purchaseOrder: { select: { numero: true } },
+        purchaseOrder: { select: { numero: true, fechaDespacho: true, fechaConfirmadaProveedor: true } },
         embarques: {
           select: { cantidad: true, shipment: { select: { codigoGuia: true, estado: true, fechaEstimadaLlegada: true } } },
         },
@@ -65,7 +68,11 @@ export class SupplyRiskService {
         });
       }
       if (pendiente > 0) {
-        agregar(l.sku, { fecha: null, cantidad: pendiente, origen: 'oc', referencia: l.purchaseOrder.numero });
+        // Si la empresa definió días de tránsito, una OC con fecha de despacho (real o comprometida por el proveedor)
+        // se estima como llegada = despacho + tránsito; sin esa fecha sigue «sin fecha de llegada».
+        const salida = l.purchaseOrder.fechaDespacho ?? l.purchaseOrder.fechaConfirmadaProveedor;
+        const fecha = diasTransito > 0 && salida ? new Date(salida.getTime() + diasTransito * 86_400_000) : null;
+        agregar(l.sku, { fecha, cantidad: pendiente, origen: 'oc', referencia: l.purchaseOrder.numero, ...(fecha ? { estimada: true } : {}) });
       }
     }
 

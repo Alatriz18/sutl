@@ -33,6 +33,9 @@ export interface ConfigOperacion {
   riesgo: {
     // Si el motor de riesgo avisa por correo a los administradores cuando un SKU pasa a rojo.
     avisarAlPasarARojo: boolean;
+    // Días de tránsito que se suman a la fecha de despacho de una OC que todavía no tiene embarque, para estimar cuándo
+    // llegaría (0 = no estimar: la OC sigue «sin fecha de llegada»).
+    diasTransitoEstimado: number;
   };
   excepciones: {
     // Horas para atender una excepción grave (SKU en rojo, OC muy atrasada) antes de escalarla.
@@ -102,7 +105,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'a_eleccion', diasCoberturaAlerta: 15 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -116,7 +119,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 5, diasAlertaAnticipada: 14, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 30 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -130,7 +133,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: true },
       inventario: { recepcionActualizaInventario: 'automatico', diasCoberturaAlerta: 20 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: true, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -144,7 +147,7 @@ export const PERFILES = {
     config: {
       compras: { toleranciaSobreRecepcionPct: 0, diasAlertaAnticipada: 7, exigirFechaConfirmacion: true, vincularEmbarqueDespachaOc: false },
       inventario: { recepcionActualizaInventario: 'nunca', diasCoberturaAlerta: 15 },
-      riesgo: { avisarAlPasarARojo: true },
+      riesgo: { avisarAlPasarARojo: true, diasTransitoEstimado: 0 },
       excepciones: { slaAltaHoras: 24, slaMediaHoras: 72, crearTareas: true, responsableSkuRojoId: '', responsableOcAtrasadaId: '', responsableDocumentoFaltanteId: '' },
       documentos: { exigirFactura: true, exigirPackingList: true, exigirDocumentoTransporte: true, exigirPedimento: false, diasAvisoVencimiento: 15, diasAntesEtaFaltante: 5, avisarVencimientos: true },
       analitica: { metaOtifPct: 90, umbralAtencionOtifPct: 70 },
@@ -186,6 +189,7 @@ export function sanitizarAjustes(raw: unknown): AjustesOperacion {
       }
       // Un responsable es el identificador de un usuario (UUID) o vacío; el servidor además comprueba que sea de la empresa.
       if (seccion === 'excepciones' && clave.startsWith('responsable') && valor !== '' && !UUID.test(valor as string)) continue;
+      if (seccion === 'riesgo' && clave === 'diasTransitoEstimado' && (!Number.isInteger(valor) || (valor as number) < 0 || (valor as number) > 365)) continue;
       if (seccion === 'analitica' && (!Number.isFinite(valor) || (valor as number) < 1 || (valor as number) > 100)) continue;
       // La marca se muestra a terceros: un color o logo mal formado se descarta al leer.
       if (seccion === 'marca') {

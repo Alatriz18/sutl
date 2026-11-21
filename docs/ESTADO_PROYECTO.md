@@ -85,6 +85,10 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-21 — B1c: llegada estimada de las órdenes que todavía no viajan
+
+Una OC sin embarque contaba como «reposición sin fecha», lo que dejaba al motor de riesgo sin poder ubicarla en el tiempo. Ahora cada empresa puede definir en Configuración → Riesgo de abastecimiento los **días de tránsito estimados** (0 = no estimar, valor por defecto, comportamiento de siempre). Con un valor mayor, la llegada de la OC se estima como *fecha de despacho (o fecha comprometida por el proveedor) + días de tránsito*, la reposición entra al cálculo con su fecha y se marca `estimada`. Rango 0–365, validado en backend y en la demo. Archivos: `tenant-config.defaults.ts`, DTO, `supply-risk.service.ts`, `risk-engine.ts`; pantalla de Configuración y modo demo. Pruebas: `test/supply-risk-transito.e2e-spec.ts` (5) y `e2e-real/transito.spec.ts`. Probado con Docker: 52 unitarias y 39 e2e de riesgo y configuración en verde. No corrí las suites completas en esta tanda porque el equipo estaba con muy poca memoria libre.
+
 ### 2026-11-21 — B3d: aviso al responsable cuando una excepción le abre una tarea
 
 Cuando la empresa definió un responsable por tipo de excepción y se abre la tarea ya asignada a esa persona, ahora también recibe el correo «te asignaron una tarea» (antes solo lo recibían las tareas creadas a mano). Un fallo del correo no frena la ronda de excepciones. Archivo: `exceptions/exceptions.service.ts`; prueba ampliada en `test/exceptions-responsable.e2e-spec.ts`. Probado con Docker: 14 unitarias de excepciones y 32 e2e de excepciones y tareas en verde.

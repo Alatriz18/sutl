@@ -23,6 +23,7 @@ export interface Reposicion {
   cantidad: number;
   origen: 'embarque' | 'oc';
   referencia: string;
+  estimada?: boolean;
 }
 
 export interface EntradaRiesgo {

@@ -610,6 +610,7 @@ export interface ConfigOperacion {
   };
   riesgo: {
     avisarAlPasarARojo: boolean;
+    diasTransitoEstimado: number;
   };
   excepciones: {
     slaAltaHoras: number;
