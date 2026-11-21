@@ -216,7 +216,6 @@ const FALTA = [
     'Observabilidad, backups con simulacro de restauración y pentest (D3, D5, D6).',
   ]],
   ['Producto', [
-    'Fotos de la entrega tomadas desde el celular (C6).',
     'Dominio propio para el seguimiento público (C8).',
   ]],
   ['Negocio', [
@@ -271,6 +270,7 @@ const HORIZONTE = [
 
 // Lo avanzado en la semana 6 (9–14 nov).
 const LOGROS_SEMANA = [
+  ['Foto de la entrega tomada con la cámara del celular', 'C6c'],
   ['Llegada estimada de las órdenes que todavía no viajan, con días de tránsito por empresa', 'B1c'],
   ['Evidencia adjunta en las tareas (hasta 10 archivos, descarga protegida)', 'B3c'],
   ['Aviso por correo a quien recibe una tarea asignada', 'B3b'],

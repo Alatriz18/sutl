@@ -85,6 +85,10 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-21 — C6c: foto de la entrega con la cámara del celular
+
+En la tarjeta «Prueba de entrega» hay un botón **Tomar foto con la cámara** (`capture="environment"`): en el celular abre directamente la cámara y la foto queda como evidencia de la entrega (si además se eligió un archivo, la foto tiene prioridad). El backend no cambió: ya validaba tipo y tamaño (10 MB). Prueba: `e2e-real/firma.spec.ts` ampliada (foto adjunta y verificada en el servidor). Probado con el backend real; no repetí la suite demo completa en esta tanda por la poca memoria libre del equipo.
+
 ### 2026-11-21 — B1c: llegada estimada de las órdenes que todavía no viajan
 
 Una OC sin embarque contaba como «reposición sin fecha», lo que dejaba al motor de riesgo sin poder ubicarla en el tiempo. Ahora cada empresa puede definir en Configuración → Riesgo de abastecimiento los **días de tránsito estimados** (0 = no estimar, valor por defecto, comportamiento de siempre). Con un valor mayor, la llegada de la OC se estima como *fecha de despacho (o fecha comprometida por el proveedor) + días de tránsito*, la reposición entra al cálculo con su fecha y se marca `estimada`. Rango 0–365, validado en backend y en la demo. Archivos: `tenant-config.defaults.ts`, DTO, `supply-risk.service.ts`, `risk-engine.ts`; pantalla de Configuración y modo demo. Pruebas: `test/supply-risk-transito.e2e-spec.ts` (5) y `e2e-real/transito.spec.ts`. Probado con Docker: 52 unitarias y 39 e2e de riesgo y configuración en verde. No corrí las suites completas en esta tanda porque el equipo estaba con muy poca memoria libre.

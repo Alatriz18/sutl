@@ -21,6 +21,8 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
   const toast = useToast();
   const { config } = useTenantConfig();
   const archivoRef = useRef<HTMLInputElement>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const [fotoNombre, setFotoNombre] = useState('');
   const firmaRef = useRef<FirmaPadHandle>(null);
   const [firmaUrl, setFirmaUrl] = useState<string | null>(null);
   const [pod, setPod] = useState<PruebaEntrega | null | undefined>(undefined);
@@ -85,7 +87,8 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
         if (modoInventario === 'a_eleccion') body.append('actualizarInventario', String(f.actualizarInventario));
         if (mueveInventario && f.warehouseId) body.append('warehouseId', f.warehouseId);
       }
-      const archivo = archivoRef.current?.files?.[0];
+      // La foto tomada con la cámara tiene prioridad sobre el archivo elegido.
+      const archivo = fotoRef.current?.files?.[0] ?? archivoRef.current?.files?.[0];
       if (archivo) body.append('evidencia', archivo);
       const firma = await firmaRef.current?.aPng();
       if (firma) body.append('firma', firma, 'firma.png');
@@ -186,7 +189,12 @@ export function PruebaEntregaCard({ shipmentId, modo, onRegistrada }: { shipment
           </div>
           <div>
             <label htmlFor={`${uid}-e`} className="mb-1 block text-sm font-medium text-navy">Evidencia (foto o PDF, opcional)</label>
-            <span className="mb-1 block text-xs text-navy/50">Desde el celular puedes tomar la foto en el momento.</span>
+            <span className="mb-1 block text-xs text-navy/50">Desde el celular puedes tomar la foto en el momento con la cámara.</span>
+            <label htmlFor={`${uid}-c`} className="mb-2 inline-flex cursor-pointer items-center rounded-md bg-navy/10 px-3 py-1.5 text-sm font-medium text-navy hover:bg-navy/15">
+              Tomar foto con la cámara
+            </label>
+            <input id={`${uid}-c`} ref={fotoRef} type="file" accept="image/jpeg,image/png" capture="environment" className="sr-only" onChange={(e) => setFotoNombre(e.target.files?.[0]?.name ?? '')} />
+            {fotoNombre && <span className="mb-2 ml-2 text-xs text-navy/70">Foto lista: {fotoNombre}</span>}
             <input id={`${uid}-e`} ref={archivoRef} type="file" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png" className="w-full rounded-md border border-navy/20 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-navy/10 file:px-3 file:py-1.5 file:text-navy" />
           </div>
           <div className="sm:col-span-2">

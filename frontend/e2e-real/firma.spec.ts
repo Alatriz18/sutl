@@ -30,6 +30,10 @@ test('el equipo registra la entrega con firma en pantalla y la firma se muestra 
   await page.mouse.move(caja.x + 150, caja.y + 100, { steps: 10 });
   await page.mouse.move(caja.x + 260, caja.y + 40, { steps: 10 });
   await page.mouse.up();
+  // Foto tomada con la cámara del celular (aquí se simula con un archivo de imagen).
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==', 'base64');
+  await page.getByLabel('Tomar foto con la cámara').setInputFiles({ name: 'foto-entrega.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByText('Foto lista: foto-entrega.png')).toBeVisible();
   await page.getByRole('button', { name: 'Registrar entrega' }).click();
 
   const firma = page.getByRole('img', { name: 'Firma de Marta Firma' });
@@ -38,5 +42,7 @@ test('el equipo registra la entrega con firma en pantalla y la firma se muestra 
   await expect.poll(() => firma.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 
   const pod = await fetch(`${API}/shipments/${id}/pod`, { headers: { Authorization: `Bearer ${token}` } });
-  expect((await pod.json()).tieneFirma).toBe(true);
+  const datos = await pod.json();
+  expect(datos.tieneFirma).toBe(true);
+  expect(datos.archivoNombre).toBe('foto-entrega.png');
 });
