@@ -67,7 +67,9 @@ describe('DeliveryService', () => {
   describe('registrar', () => {
     it('guarda la prueba, deja el envío en «entregado» por el seguimiento y anota la bitácora', async () => {
       const { service, prisma, tracking, audit } = montar();
-      await service.registrar(user(), 's1', dto, { filename: 'pod-1.jpg', originalname: 'firma.jpg' });
+      const rutaJpg = join(mkdtempSync(join(tmpdir(), 'evid-')), 'pod-1.jpg');
+      writeFileSync(rutaJpg, Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('datos')]));
+      await service.registrar(user(), 's1', dto, { filename: 'pod-1.jpg', originalname: 'firma.jpg', path: rutaJpg });
       expect(prisma.proofOfDelivery.create.mock.calls[0][0].data).toMatchObject({
         tenantId: 't1', shipmentId: 's1', receptorNombre: 'Ana Pérez', archivoUrl: '/uploads/t1/pod-1.jpg', archivoNombre: 'firma.jpg', registradoPorId: 'u1',
       });
@@ -81,6 +83,15 @@ describe('DeliveryService', () => {
       writeFileSync(ruta, Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from('datos')]));
       await service.registrar(user(), 's1', dto, undefined, { filename: 'pod-9.png', path: ruta });
       expect(prisma.proofOfDelivery.create.mock.calls[0][0].data).toMatchObject({ firmaUrl: '/uploads/t1/pod-9.png' });
+    });
+
+    it('rechaza una evidencia cuyo contenido no es del tipo que dice su extensión, la borra y no registra nada', async () => {
+      const { service, prisma } = montar();
+      const ruta = join(mkdtempSync(join(tmpdir(), 'evid-')), 'pod-2.pdf');
+      writeFileSync(ruta, 'MZ ejecutable disfrazado');
+      await expect(service.registrar(user(), 's1', dto, { filename: 'pod-2.pdf', originalname: 'acta.pdf', path: ruta })).rejects.toBeInstanceOf(BadRequestException);
+      expect(existsSync(ruta)).toBe(false);
+      expect(prisma.proofOfDelivery.create).not.toHaveBeenCalled();
     });
 
     it('rechaza una «firma» que no es un PNG (aunque se llame .png), la borra y no registra nada', async () => {

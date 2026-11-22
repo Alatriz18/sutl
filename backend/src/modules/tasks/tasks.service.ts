@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { EstadoTarea, Prisma, RolUsuario } from '@prisma/client';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../prisma/prisma.service';
+import { descartarArchivo, exigirContenidoValido } from '../../common/uploads';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateCommentDto, CreateTaskDto, ListTasksQueryDto, UpdateTaskDto } from './dto/task.dto';
@@ -185,6 +186,16 @@ Entra a SUTL → Tareas para verla y marcarla como hecha.`,
 
   // Evidencia: la puede adjuntar el administrador, quien creó la tarea o su responsable (igual que modificarla).
   async adjuntar(user: RequestUser, id: string, file: Express.Multer.File) {
+    exigirContenidoValido(file);
+    try {
+      return await this.guardarAdjunto(user, id, file);
+    } catch (e) {
+      descartarArchivo(file); // rechazada: no deja el archivo huérfano en el disco
+      throw e;
+    }
+  }
+
+  private async guardarAdjunto(user: RequestUser, id: string, file: Express.Multer.File) {
     const tarea = await this.prisma.task.findFirst({ where: { id, tenantId: user.tenantId }, select: { creadoPorId: true, asignadoAId: true } });
     if (!tarea) throw new NotFoundException('Tarea no encontrada');
     if (!esAdmin(user.rol) && tarea.creadoPorId !== user.userId && tarea.asignadoAId !== user.userId) {

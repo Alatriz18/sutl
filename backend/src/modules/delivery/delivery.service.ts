@@ -4,6 +4,7 @@ import { closeSync, openSync, readSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../prisma/prisma.service';
+import { descartarArchivo, exigirContenidoValido } from '../../common/uploads';
 import { AuditService } from '../audit/audit.service';
 import { PurchaseOrdersService } from '../purchase-orders/purchase-orders.service';
 import { TrackingEventsService } from '../tracking-events/tracking-events.service';
@@ -94,12 +95,22 @@ export class DeliveryService {
     return { ruta: pod.firmaUrl };
   }
 
-  async registrar(user: RequestUser, shipmentId: string, dto: RegisterPodDto, archivo?: { filename: string; originalname: string }, firma?: { filename: string; path?: string }) {
+  async registrar(user: RequestUser, shipmentId: string, dto: RegisterPodDto, archivo?: { filename: string; originalname: string; path?: string }, firma?: { filename: string; path?: string }) {
     const envio = await this.envioVisible(user, shipmentId).catch((e) => {
       this.descartar(firma?.path);
+      descartarArchivo(archivo);
       throw e;
     });
+    if (archivo) {
+      try {
+        exigirContenidoValido(archivo as { path?: string; originalname: string });
+      } catch (e) {
+        this.descartar(firma?.path);
+        throw e;
+      }
+    }
     if (firma && firma.path && !esPng(firma.path)) {
+      descartarArchivo(archivo);
       this.descartar(firma.path);
       throw new BadRequestException('La firma no es una imagen PNG válida');
     }

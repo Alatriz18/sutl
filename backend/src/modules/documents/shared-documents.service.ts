@@ -1,3 +1,4 @@
+import { descartarArchivo, exigirContenidoValido } from '../../common/uploads';
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma, RolUsuario, TipoDocumento } from '@prisma/client';
 import { RequestUser } from '../../common/interfaces/jwt-payload.interface';
@@ -141,6 +142,16 @@ export class SharedDocumentsService {
 
   // Un externo sube un documento de su operación: queda pendiente de revisión y solo lo ve su lado y el equipo.
   async subirExterno(user: RequestUser, shipmentId: string, tipo: TipoDocumento, fechaVencimiento: string | undefined, file: Express.Multer.File) {
+    exigirContenidoValido(file);
+    try {
+      return await this.guardarExterno(user, shipmentId, tipo, fechaVencimiento, file);
+    } catch (e) {
+      descartarArchivo(file); // rechazado: no deja el archivo huérfano en el disco
+      throw e;
+    }
+  }
+
+  private async guardarExterno(user: RequestUser, shipmentId: string, tipo: TipoDocumento, fechaVencimiento: string | undefined, file: Express.Multer.File) {
     const permitidos = TIPOS_EXTERNOS[user.rol];
     if (!permitidos) throw new ForbiddenException('Forbidden resource');
     const envio = await this.envio(user, shipmentId);

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { TenantConfigService } from '../tenant-config/tenant-config.service';
 import { ETIQUETA_ESTADO, ETIQUETA_TIPO, DocumentoVersion, estadoDelItem, evaluarChecklist, ultimasVersiones } from './checklist';
+import { descartarArchivo, exigirContenidoValido } from '../../common/uploads';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { RevisarDocumentDto } from './dto/revisar-document.dto';
 
@@ -49,6 +50,16 @@ export class DocumentsService {
     dto: CreateDocumentDto,
     file: Express.Multer.File,
   ) {
+    exigirContenidoValido(file);
+    try {
+      return await this.guardar(tenantId, userId, dto, file);
+    } catch (e) {
+      descartarArchivo(file); // rechazado: no deja el archivo huérfano en el disco
+      throw e;
+    }
+  }
+
+  private async guardar(tenantId: string, userId: string, dto: CreateDocumentDto, file: Express.Multer.File) {
     const shipment = await this.prisma.shipment.findFirst({
       where: { id: dto.shipmentId, tenantId },
     });

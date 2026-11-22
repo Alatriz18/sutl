@@ -85,6 +85,18 @@ Implicación: varios módulos actuales (cotizaciones, reservas, tarifas/contrato
 
 ## Historial de cambios
 
+### 2026-11-21 — Revisión de seguridad de lo construido (A9b)
+
+Se revisó la superficie nueva de las últimas semanas (subida y descarga de archivos, aislamiento entre empresas, configuración global, secretos y dependencias).
+
+**Sin hallazgos:** `npm audit` de producción sin vulnerabilidades; cabeceras de seguridad con helmet; la carpeta de subidas nunca se sirve pública (solo descargas con sesión, validando empresa); ninguna clave con valor por defecto en el código (`JWT_REFRESH_SECRET` y `ENCRYPTION_KEY` son obligatorias); solo 6 rutas públicas, todas deliberadas (login, refresh, tracking público, contacto, API pública con clave); el aislamiento entre empresas ya lo cubren las pruebas de aislamiento y el barrido de fuga de secretos.
+
+**Corregido (2):**
+1. *El contenido de un archivo no se comprobaba, solo su nombre.* Un ejecutable renombrado como `factura.pdf` se guardaba. Ahora tareas, documentos (del equipo y de externos) y evidencia de entrega verifican los primeros bytes del archivo contra su extensión (PDF, PNG, JPG, XLSX/DOCX, DOC) y rechazan lo que no coincide. Ayudante común: `src/common/uploads.ts`.
+2. *Una subida rechazada dejaba el archivo huérfano en el disco* (por permisos, empresa ajena o envío inexistente), lo que permitía a un usuario autenticado llenar el disco con intentos fallidos. Ahora el archivo se borra siempre que la operación se rechaza.
+
+Pruebas: `test/subidas-seguridad.e2e-spec.ts` (3) y una unitaria nueva de entrega. **465 unitarias y 415 e2e en verde.** Pendiente fuera de local: pentest externo y revisión de infraestructura (D6), que dependen del entorno en la nube.
+
 ### 2026-11-21 — C6c: foto de la entrega con la cámara del celular
 
 En la tarjeta «Prueba de entrega» hay un botón **Tomar foto con la cámara** (`capture="environment"`): en el celular abre directamente la cámara y la foto queda como evidencia de la entrega (si además se eligió un archivo, la foto tiene prioridad). El backend no cambió: ya validaba tipo y tamaño (10 MB). Prueba: `e2e-real/firma.spec.ts` ampliada (foto adjunta y verificada en el servidor). Probado con el backend real; no repetí la suite demo completa en esta tanda por la poca memoria libre del equipo.

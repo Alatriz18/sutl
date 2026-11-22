@@ -270,6 +270,7 @@ const HORIZONTE = [
 
 // Lo avanzado en la semana 6 (9–14 nov).
 const LOGROS_SEMANA = [
+  ['Revisión de seguridad: el contenido de los archivos subidos se verifica y las subidas rechazadas no dejan archivos', 'A9b'],
   ['Foto de la entrega tomada con la cámara del celular', 'C6c'],
   ['Llegada estimada de las órdenes que todavía no viajan, con días de tránsito por empresa', 'B1c'],
   ['Evidencia adjunta en las tareas (hasta 10 archivos, descarga protegida)', 'B3c'],
@@ -319,7 +320,7 @@ const PLAN_SEMANA = [
 // Indicadores de la primera página. Actualizar a mano en cada corte (los de pruebas vienen de correr las suites).
 const KPIS = [
   { n: '33', t: 'módulos de backend (Postgres, Mongo y Redis), todos probados con el stack completo' },
-  { n: '976', t: 'pruebas en verde: 464 unitarias y 412 de punta a punta del backend, 73 de navegador en demo y 27 contra el backend real' },
+  { n: '980', t: 'pruebas en verde: 465 unitarias y 415 de punta a punta del backend, 73 de navegador en demo y 27 contra el backend real' },
   { n: '29', t: 'secciones del panel (algunas solo para un rol), más landing, login, tracking público y modo demo' },
   { n: 'Local', t: 'único entorno activo; staging y producción siguen sin desplegarse', color: 'red' },
 ];
